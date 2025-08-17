@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 # Create your models here.
 
@@ -93,3 +94,21 @@ class FacilityNonCovered(TimestampedModel):
         verbose_name_plural = "비급여 항목"
     def __str__(self):
         return f"{self.facility.code}-{self.title}"
+
+
+class ChatHistory(TimestampedModel):
+    """Stores chat queries and answers for authenticated users."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chat_histories"
+    )
+    query = models.TextField()
+    answer = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "채팅 기록"
+        verbose_name_plural = "채팅 기록"
+
+    def __str__(self):
+        return f"{self.user} - {self.created_at:%Y-%m-%d %H:%M:%S}"

@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import JsonResponse
-from .models import Facility
+from .models import Facility, ChatHistory
 from .serializers import FacilityListSerializer, FacilityDetailSerializer, ChatRequestSerializer, ChatResponseSerializer
 from .rag_service import RAGService
 
@@ -77,7 +77,12 @@ class ChatbotAPI(APIView):
 
                 response_serializer = ChatResponseSerializer(data=result)
                 if response_serializer.is_valid():
-                    return Response(response_serializer.data, status=status.HTTP_200_OK)
+                    data = response_serializer.data
+                    if request.user.is_authenticated:
+                        ChatHistory.objects.create(
+                            user=request.user, query=query, answer=data.get("answer", "")
+                        )
+                    return Response(data, status=status.HTTP_200_OK)
                 else:
                     return Response(response_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
