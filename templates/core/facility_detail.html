@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>{{ facility.name }} - 시설 상세</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', Arial, sans-serif; margin:16px; line-height:1.45; }
+        h1 { margin:0 0 4px; }
+        h2 { margin:32px 0 12px; border-left:4px solid #4a6; padding-left:8px; font-size:1.15rem; }
+        table { width:100%; border-collapse:collapse; font-size:0.9rem; }
+        th, td { border:1px solid #ddd; padding:6px 8px; vertical-align:top; }
+        th { background:#f7f7f7; text-align:left; width:180px; }
+        .muted { color:#777; font-size:0.8rem; }
+        .badge { display:inline-block; background:#eee; border-radius:6px; padding:2px 8px; margin:2px 4px 0 0; font-size:0.7rem; }
+        .ok { color:#0a7; font-weight:600; }
+        .no { color:#c00; font-weight:600; }
+        pre { background:#f5f5f5; padding:10px; border:1px solid #ddd; border-radius:6px; white-space:pre-wrap; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>{{ facility.name }} <small style="font-size:.7em;color:#666">({{ facility.code }})</small></h1>
+        <div style="font-size:.85rem;">
+            종류: {{ facility.kind|default:'-' }} · 등급: <strong>{{ facility.grade|default:'-' }}</strong> · 정원 {{ facility.capacity|default:'-' }} / 현원 {{ facility.occupancy|default:'-' }} / 대기 {{ facility.waiting|default:'-' }} · 이용가능: {% if facility.availability == '가능' %}<span class="ok">가능</span>{% elif facility.availability %}<span class="no">{{ facility.availability }}</span>{% else %}-{% endif %}
+        </div>
+        {% if homepage_item and homepage_item.content %}
+            <div style="margin-top:4px;font-size:.8rem;">홈페이지: <a href="{{ homepage_item.content }}" target="_blank" rel="noopener">{{ homepage_item.content }}</a></div>
+        {% endif %}
+    </header>
+
+    <h2>기본정보</h2>
+    {% if basic_items %}
+        <table>
+            <tbody>
+            {% for it in basic_items %}
+                <tr>
+                    <th>{{ it.title }}</th>
+                    <td>{{ it.content|linebreaksbr }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}<p class="muted">기본정보 없음</p>{% endif %}
+
+    <h2>평가정보</h2>
+    {% if evaluation_items %}
+        <table>
+            <tbody>
+            {% for it in evaluation_items %}
+                <tr>
+                    <th>{{ it.title }}</th>
+                    <td>{{ it.content|linebreaksbr }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}<p class="muted">평가정보 없음</p>{% endif %}
+
+    <h2>인력현황</h2>
+    {% if staff_items %}
+        <table>
+            <tbody>
+            {% for it in staff_items %}
+                <tr>
+                    <th>{{ it.title }}</th>
+                    <td>{{ it.content|linebreaksbr }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}<p class="muted">인력현황 없음</p>{% endif %}
+
+    <h2>프로그램운영</h2>
+    {% if program_items %}
+        <table>
+            <tbody>
+            {% for it in program_items %}
+                <tr>
+                    <th>{{ it.title }}</th>
+                    <td>{{ it.content|linebreaksbr }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}<p class="muted">프로그램 데이터 없음</p>{% endif %}
+
+    <h2>위치</h2>
+    {% if location_item %}
+        <pre>{{ location_item.content }}</pre>
+    {% else %}<p class="muted">위치 정보 없음</p>{% endif %}
+
+    <h2>비급여 항목</h2>
+    {% if noncovered_item and noncovered_item.content %}
+        <pre>{{ noncovered_item.content }}</pre>
+    {% else %}<p class="muted">비급여 항목 없음</p>{% endif %}
+
+</body>
+</html>
