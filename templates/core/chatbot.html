@@ -502,17 +502,17 @@
     </style>
 </head>
 <body>
+<!-- 로그인 상태 서버사이드 표시 -->
+<div class="site-header">
+    {% if request.user.is_authenticated %}
+        <span class="link">안녕하세요, {{ request.user.username }}</span>
+        <a class="btn" href="{% url 'auth-logout' %}?next={{ request.path }}">로그아웃</a>
+    {% else %}
+        <a class="btn" href="{% url 'login-page' %}?next={{ request.path }}">로그인</a>
+    {% endif %}
+</div>
 <div id="app">
-    <div class="site-header">
-        <template v-if="me">
-            <span class="link">안녕하세요, {{ me.username }}</span>
-            <a class="btn" href="#" @click.prevent="logout">로그아웃</a>
-        </template>
-        <template v-else>
-            <a class="btn" href="#" @click.prevent="goLogin">로그인</a>
-        </template>
-    </div>
-
+    <!-- Vue 내부 헤더 제거됨 -->
     <!-- 랜딩 / 초기 화면 -->
     <transition name="fade">
         <div v-if="!isChatMode" class="main-container">
@@ -647,8 +647,11 @@
 </div>
 
 <script>
+    // CSRF 설정 (Django 기본 csrftoken 쿠키 -> X-CSRFToken 헤더 자동 전송)
+    axios.defaults.withCredentials = true;
+    axios.defaults.xsrfCookieName = 'csrftoken';
+    axios.defaults.xsrfHeaderName = 'X-CSRFToken';
     const { createApp } = Vue;
-
     createApp({
         data() {
             return {
@@ -660,169 +663,58 @@
                 messageIdCounter: 0,
                 isChatMode: false,
                 isRagInitialized: false,
-                me: null,
             }
         },
-
         methods: {
-            logout() {
-                axios.get('/account/auth/logout/').then(() => {
-                    this.me = null;
-                });
-            },
-            goLogin() {
-                const next = encodeURIComponent(window.location.pathname);
-                window.location.href = `/account/auth/login/?next=${next}`;
-            },
             async startChat() {
-                console.log('startChat 호출됨, currentMessage:', this.currentMessage);
                 if (!this.currentMessage.trim() || this.isLoading) return;
-
                 this.isChatMode = true;
-                console.log('isChatMode 변경됨:', this.isChatMode);
                 await this.sendMessage();
             },
-
-            async fetchMe() {
-                try {
-                  const { data } = await axios.get('/account/auth/me/', {
-                    withCredentials: true  // 세션 쿠키 포함하여 요청
-                  });
-                  // API 응답: {authenticated: boolean, user: {...} | null}
-                  this.me = data.authenticated ? data.user : null;
-                } catch (e) {
-                  this.me = null;
-                }
-            },
-
             async sendMessage() {
-                console.log('sendMessage 시작, currentMessage:', this.currentMessage);
                 if (!this.currentMessage.trim() || this.isLoading) return;
-
-                const userMessage = {
-                    id: this.messageIdCounter++,
-                    type: 'user',
-                    content: this.currentMessage,
-                    timestamp: new Date()
-                };
-
-                console.log('사용자 메시지 추가:', userMessage);
+                const userMessage = { id: this.messageIdCounter++, type: 'user', content: this.currentMessage, timestamp: new Date() };
                 this.messages.push(userMessage);
-                console.log('현재 messages 배열:', this.messages);
-                console.log('messages.length:', this.messages.length);
-
                 const query = this.currentMessage;
                 this.currentMessage = '';
                 this.isLoading = true;
-
-                this.$nextTick(() => {
-                    console.log('nextTick - DOM 업데이트 후');
-                    this.scrollToBottom();
-                });
-
+                this.$nextTick(this.scrollToBottom);
                 try {
-                    console.log('API 호�� 시작:', query);
-                    const response = await axios.post('/api/chat/', {
-                        query: query
-                    });
-
-                    console.log('API 응답:', response.data);
-
-                    const botMessage = {
-                        id: this.messageIdCounter++,
-                        type: 'bot',
-                        content: response.data.answer,
-                        sources: response.data.sources,
-                        timestamp: new Date()
-                    };
-
-                    console.log('봇 메시지 추가:', botMessage);
-                    this.messages.push(botMessage);
-                    console.log('최종 messages 배열:', this.messages);
-
+                    const { data } = await axios.post('/api/chat/', { query });
+                    this.messages.push({ id: this.messageIdCounter++, type: 'bot', content: data.answer, sources: data.sources, timestamp: new Date() });
                 } catch (error) {
-                    console.error('챗봇 API 오류:', error);
-                    const errorMessage = {
-                        id: this.messageIdCounter++,
-                        type: 'bot',
-                        content: error.response?.data?.error || '죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.',
-                        isError: true,
-                        timestamp: new Date()
-                    };
-                    this.messages.push(errorMessage);
+                    this.messages.push({ id: this.messageIdCounter++, type: 'bot', content: error.response?.data?.error || '죄송합니다. 오류가 발생했습니다.', isError: true, timestamp: new Date() });
                 } finally {
                     this.isLoading = false;
-                    this.$nextTick(() => {
-                        this.scrollToBottom();
-                    });
+                    this.$nextTick(this.scrollToBottom);
                 }
             },
-
             async initializeRAG() {
                 this.isInitializing = true;
-
                 try {
-                    const response = await axios.post('/api/initialize-rag/');
-                    this.successMessage = response.data.message;
+                    const { data } = await axios.post('/api/initialize-rag/');
+                    this.successMessage = data.message;
                     this.isRagInitialized = true;
-
-                    setTimeout(() => {
-                        this.successMessage = '';
-                    }, 4000);
-                } catch (error) {
-                    console.error('RAG 초기화 오류:', error);
-                    this.successMessage = error.response?.data?.error || 'AI 초기화 중 오류가 발생했습니다.';
-                    setTimeout(() => {
-                        this.successMessage = '';
-                    }, 4000);
+                    setTimeout(()=> this.successMessage = '', 4000);
+                } catch (e) {
+                    this.successMessage = e.response?.data?.error || 'AI 초기화 중 오류가 발생했습니다.';
+                    setTimeout(()=> this.successMessage = '', 4000);
                 } finally {
                     this.isInitializing = false;
                 }
             },
-
-            setExamplePrompt(prompt) {
-                this.currentMessage = prompt;
-            },
-
-            backToMain() {
-                this.isChatMode = false;
-                this.messages = [];
-                this.currentMessage = '';
-            },
-
-            formatMessage(content) {
-                return content
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\n/g, '<br>');
-            },
-
-            scrollToBottom() {
-                if (this.$refs.messagesContainer) {
-                    this.$refs.messagesContainer.scrollTop = this.$refs.messagesContainer.scrollHeight;
-                }
-            }
+            setExamplePrompt(p){ this.currentMessage = p; },
+            backToMain(){ this.isChatMode = false; this.messages = []; this.currentMessage=''; },
+            formatMessage(c){ return c.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'); },
+            scrollToBottom(){ if (this.$refs.messagesContainer) this.$refs.messagesContainer.scrollTop = this.$refs.messagesContainer.scrollHeight; }
         },
-
         mounted() {
-            console.log('Vue 앱 마운트됨');
-            // axios 기본 설정: 모든 요청에 쿠키 포함
             axios.defaults.withCredentials = true;
-            this.fetchMe();
             document.body.classList.toggle('chat-active', this.isChatMode);
         },
-
         watch: {
-        messages: {
-            handler(newMessages) {
-                console.log('messages 배열 변경됨:', newMessages);
-            },
-            deep: true
-      },
-      isChatMode(newVal) {
-          console.log('isChatMode 변경됨:', newVal);
-          document.body.classList.toggle('chat-active', newVal); // ← 이 줄 추가
-      }
-},
+            isChatMode(v){ document.body.classList.toggle('chat-active', v); }
+        }
     }).mount('#app');
 </script>
 </body>

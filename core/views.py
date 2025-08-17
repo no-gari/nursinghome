@@ -4,13 +4,15 @@ from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import JsonResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
 from .models import Facility, ChatHistory
 from .serializers import FacilityListSerializer, FacilityDetailSerializer, ChatRequestSerializer, ChatResponseSerializer
 from .rag_service import RAGService
 
+@ensure_csrf_cookie
 # 기존 Django 템플릿 뷰
 def chatbot_view(request):
-    """Vue.js 챗봇 인터페이스"""
+    """Vue.js 챗봇 인터페이스 (CSRF 쿠키 강제 세팅)"""
     return render(request, 'core/chatbot.html')
 
 def facility_detail(request, code: str):
