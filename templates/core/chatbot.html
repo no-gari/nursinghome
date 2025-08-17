@@ -506,10 +506,10 @@
     <div class="site-header">
         <template v-if="me">
             <span class="link">안녕하세요, {{ me.username }}</span>
-            <a class="btn" href="/account/auth/logout/?next=/">로그아웃</a>
+            <a class="btn" href="#" @click.prevent="logout">로그아웃</a>
         </template>
         <template v-else>
-            <a class="btn" href="/account/auth/login/?next=/">로그인</a>
+            <a class="btn" href="#" @click.prevent="goLogin">로그인</a>
         </template>
     </div>
 
@@ -665,6 +665,15 @@
         },
 
         methods: {
+            logout() {
+                axios.get('/account/auth/logout/').then(() => {
+                    this.me = null;
+                });
+            },
+            goLogin() {
+                const next = encodeURIComponent(window.location.pathname);
+                window.location.href = `/account/auth/login/?next=${next}`;
+            },
             async startChat() {
                 console.log('startChat 호출됨, currentMessage:', this.currentMessage);
                 if (!this.currentMessage.trim() || this.isLoading) return;
