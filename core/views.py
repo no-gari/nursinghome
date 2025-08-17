@@ -3,17 +3,32 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
-from .models import Facility, ChatHistory
-from .serializers import FacilityListSerializer, FacilityDetailSerializer, ChatRequestSerializer, ChatResponseSerializer
+from django.contrib.auth.decorators import login_required
+
+from .models import Facility, ChatSession, ChatMessage
+from .serializers import (
+    FacilityListSerializer,
+    FacilityDetailSerializer,
+    ChatRequestSerializer,
+    ChatResponseSerializer,
+    ChatSessionSerializer,
+    ChatMessageSerializer,
+)
 from .rag_service import RAGService
+from rest_framework.permissions import IsAuthenticated
 
 @ensure_csrf_cookie
-# 기존 Django 템플릿 뷰
-def chatbot_view(request):
-    """Vue.js 챗봇 인터페이스 (CSRF 쿠키 강제 세팅)"""
-    return render(request, 'core/chatbot.html')
+def main_view(request):
+    """메인 페이지"""
+    return render(request, "core/index.html")
+
+
+@login_required
+@ensure_csrf_cookie
+def chat_view(request):
+    """채팅 페이지"""
+    return render(request, "core/chat.html")
 
 def facility_detail(request, code: str):
     facility = get_object_or_404(Facility, code=code)
@@ -80,10 +95,6 @@ class ChatbotAPI(APIView):
                 response_serializer = ChatResponseSerializer(data=result)
                 if response_serializer.is_valid():
                     data = response_serializer.data
-                    if request.user.is_authenticated:
-                        ChatHistory.objects.create(
-                            user=request.user, query=query, answer=data.get("answer", "")
-                        )
                     return Response(data, status=status.HTTP_200_OK)
                 else:
                     return Response(response_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -93,6 +104,49 @@ class ChatbotAPI(APIView):
                     'error': f'챗봇 처리 중 오류가 발생했습니다: {str(e)}'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChatSessionViewSet(viewsets.ModelViewSet):
+    serializer_class = ChatSessionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return ChatSession.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=["get"], serializer_class=ChatMessageSerializer)
+    def messages(self, request, pk=None):
+        session = self.get_object()
+        serializer = ChatMessageSerializer(session.messages.all(), many=True)
+        return Response(serializer.data)
+
+    @messages.mapping.post
+    def post_message(self, request, pk=None):
+        session = self.get_object()
+        serializer = ChatRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            query = serializer.validated_data["query"]
+            ChatMessage.objects.create(session=session, role="user", content=query)
+            try:
+                rag_service = RAGService()
+                result = rag_service.chat(query)
+                response_serializer = ChatResponseSerializer(data=result)
+                if response_serializer.is_valid():
+                    data = response_serializer.data
+                    ChatMessage.objects.create(
+                        session=session, role="assistant", content=data.get("answer", "")
+                    )
+                    return Response(data, status=status.HTTP_200_OK)
+                else:
+                    return Response(response_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                return Response(
+                    {"error": f"챗봇 처리 중 오류가 발생했습니다: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])

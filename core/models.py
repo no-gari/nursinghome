@@ -96,19 +96,39 @@ class FacilityNonCovered(TimestampedModel):
         return f"{self.facility.code}-{self.title}"
 
 
-class ChatHistory(TimestampedModel):
-    """Stores chat queries and answers for authenticated users."""
-
+class ChatSession(TimestampedModel):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chat_histories"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="chat_sessions",
     )
-    query = models.TextField()
-    answer = models.TextField(blank=True)
+    title = models.CharField(max_length=255, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
-        verbose_name = "채팅 기록"
-        verbose_name_plural = "채팅 기록"
+        verbose_name = "채팅 세션"
+        verbose_name_plural = "채팅 세션"
 
     def __str__(self):
-        return f"{self.user} - {self.created_at:%Y-%m-%d %H:%M:%S}"
+        return self.title or f"Session {self.pk}"
+
+
+class ChatMessage(TimestampedModel):
+    session = models.ForeignKey(
+        ChatSession, on_delete=models.CASCADE, related_name="messages"
+    )
+    role = models.CharField(
+        max_length=10,
+        choices=[("user", "User"), ("assistant", "Assistant")],
+        default="user",
+    )
+    content = models.TextField()
+
+    class Meta:
+        ordering = ["created_at"]
+        verbose_name = "채팅 메시지"
+        verbose_name_plural = "채팅 메시지"
+
+    def __str__(self):
+        return f"{self.role}: {self.content[:20]}"
+
