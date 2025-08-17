@@ -1,5 +1,15 @@
 from rest_framework import serializers
-from .models import Facility, FacilityBasic, FacilityEvaluation, FacilityStaff, FacilityProgram, FacilityLocation, FacilityNonCovered
+from .models import (
+    Facility,
+    FacilityBasic,
+    FacilityEvaluation,
+    FacilityStaff,
+    FacilityProgram,
+    FacilityLocation,
+    FacilityNonCovered,
+    ChatSession,
+    ChatMessage,
+)
 
 class FacilityBasicSerializer(serializers.ModelSerializer):
     class Meta:
@@ -63,3 +73,15 @@ class ChatResponseSerializer(serializers.Serializer):
     answer = serializers.CharField(help_text="생성된 답변")
     sources = serializers.ListField(help_text="참조된 요양원 정보")
     query = serializers.CharField(help_text="원본 질문")
+
+
+class ChatSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatSession
+        fields = ["id", "title", "created_at"]
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatMessage
+        fields = ["id", "session", "role", "content", "created_at"]

@@ -112,3 +112,20 @@ class FacilityProgramAdmin(admin.ModelAdmin):
     def content_preview(self, obj):
         return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
     content_preview.short_description = '내용 미리보기'
+
+
+@admin.register(models.ChatSession)
+class ChatSessionAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "title", "created_at")
+    search_fields = ("title", "user__username")
+
+
+@admin.register(models.ChatMessage)
+class ChatMessageAdmin(admin.ModelAdmin):
+    list_display = ("id", "session", "role", "content_preview", "created_at")
+    list_filter = ("role",)
+    search_fields = ("content",)
+
+    def content_preview(self, obj):
+        return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
+    content_preview.short_description = '내용 미리보기'

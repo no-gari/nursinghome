@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>CareBridge Chat</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+<div id="app">
+    <div>
+        <button @click="createSession">새 채팅</button>
+        <ul>
+            <li v-for="s in sessions" :key="s.id">
+                <span @click="selectSession(s)" style="cursor:pointer">{{ s.title || ('채팅 ' + s.id) }}</span>
+                <button @click="deleteSession(s)" type="button">삭제</button>
+            </li>
+        </ul>
+    </div>
+    <div v-if="currentSession">
+        <div v-for="m in messages" :key="m.id">
+            <strong>{{ m.role }}:</strong> {{ m.content }}
+        </div>
+        <form @submit.prevent="sendMessage">
+            <input v-model="query" placeholder="메시지를 입력하세요" />
+            <button type="submit">전송</button>
+        </form>
+    </div>
+    <div v-else>
+        채팅 세션을 선택하거나 새로 만드세요.
+    </div>
+</div>
+<script>
+function getCookie(name) {
+    const value = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return value ? value.pop() : '';
+}
+axios.defaults.headers.common['X-CSRFToken'] = getCookie('csrftoken');
+
+const { createApp } = Vue;
+createApp({
+    data() {
+        return { sessions: [], currentSession: null, messages: [], query: '' };
+    },
+    methods: {
+        loadSessions() {
+            axios.get('/api/chat/sessions/').then(res => {
+                this.sessions = res.data;
+                if (!this.currentSession && this.sessions.length) {
+                    this.selectSession(this.sessions[0]);
+                }
+            });
+        },
+        selectSession(session) {
+            this.currentSession = session;
+            axios.get(`/api/chat/sessions/${session.id}/messages/`).then(res => {
+                this.messages = res.data;
+            });
+        },
+        createSession() {
+            axios.post('/api/chat/sessions/', {}).then(res => {
+                this.sessions.unshift(res.data);
+                this.selectSession(res.data);
+            });
+        },
+        deleteSession(session) {
+            axios.delete(`/api/chat/sessions/${session.id}/`).then(() => {
+                this.sessions = this.sessions.filter(s => s.id !== session.id);
+                if (this.currentSession && this.currentSession.id === session.id) {
+                    this.currentSession = null;
+                    this.messages = [];
+                }
+            });
+        },
+        sendMessage() {
+            if (!this.query || !this.currentSession) return;
+            const text = this.query;
+            this.query = '';
+            axios.post(`/api/chat/sessions/${this.currentSession.id}/messages/`, { query: text }).then(res => {
+                this.messages.push({ id: Date.now(), role: 'user', content: text });
+                this.messages.push({ id: Date.now()+1, role: 'assistant', content: res.data.answer });
+            });
+        }
+    },
+    mounted() {
+        this.loadSessions();
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
