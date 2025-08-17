@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareBridge - 요양원 맞춤 AI</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f7f7f8;
+            color: #374151;
+            line-height: 1.6;
+        }
+
+        /* 메인 페이지 스타일 */
+        .main-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(160deg,#ffffff 0%,#f5f8fb 55%,#eef3f9 100%);
+        }
+
+        .landing-inner {
+            width:100%;
+            max-width:860px;
+            margin:0 auto;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:40px;
+        }
+
+        .brand-text {
+            text-align:center;
+        }
+        .brand-text h1.hero-title {
+            font-size:3rem;
+            background:linear-gradient(135deg,#1e293b,#334155 40%,#6366f1);
+            -webkit-background-clip:text;
+            color:transparent;
+            margin-bottom:12px;
+        }
+        .brand-text p.hero-subtitle {
+            color:#475569;
+        }
+
+        .main-input-container {
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .main-input {
+            width: 100%;
+            padding: 20px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 16px;
+            background: white;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            outline: none;
+            transition: all 0.3s ease;
+            padding-right: 60px;
+        }
+
+        .main-input:focus {
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+        }
+
+        .main-send-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #667eea;
+            color: white;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .main-send-btn:hover:not(:disabled) {
+            background: #5a67d8;
+            transform: translateY(-50%) scale(1.05);
+        }
+
+        .main-send-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+
+        .example-prompts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            max-width: 800px;
+            margin-top: 32px;
+        }
+
+        .example-prompt {
+            border-radius:22px !important;
+            padding:20px 22px;
+            border:1px solid #e2e8f0 !important;
+            background:#ffffff !important;
+            position:relative;
+            overflow:hidden;
+            box-shadow:0 6px 18px -6px rgba(15,23,42,0.08),0 2px 6px rgba(15,23,42,0.05) !important;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .example-prompt:hover {
+            background:#f8fafc !important;
+        }
+        .example-prompt h3 {
+            font-size:0.95rem;
+        }
+        .example-prompt p {
+            font-size:0.8rem;
+        }
+
+        .init-notice {
+            margin-top: 24px;
+            padding: 16px 24px;
+            background:#ffffff !important;
+            border:1px solid #e2e8f0 !important;
+            color:#1e293b !important;
+            box-shadow:0 4px 12px -4px rgba(0,0,0,0.08);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .init-btn {
+            background:#1e293b !important;
+            border:1px solid #1e293b !important;
+            color:#ffffff !important;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-left: 8px;
+            transition:background .25s, transform .25s;
+        }
+
+        .init-btn:hover {
+            background:#334155 !important;
+        }
+
+        .init-btn:disabled {
+            background:#64748b !important;
+            border-color:#64748b !important;
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .site-header {
+          position: fixed;
+          top: 12px;
+          right: 16px;
+          z-index: 1100;
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+        .site-header .link, .site-header .btn {
+          appearance: none;
+          border: 1px solid #e5e7eb;
+          background: #fff;
+          color:#111827;
+          height: 34px;
+          padding: 0 12px;
+          border-radius: 10px;
+          font-size: 14px;
+          text-decoration: none;
+          display: inline-flex;
+          align-items: center;
+        }
+        .site-header .btn:hover {
+            box-shadow: 0 4px 14px rgba(0,0,0,.06);
+            transform: translateY(-1px);
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .brand-text h1.hero-title {
+                font-size: 2.5rem;
+            }
+
+            .example-prompts {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- 로그인 상태 서버사이드 표시 -->
+<div class="site-header">
+    {% if request.user.is_authenticated %}
+        <span class="link">안녕하세요, {{ request.user.username }}</span>
+        <a class="btn" href="{% url 'auth-logout' %}?next={{ request.path }}">로그아웃</a>
+    {% else %}
+        <a class="btn" href="{% url 'login-page' %}?next={{ request.path }}">로그인</a>
+    {% endif %}
+</div>
+
+<div id="app">
+    <div class="main-container">
+        <div class="landing-inner">
+            <div class="brand-text">
+                <h1 class="hero-title">CareBridge</h1>
+                <p class="hero-subtitle">전국 요양원 데이터를 기반으로 한 맞춤형 추천 & 정보 분석</p>
+            </div>
+            <div class="main-input-container">
+                <input v-model="currentMessage" @keypress.enter="startChat"
+                       :disabled="isLoading" placeholder="예) 서울에 있는 A등급 요양원 추천해주세요."
+                       class="main-input">
+                <button @click="startChat" :disabled="isLoading || !currentMessage.trim()"
+                        class="main-send-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="example-prompts">
+                <div class="example-prompt" @click="setExamplePrompt('서울에 있는 A등급 요양원 추천해주세요')">
+                    <h3>🏆 등급별 추천</h3>
+                    <p>서울에 있는 A등급 요양원 추천해주세요.</p>
+                </div>
+                <div class="example-prompt" @click="setExamplePrompt('대기자가 적은 요양원 찾아주세요')">
+                    <h3>⏰ 입소 가능</h3>
+                    <p>대기자가 적은 요양원 찾아주세요.</p>
+                </div>
+                <div class="example-prompt" @click="setExamplePrompt('비급여 비용이 저렴한 곳은 어디인가요?')">
+                    <h3>💰 비용 정보</h3>
+                    <p>비급여 비용이 저렴한 곳은 어디인가요?</p>
+                </div>
+                <div class="example-prompt"
+                     @click="setExamplePrompt('물리치료 프로그램이 있는 요양원 추천해주세요')">
+                    <h3>🏃‍♂️ 특별 프로그램</h3>
+                    <p>물리치료 프로그램이 있는 요양원 추천해주세요</p>
+                </div>
+            </div>
+
+            <div v-if="!isRagInitialized" class="init-notice">
+                <span>💡 더 정확한 답변을 위해 AI 시스템을 초기화하세요</span>
+                <button
+                        class="init-btn"
+                        @click="initializeRAG"
+                        :disabled="isInitializing"
+                >
+                    <span v-if="isInitializing">초기화 중...</span>
+                    <span v-else>AI 초기화</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+    data() {
+        return {
+            currentMessage: '',
+            isLoading: false,
+            isRagInitialized: false,
+            isInitializing: false,
+        }
+    },
+    mounted() {
+        // 초기화 상태 확인 (예시)
+        this.isRagInitialized = localStorage.getItem('rag_initialized') === 'true';
+    },
+    methods: {
+        setExamplePrompt(prompt) {
+            this.currentMessage = prompt;
+        },
+        startChat() {
+            if (!this.currentMessage.trim() || this.isLoading) return;
+
+            // 채팅 페이지로 리디렉션하면서 메시지를 URL 파라미터로 전달
+            const encodedMessage = encodeURIComponent(this.currentMessage);
+            window.location.href = `/chat/?message=${encodedMessage}`;
+        },
+        async initializeRAG() {
+            this.isInitializing = true;
+            try {
+                const response = await axios.post('/api/initialize-rag/');
+                if (response.status === 200) {
+                    this.isRagInitialized = true;
+                    localStorage.setItem('rag_initialized', 'true');
+                    this.showSuccessNotice('AI 시스템이 초기화되었습니다!');
+                }
+            } catch (error) {
+                console.error('RAG 초기화 실패:', error);
+                alert('초기화에 실패했습니다. 다시 시도해주세요.');
+            } finally {
+                this.isInitializing = false;
+            }
+        },
+        showSuccessNotice(message) {
+            const notice = document.createElement('div');
+            notice.className = 'success-notice';
+            notice.textContent = message;
+            document.body.appendChild(notice);
+
+            setTimeout(() => {
+                notice.remove();
+            }, 3000);
+        }
+    }
+}).mount('#app');
+</script>
+
+<style>
+.success-notice {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    background: #10b981;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 2000;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+</style>
+</body>
+</html>

@@ -4,16 +4,28 @@ from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import JsonResponse
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from .models import Facility, ChatHistory
 from .serializers import FacilityListSerializer, FacilityDetailSerializer, ChatRequestSerializer, ChatResponseSerializer
 from .rag_service import RAGService
+from django.utils.decorators import method_decorator
 
 @ensure_csrf_cookie
-# 기존 Django 템플릿 뷰
+def main_view(request):
+    """메인 페이지"""
+    return render(request, 'core/main.html')
+
+@ensure_csrf_cookie
+def chat_view(request):
+    """채팅 페이지"""
+    return render(request, 'core/chat.html')
+
+@ensure_csrf_cookie
+# 기존 Django 템플릿 뷰 (호환성을 위해 유지)
 def chatbot_view(request):
     """Vue.js 챗봇 인터페이스 (CSRF 쿠키 강제 세팅)"""
-    return render(request, 'core/chatbot.html')
+    # 메인 페이지로 리디렉션
+    return render(request, 'core/main.html')
 
 def facility_detail(request, code: str):
     facility = get_object_or_404(Facility, code=code)
@@ -65,35 +77,29 @@ class FacilityViewSet(viewsets.ReadOnlyModelViewSet):
 
         return queryset.order_by('name')
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ChatbotAPI(APIView):
     """RAG 챗봇 API"""
+    authentication_classes = []  # SessionAuthentication 비활성 (CSRF 회피)
+    permission_classes = []
 
     def post(self, request):
-        serializer = ChatRequestSerializer(data=request.data)
-        if serializer.is_valid():
-            query = serializer.validated_data['query']
+        # 'query' 또는 'message' 둘 다 지원
+        raw_query = request.data.get('query') or request.data.get('message')
+        if not raw_query:
+            return Response({'error': 'query 필드가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            try:
-                rag_service = RAGService()
-                result = rag_service.chat(query)
-
-                response_serializer = ChatResponseSerializer(data=result)
-                if response_serializer.is_valid():
-                    data = response_serializer.data
-                    if request.user.is_authenticated:
-                        ChatHistory.objects.create(
-                            user=request.user, query=query, answer=data.get("answer", "")
-                        )
-                    return Response(data, status=status.HTTP_200_OK)
-                else:
-                    return Response(response_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-            except Exception as e:
-                return Response({
-                    'error': f'챗봇 처리 중 오류가 발생했습니다: {str(e)}'
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            rag_service = RAGService()
+            result = rag_service.chat(raw_query)
+            # result 예: { 'answer': '...', 'sources': [...] }
+            answer = result.get('answer') or result.get('response') or ''
+            sources = result.get('sources', [])
+            if request.user.is_authenticated:
+                ChatHistory.objects.create(user=request.user, query=raw_query, answer=answer)
+            return Response({'answer': answer, 'sources': sources}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': f'챗봇 처리 중 오류: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 def initialize_rag(request):
