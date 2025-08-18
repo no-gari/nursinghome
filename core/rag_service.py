@@ -3,7 +3,7 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings  # 텔레메트리 제어
 from sentence_transformers import SentenceTransformer
 from django.conf import settings
-from core.models import Facility, FacilityBasic, FacilityEvaluation, FacilityStaff, FacilityProgram, FacilityLocation, FacilityNonCovered, FacilityHomepage  # FacilityHomepage 추가
+from core.models import Facility
 from typing import List, Dict, Any
 import openai
 from openai import OpenAI  # OpenAI 1.x Client 추가
@@ -53,8 +53,21 @@ class RAGService:
         cleaned = text.replace('등��', '등급').replace('\u200b', '').strip()
         return cleaned
 
-    def embed_facilities(self, progress_cb=None):
-        """모든 요양원 데이터를 벡터화 (관계 최적화 + 진행 콜백)"""
+    def _chunk_text(self, text: str, chunk_size: int = 1200, overlap: int = 120) -> List[str]:
+        """주어진 텍스트를 chunk_size 기준으로 겹치게 분할"""
+        chunks = []
+        start = 0
+        length = len(text)
+        while start < length:
+            end = start + chunk_size
+            chunks.append(text[start:end])
+            if end >= length:
+                break
+            start = end - overlap
+        return chunks
+
+    def _legacy_embed_facilities(self, progress_cb=None):
+        """구 버전 임베딩 로직"""
         facilities = (Facility.objects
                       .prefetch_related(
                           'basic_items', 'evaluation_items', 'staff_items', 'program_items',
@@ -153,10 +166,140 @@ class RAGService:
             progress_cb({"status": "finished", "stage": "done", "processed": added, "total": total_fac, "failed": failed, "message": f"완료 (성공 {added} / 실패 {failed})"})
         return added
 
+    def embed_facilities(self, progress_cb=None):
+        """모든 요양원 데이터를 벡터화 (모든 1-depth 관계 포함)"""
+        select_related_fields: List[str] = []
+        prefetch_related_fields: List[str] = []
+        for field in Facility._meta.get_fields():
+            if not field.is_relation:
+                continue
+            if field.many_to_one or field.one_to_one:
+                select_related_fields.append(field.name)
+            else:
+                if field.auto_created:
+                    prefetch_related_fields.append(field.get_accessor_name())
+                else:
+                    prefetch_related_fields.append(field.name)
+
+        facilities = (Facility.objects
+                      .select_related(*select_related_fields)
+                      .prefetch_related(*prefetch_related_fields)
+                      .all())
+        if not facilities.exists():
+            print('[RAGService] 시설 데이터가 없습니다.')
+            if progress_cb:
+                progress_cb({"status": "empty", "processed": 0, "total": 0, "failed": 0, "message": "시설 데이터 없음"})
+            return 0
+
+        total_fac = facilities.count()
+        if progress_cb:
+            progress_cb({"status": "running", "stage": "load", "processed": 0, "total": total_fac, "failed": 0, "message": f"총{total_fac}개 로드"})
+
+        documents: List[str] = []
+        metadatas: List[Dict[str, Any]] = []
+        ids: List[str] = []
+        failed = 0
+
+        for idx, facility in enumerate(facilities, 1):
+            try:
+                base_parts = [
+                    f"시설명: {self._clean_text(facility.name)}",
+                    f"시설코드: {facility.code}",
+                    f"종류: {self._clean_text(facility.kind) or '정보없음'}",
+                    f"등급: {self._clean_text(facility.grade) or '정보없음'}",
+                    f"이용가능: {self._clean_text(facility.availability) or '정보없음'}",
+                ]
+                if facility.capacity:
+                    base_parts.append(f"정원: {facility.capacity}명")
+                if facility.occupancy:
+                    base_parts.append(f"현원: {facility.occupancy}명")
+                if facility.waiting is not None:
+                    base_parts.append(f"대기: {facility.waiting}명")
+
+                for field in Facility._meta.get_fields():
+                    if not field.is_relation:
+                        continue
+                    related_objects = []
+                    if field.many_to_one or field.one_to_one:
+                        obj = getattr(facility, field.name, None)
+                        if obj:
+                            related_objects.append(obj)
+                    else:
+                        manager = getattr(facility, field.get_accessor_name() if field.auto_created else field.name)
+                        try:
+                            related_objects.extend(list(manager.all()))
+                        except Exception:
+                            continue
+                    for obj in related_objects:
+                        if isinstance(obj, Facility):
+                            continue
+                        title = self._clean_text(getattr(obj, 'title', ''))
+                        content = self._clean_text(getattr(obj, 'content', ''))
+                        if title or content:
+                            base_parts.append(f"{title} : {content}")
+
+                full_text = "\n".join(base_parts)
+                chunks = self._chunk_text(full_text)
+                for c_idx, chunk in enumerate(chunks):
+                    documents.append(chunk)
+                    metadatas.append({
+                        "facility_id": facility.id,
+                        "facility_code": facility.code,
+                        "facility_name": facility.name,
+                        "facility_kind": facility.kind or '',
+                        "facility_grade": facility.grade or '',
+                        "facility_availability": facility.availability or ''
+                    })
+                    ids.append(f"facility_{facility.id}_{c_idx}")
+            except Exception as e:
+                failed += 1
+                if progress_cb:
+                    progress_cb({"status": "running", "stage": "collect", "processed": idx-1, "total": total_fac, "failed": failed, "message": f"시설 처리 실패 {facility.id}:{e}"})
+                continue
+
+            if progress_cb and idx % 50 == 0:
+                progress_cb({"status": "running", "stage": "collect", "processed": idx, "total": total_fac, "failed": failed, "message": f"{idx}/{total_fac} 수집"})
+
+        if progress_cb:
+            progress_cb({"status": "running", "stage": "recreate_collection", "processed": len(documents), "total": total_fac, "failed": failed, "message": "컬렉션 재생성"})
+
+        try:
+            try:
+                self.chroma_client.delete_collection(name=self.collection_name)
+            except Exception:
+                pass
+            self.collection = self.chroma_client.create_collection(name=self.collection_name, metadata={"description": "요양원 시설 정보"})
+        except Exception as e:
+            if progress_cb:
+                progress_cb({"status": "error", "stage": "recreate_collection", "processed": 0, "total": total_fac, "failed": failed, "message": f"컬렉션 실패: {e}"})
+            return 0
+
+        batch_size = 50
+        added = 0
+        for i in range(0, len(documents), batch_size):
+            batch_docs = documents[i:i + batch_size]
+            batch_meta = metadatas[i:i + batch_size]
+            batch_ids = ids[i:i + batch_size]
+            try:
+                emb_inputs = [f"passage: {doc}" for doc in batch_docs]
+                embeddings = self.embedding_model.encode(emb_inputs).tolist()
+                self.collection.add(documents=batch_docs, metadatas=batch_meta, ids=batch_ids, embeddings=embeddings)
+                added += len(batch_docs)
+                if progress_cb:
+                    progress_cb({"status": "running", "stage": "embedding", "processed": added, "total": total_fac, "failed": failed, "message": f"임베딩 {added}/{len(documents)}"})
+            except Exception as e:
+                failed += len(batch_docs)
+                if progress_cb:
+                    progress_cb({"status": "running", "stage": "embedding", "processed": added, "total": total_fac, "failed": failed, "message": f"배치 오류: {e}"})
+
+        if progress_cb:
+            progress_cb({"status": "finished", "stage": "done", "processed": added, "total": total_fac, "failed": failed, "message": f"완료 (성공 {added} / 실패 {failed})"})
+        return added
+
     def search_facilities(self, query: str, n_results: int = 5) -> List[Dict]:
         """사용자 질문에 관련된 요양원들을 검색"""
-        # 쿼리 임베딩
-        query_embedding = self.embedding_model.encode([query]).tolist()
+        # 쿼리 임베딩 (prefix 적용)
+        query_embedding = self.embedding_model.encode([f"query: {query}"]).tolist()
 
         # 유사한 문서 검색
         results = self.collection.query(
