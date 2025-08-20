@@ -18,3 +18,4 @@ chroma_db/
 .DS_Store
 /crawl_debug/
 /venv
+/media/

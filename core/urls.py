@@ -13,6 +13,7 @@ urlpatterns = [
     path('', views.main_view, name='main'),  # 메인 페이지
     path('chat/', views.chat_view, name='chat'),  # 채팅 페이지
     path('chatbot/', views.chatbot_view, name='chatbot'),  # 기존 호환성
+    path('facilities/', views.facility_list_view, name='facility_list'),  # 시설 리스트
     path('facility/<str:code>/', views.facility_detail, name='facility_detail'),
 
     # DRF API

@@ -47,10 +47,10 @@ class FacilityNonCoveredInline(admin.StackedInline):
 
 @admin.register(models.Facility)
 class FacilityAdmin(admin.ModelAdmin):
-    list_display = ('code', 'name', 'kind', 'grade', 'capacity', 'occupancy', 'waiting', 'availability', 'view_detail_link')
-    list_filter = ('kind', 'grade', 'availability')
+    list_display = ('code', 'name', 'kind', 'grade', 'capacity', 'occupancy', 'waiting', 'availability', 'has_images', 'view_detail_link')
+    list_filter = ('kind', 'grade', 'availability', 'has_images')
     search_fields = ('code', 'name')
-    readonly_fields = ('code', 'name', 'kind', 'grade', 'capacity', 'occupancy', 'waiting', 'availability')
+    readonly_fields = ('code', 'name', 'kind', 'grade', 'capacity', 'occupancy', 'waiting', 'availability', 'has_images')
 
     inlines = [
         FacilityBasicInline,

@@ -18,6 +18,7 @@ class Facility(TimestampedModel):
     capacity = models.PositiveIntegerField(null=True, blank=True, verbose_name='정원')
     occupancy = models.PositiveIntegerField(null=True, blank=True, verbose_name='현원')
     waiting = models.PositiveIntegerField(null=True, blank=True, verbose_name='대기')
+    has_images = models.BooleanField(default=False, verbose_name='이미지 존재 여부', help_text='크롤링 가능하고 이미지가 있으면 True')
     class Meta:
         ordering = ["name"]
         verbose_name = "시설"
@@ -95,6 +96,38 @@ class FacilityNonCovered(TimestampedModel):
     def __str__(self):
         return f"{self.facility.code}-{self.title}"
 
+# ---- 추가: 시설 태그 및 이미지 ----
+class Tag(TimestampedModel):
+    name = models.CharField(max_length=100, unique=True)
+    facilities = models.ManyToManyField(Facility, related_name='tags', blank=True)
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "태그"
+        verbose_name_plural = "태그"
+    def __str__(self):
+        return self.name
+
+class FacilityImage(TimestampedModel):
+    facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='facility_images/%Y/%m/%d')
+    original_url = models.URLField(max_length=500, unique=True)
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "시설 이미지"
+        verbose_name_plural = "시설 이미지"
+    def __str__(self):
+        return f"{self.facility.code} - {self.original_url.split('/')[-1]}"
+
+class FacilitySummary(TimestampedModel):
+    facility = models.OneToOneField(Facility, on_delete=models.CASCADE, related_name='summary')
+    content = models.TextField(verbose_name='AI 요약 내용')
+    model_name = models.CharField(max_length=100, default='llama3.2', verbose_name='사용된 모델')
+    is_generated = models.BooleanField(default=False, verbose_name='요약 생성 완료')
+    class Meta:
+        verbose_name = "시설 요약"
+        verbose_name_plural = "시설 요약"
+    def __str__(self):
+        return f"{self.facility.code} 요약"
 
 class ChatHistory(TimestampedModel):
     """Stores chat queries and answers for authenticated users."""

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>요양시설 검색</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .filter-card {
+            transition: all 0.3s ease;
+        }
+        .filter-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .facility-card {
+            transition: all 0.3s ease;
+            border: 1px solid #e5e7eb;
+        }
+        .facility-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border-color: #3b82f6;
+        }
+        .tag {
+            @apply inline-block px-2 py-1 text-xs rounded-full;
+        }
+        .tag-grade-a { @apply bg-green-100 text-green-800; }
+        .tag-grade-b { @apply bg-blue-100 text-blue-800; }
+        .tag-grade-c { @apply bg-yellow-100 text-yellow-800; }
+        .tag-grade-d { @apply bg-orange-100 text-orange-800; }
+        .tag-grade-e { @apply bg-red-100 text-red-800; }
+        .tag-default { @apply bg-gray-100 text-gray-800; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 헤더 -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="{% url 'core:main' %}" class="text-2xl font-bold text-blue-600">
+                        <i class="fas fa-home mr-2"></i>너싱홈
+                    </a>
+                </div>
+                <nav class="flex space-x-8">
+                    <a href="{% url 'core:main' %}" class="text-gray-700 hover:text-blue-600 transition-colors">홈</a>
+                    <a href="{% url 'core:facility_list' %}" class="text-blue-600 font-semibold">시설검색</a>
+                    <a href="{% url 'core:chat' %}" class="text-gray-700 hover:text-blue-600 transition-colors">AI 상담</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- 필터 사이드바 -->
+            <div class="lg:w-80 space-y-6">
+                <form method="GET" class="space-y-6">
+                    <!-- 검색어 -->
+                    <div class="bg-white rounded-lg p-6 shadow-sm filter-card">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            <i class="fas fa-search mr-2 text-blue-600"></i>검색
+                        </h3>
+                        <input type="text" name="search" value="{{ current_filters.search }}"
+                               placeholder="시설명 또는 코드를 입력하세요"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+
+                    <!-- 지역 선택 -->
+                    <div class="bg-white rounded-lg p-6 shadow-sm filter-card">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            <i class="fas fa-map-marker-alt mr-2 text-blue-600"></i>지역
+                        </h3>
+                        <div class="space-y-4">
+                            <select name="sido" id="sido" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">시/도 선택</option>
+                                {% for sido_name in regions.keys %}
+                                    <option value="{{ sido_name }}" {% if current_filters.sido == sido_name %}selected{% endif %}>{{ sido_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <select name="sigungu" id="sigungu" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">시/군/구 선택</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 평가등급 -->
+                    <div class="bg-white rounded-lg p-6 shadow-sm filter-card">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            <i class="fas fa-star mr-2 text-blue-600"></i>평가등급
+                        </h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="grade" value="A등급"
+                                       {% if current_filters.grade == 'A등급' %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span class="tag tag-grade-a">A등급</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="grade" value="B등급"
+                                       {% if current_filters.grade == 'B등급' %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span class="tag tag-grade-b">B등급</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="grade" value="C등급"
+                                       {% if current_filters.grade == 'C등급' %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span class="tag tag-grade-c">C등급</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="grade" value="D등급"
+                                       {% if current_filters.grade == 'D등급' %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span class="tag tag-grade-d">D등급</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="grade" value="E등급"
+                                       {% if current_filters.grade == 'E등급' %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span class="tag tag-grade-e">E등급</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="grade" value="등급외"
+                                       {% if current_filters.grade == '등급외' %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span class="tag tag-default">등급외</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 돌봄파트너 -->
+                    <div class="bg-white rounded-lg p-6 shadow-sm filter-card">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            <i class="fas fa-hands-helping mr-2 text-blue-600"></i>돌봄파트너
+                        </h3>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="care_partner" value="Y"
+                                   {% if current_filters.care_partner == 'Y' %}checked{% endif %}
+                                   class="mr-2 text-blue-600 focus:ring-blue-500">
+                            <span>돌봄파트너 인증시설</span>
+                        </label>
+                    </div>
+
+                    <!-- 시설규모 -->
+                    <div class="bg-white rounded-lg p-6 shadow-sm filter-card">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            <i class="fas fa-building mr-2 text-blue-600"></i>시설규모
+                        </h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="size" value="대형"
+                                       {% if current_filters.size == '대형' %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>대형</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="size" value="중형"
+                                       {% if current_filters.size == '중형' %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>중형</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="size" value="소형"
+                                       {% if current_filters.size == '소형' %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>소형</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 설립년도 -->
+                    <div class="bg-white rounded-lg p-6 shadow-sm filter-card">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            <i class="fas fa-calendar mr-2 text-blue-600"></i>설립년도
+                        </h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="establishment" value="신규시설"
+                                       {% if current_filters.establishment == '신규시설' %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>신규시설</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="establishment" value="5년이내"
+                                       {% if current_filters.establishment == '5년이내' %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>5년이내</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="establishment" value="10년이내"
+                                       {% if current_filters.establishment == '10년이내' %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>10년이내</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="establishment" value="10년이상"
+                                       {% if current_filters.establishment == '10년이상' %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>10년이상</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 특수시설 -->
+                    <div class="bg-white rounded-lg p-6 shadow-sm filter-card">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            <i class="fas fa-plus-circle mr-2 text-blue-600"></i>특수시설
+                        </h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="special_facility" value="premium_room"
+                                       {% if 'premium_room' in current_filters.special_facility %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>상급침실 있음</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="special_facility" value="dementia_care"
+                                       {% if 'dementia_care' in current_filters.special_facility %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>치매전담실</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 프로그램 -->
+                    <div class="bg-white rounded-lg p-6 shadow-sm filter-card">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            <i class="fas fa-tasks mr-2 text-blue-600"></i>프로그램
+                        </h3>
+                        <div class="space-y-2 max-h-48 overflow-y-auto">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="programs" value="exercise_support"
+                                       {% if 'exercise_support' in current_filters.programs %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>운동보조</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="programs" value="exercise_therapy"
+                                       {% if 'exercise_therapy' in current_filters.programs %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>운동요법</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="programs" value="music_activity"
+                                       {% if 'music_activity' in current_filters.programs %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>음악활동</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="programs" value="cognitive_stimulation"
+                                       {% if 'cognitive_stimulation' in current_filters.programs %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>인지자극활동</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="programs" value="cognitive_improvement"
+                                       {% if 'cognitive_improvement' in current_filters.programs %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>인지기능향상</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="programs" value="reality_orientation"
+                                       {% if 'reality_orientation' in current_filters.programs %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>현실인식훈련</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="programs" value="family_participation"
+                                       {% if 'family_participation' in current_filters.programs %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>가족참여</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="programs" value="other"
+                                       {% if 'other' in current_filters.programs %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>기타</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 버튼 -->
+                    <div class="space-y-3">
+                        <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+                            <i class="fas fa-search mr-2"></i>검색
+                        </button>
+                        <a href="{% url 'core:facility_list' %}" class="block w-full bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors text-center">
+                            <i class="fas fa-refresh mr-2"></i>초기화
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 결과 영역 -->
+            <div class="flex-1">
+                <!-- 결과 헤더 -->
+                <div class="bg-white rounded-lg p-6 shadow-sm mb-6">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-semibold text-gray-900">
+                            검색결과 <span class="text-blue-600">{{ total_count }}개</span>
+                        </h2>
+                        <div class="text-sm text-gray-500">
+                            {{ facilities.number }} / {{ facilities.paginator.num_pages }} 페이지
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 시설 리스트 -->
+                <div class="space-y-6">
+                    {% for facility in facilities %}
+                        <div class="bg-white rounded-lg p-6 shadow-sm facility-card">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex-1">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">
+                                        <a href="{% url 'core:facility_detail' facility.code %}" class="hover:text-blue-600 transition-colors">
+                                            {{ facility.name }}
+                                        </a>
+                                    </h3>
+                                    <div class="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+                                        <span><i class="fas fa-map-marker-alt mr-1"></i>{{ facility.code }}</span>
+                                        {% if facility.kind %}
+                                            <span><i class="fas fa-building mr-1"></i>{{ facility.kind }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="flex flex-col items-end space-y-2">
+                                    {% if facility.grade %}
+                                        <span class="tag tag-grade-{{ facility.grade.0|lower }}">{{ facility.grade }}</span>
+                                    {% endif %}
+                                    {% if facility.has_images %}
+                                        <span class="tag bg-green-100 text-green-800">
+                                            <i class="fas fa-camera mr-1"></i>사진
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- 시설 정보 -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                {% if facility.capacity %}
+                                    <div class="text-center bg-gray-50 rounded-lg py-3">
+                                        <div class="text-lg font-semibold text-gray-900">{{ facility.capacity }}</div>
+                                        <div class="text-sm text-gray-600">정원</div>
+                                    </div>
+                                {% endif %}
+                                {% if facility.occupancy %}
+                                    <div class="text-center bg-gray-50 rounded-lg py-3">
+                                        <div class="text-lg font-semibold text-gray-900">{{ facility.occupancy }}</div>
+                                        <div class="text-sm text-gray-600">현원</div>
+                                    </div>
+                                {% endif %}
+                                {% if facility.waiting %}
+                                    <div class="text-center bg-gray-50 rounded-lg py-3">
+                                        <div class="text-lg font-semibold text-gray-900">{{ facility.waiting }}</div>
+                                        <div class="text-sm text-gray-600">대기</div>
+                                    </div>
+                                {% endif %}
+                                {% if facility.availability %}
+                                    <div class="text-center bg-gray-50 rounded-lg py-3">
+                                        <div class="text-sm font-semibold text-gray-900">{{ facility.availability }}</div>
+                                        <div class="text-sm text-gray-600">이용가능</div>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- 태그 -->
+                            {% if facility.tags.all %}
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    {% for tag in facility.tags.all %}
+                                        <span class="tag tag-default">{{ tag.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            <!-- 액션 버튼 -->
+                            <div class="flex justify-between items-center pt-4 border-t">
+                                <div class="text-sm text-gray-500">
+                                    {% if facility.summary.is_generated %}
+                                        <i class="fas fa-robot mr-1 text-green-600"></i>AI 요약 가능
+                                    {% endif %}
+                                </div>
+                                <a href="{% url 'core:facility_detail' facility.code %}"
+                                   class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                    상세보기
+                                </a>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="bg-white rounded-lg p-12 shadow-sm text-center">
+                            <i class="fas fa-search text-6xl text-gray-300 mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-700 mb-2">검색 결과가 없습니다</h3>
+                            <p class="text-gray-500 mb-6">다른 조건으로 검색해보세요</p>
+                            <a href="{% url 'core:facility_list' %}" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                전체 시설 보기
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- 페이지네이션 -->
+                {% if facilities.has_other_pages %}
+                    <div class="mt-8 flex justify-center">
+                        <nav class="flex space-x-2">
+                            {% if facilities.has_previous %}
+                                <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                                   class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                                <a href="?page={{ facilities.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                                   class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            {% endif %}
+
+                            {% for num in facilities.paginator.page_range %}
+                                {% if num == facilities.number %}
+                                    <span class="px-3 py-2 bg-blue-600 text-white rounded-lg">{{ num }}</span>
+                                {% elif num > facilities.number|add:'-3' and num < facilities.number|add:'3' %}
+                                    <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                                       class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">{{ num }}</a>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if facilities.has_next %}
+                                <a href="?page={{ facilities.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                                   class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                                <a href="?page={{ facilities.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                                   class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 지역 선택 연동
+        const regions = {{ regions|safe }};
+        const sidoSelect = document.getElementById('sido');
+        const sigunguSelect = document.getElementById('sigungu');
+        const currentSigungu = '{{ current_filters.sigungu }}';
+
+        function updateSigungu() {
+            const selectedSido = sidoSelect.value;
+            sigunguSelect.innerHTML = '<option value="">시/군/구 선택</option>';
+
+            if (selectedSido && regions[selectedSido]) {
+                regions[selectedSido].forEach(sigungu => {
+                    const option = document.createElement('option');
+                    option.value = sigungu;
+                    option.textContent = sigungu;
+                    if (sigungu === currentSigungu) {
+                        option.selected = true;
+                    }
+                    sigunguSelect.appendChild(option);
+                });
+            }
+        }
+
+        sidoSelect.addEventListener('change', updateSigungu);
+
+        // 페이지 로드시 시군구 업데이트
+        if (sidoSelect.value) {
+            updateSigungu();
+        }
+    </script>
+</body>
+</html>
