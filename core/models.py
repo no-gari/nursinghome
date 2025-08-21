@@ -1,13 +1,13 @@
 from django.db import models
 from django.conf import settings
 
-# Create your models here.
 
 class TimestampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     class Meta:
         abstract = True
+
 
 class Facility(TimestampedModel):
     code = models.CharField(max_length=32, unique=True, help_text="URL 내 고유 코드")
@@ -19,12 +19,28 @@ class Facility(TimestampedModel):
     occupancy = models.PositiveIntegerField(null=True, blank=True, verbose_name='현원')
     waiting = models.PositiveIntegerField(null=True, blank=True, verbose_name='대기')
     has_images = models.BooleanField(default=False, verbose_name='이미지 존재 여부', help_text='크롤링 가능하고 이미지가 있으면 True')
+    # 신규: 행정구역 (시/도, 시/군/구)
+    sido = models.CharField(max_length=20, blank=True, db_index=True, verbose_name='시도')
+    sigungu = models.CharField(max_length=30, blank=True, db_index=True, verbose_name='시군구')
+    # 연락처 정보
+    phone = models.CharField(max_length=20, blank=True, verbose_name='전화번호')
+    homepage_url = models.URLField(blank=True, verbose_name='홈페이지 URL')
+    # 교통 정보
+    location_info = models.TextField(blank=True, verbose_name='교통편 정보')
+    # JSON 필드들 - 기존 연관 모델들을 통합
+    evaluation_info = models.JSONField(default=dict, verbose_name='평가정보', help_text='{"제목": "내용"} 형태')
+    staff_info = models.JSONField(default=dict, verbose_name='인력현황', help_text='{"제목": "내용"} 형태')
+    program_info = models.JSONField(default=dict, verbose_name='프로그램운영', help_text='{"제목": "내용"} 형태')
+    noncovered_info = models.JSONField(default=dict, verbose_name='비급여항목', help_text='{"제목": "금액"} 형태 (숫자만)')
+    summary = models.TextField(blank=True, verbose_name='AI 요약', help_text='AI가 생성한 시설 요약 내용')
+
     class Meta:
         ordering = ["name"]
         verbose_name = "시설"
         verbose_name_plural = "시설"
     def __str__(self):
         return f"{self.name} ({self.code})"
+
 
 class FacilityBasic(TimestampedModel):
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='basic_items')
@@ -36,6 +52,7 @@ class FacilityBasic(TimestampedModel):
     def __str__(self):
         return f"{self.facility.code}-{self.title}"
 
+
 class FacilityEvaluation(TimestampedModel):
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='evaluation_items')
     title = models.CharField(max_length=100, default='평가정보')
@@ -45,6 +62,7 @@ class FacilityEvaluation(TimestampedModel):
         verbose_name_plural = "평가정보"
     def __str__(self):
         return f"{self.facility.code}-{self.title}"
+
 
 class FacilityStaff(TimestampedModel):
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='staff_items')
@@ -56,6 +74,7 @@ class FacilityStaff(TimestampedModel):
     def __str__(self):
         return f"{self.facility.code}-{self.title}"
 
+
 class FacilityProgram(TimestampedModel):
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='program_items')
     title = models.CharField(max_length=100, default='프로그램운영')
@@ -65,6 +84,7 @@ class FacilityProgram(TimestampedModel):
         verbose_name_plural = "프로그램운영"
     def __str__(self):
         return f"{self.facility.code}-{self.title}"
+
 
 class FacilityLocation(TimestampedModel):
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='location_items')
@@ -76,6 +96,7 @@ class FacilityLocation(TimestampedModel):
     def __str__(self):
         return f"{self.facility.code}-{self.title}"
 
+
 class FacilityHomepage(TimestampedModel):
     facility = models.OneToOneField(Facility, on_delete=models.CASCADE, related_name='homepage_info')
     title = models.CharField(max_length=100, default='홈페이지')
@@ -85,6 +106,7 @@ class FacilityHomepage(TimestampedModel):
         verbose_name_plural = "홈페이지"
     def __str__(self):
         return self.title
+
 
 class FacilityNonCovered(TimestampedModel):
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='noncovered_items')
@@ -96,7 +118,7 @@ class FacilityNonCovered(TimestampedModel):
     def __str__(self):
         return f"{self.facility.code}-{self.title}"
 
-# ---- 추가: 시설 태그 및 이미지 ----
+
 class Tag(TimestampedModel):
     name = models.CharField(max_length=100, unique=True)
     facilities = models.ManyToManyField(Facility, related_name='tags', blank=True)
@@ -106,6 +128,7 @@ class Tag(TimestampedModel):
         verbose_name_plural = "태그"
     def __str__(self):
         return self.name
+
 
 class FacilityImage(TimestampedModel):
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='images')
@@ -117,17 +140,6 @@ class FacilityImage(TimestampedModel):
         verbose_name_plural = "시설 이미지"
     def __str__(self):
         return f"{self.facility.code} - {self.original_url.split('/')[-1]}"
-
-class FacilitySummary(TimestampedModel):
-    facility = models.OneToOneField(Facility, on_delete=models.CASCADE, related_name='summary')
-    content = models.TextField(verbose_name='AI 요약 내용')
-    model_name = models.CharField(max_length=100, default='llama3.2', verbose_name='사용된 모델')
-    is_generated = models.BooleanField(default=False, verbose_name='요약 생성 완료')
-    class Meta:
-        verbose_name = "시설 요약"
-        verbose_name_plural = "시설 요약"
-    def __str__(self):
-        return f"{self.facility.code} 요약"
 
 class ChatHistory(TimestampedModel):
     """Stores chat queries and answers for authenticated users."""
