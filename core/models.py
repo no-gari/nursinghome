@@ -10,7 +10,7 @@ class TimestampedModel(models.Model):
 
 
 class Facility(TimestampedModel):
-    code = models.CharField(max_length=32, unique=True, help_text="URL 내 고유 코드")
+    code = models.CharField(max_length=32, unique=True, verbose_name='시설 코드', help_text='고유한 시설 식별 코드')
     name = models.CharField(max_length=255)
     kind = models.CharField(max_length=32, blank=True)
     grade = models.CharField(max_length=16, blank=True)
@@ -19,15 +19,11 @@ class Facility(TimestampedModel):
     occupancy = models.PositiveIntegerField(null=True, blank=True, verbose_name='현원')
     waiting = models.PositiveIntegerField(null=True, blank=True, verbose_name='대기')
     has_images = models.BooleanField(default=False, verbose_name='이미지 존재 여부', help_text='크롤링 가능하고 이미지가 있으면 True')
-    # 신규: 행정구역 (시/도, 시/군/구)
     sido = models.CharField(max_length=20, blank=True, db_index=True, verbose_name='시도')
     sigungu = models.CharField(max_length=30, blank=True, db_index=True, verbose_name='시군구')
-    # 연락처 정보
     phone = models.CharField(max_length=20, blank=True, verbose_name='전화번호')
     homepage_url = models.URLField(blank=True, verbose_name='홈페이지 URL')
-    # 교통 정보
     location_info = models.TextField(blank=True, verbose_name='교통편 정보')
-    # JSON 필드들 - 기존 연관 모델들을 통합
     evaluation_info = models.JSONField(default=dict, verbose_name='평가정보', help_text='{"제목": "내용"} 형태')
     staff_info = models.JSONField(default=dict, verbose_name='인력현황', help_text='{"제목": "내용"} 형태')
     program_info = models.JSONField(default=dict, verbose_name='프로그램운영', help_text='{"제목": "내용"} 형태')
@@ -142,8 +138,6 @@ class FacilityImage(TimestampedModel):
         return f"{self.facility.code} - {self.original_url.split('/')[-1]}"
 
 class ChatHistory(TimestampedModel):
-    """Stores chat queries and answers for authenticated users."""
-
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chat_histories"
     )
