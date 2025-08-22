@@ -151,3 +151,21 @@ class ChatHistory(TimestampedModel):
 
     def __str__(self):
         return f"{self.user} - {self.created_at:%Y-%m-%d %H:%M:%S}"
+
+class Blog(TimestampedModel):
+    facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='blogs')
+    title = models.CharField(max_length=255, verbose_name='블로그 제목')
+    link = models.URLField(verbose_name='블로그 링크')
+    description = models.TextField(blank=True, verbose_name='블로그 설명')
+    bloggername = models.CharField(max_length=100, blank=True, verbose_name='블로거명')
+    bloggerlink = models.URLField(blank=True, verbose_name='블로거 링크')
+    postdate = models.CharField(max_length=20, blank=True, verbose_name='작성일')
+
+    class Meta:
+        ordering = ['-postdate', '-created_at']
+        verbose_name = "블로그"
+        verbose_name_plural = "블로그"
+        unique_together = ['facility', 'link']  # 같은 시설의 동일한 링크 중복 방지
+
+    def __str__(self):
+        return f"{self.facility.name} - {self.title}"

@@ -39,6 +39,13 @@ class FacilityHomepageInline(admin.StackedInline):
     readonly_fields = ('title', 'content')
     can_delete = False
 
+class BlogInline(admin.TabularInline):
+    model = models.Blog
+    extra = 0
+    readonly_fields = ('title', 'link', 'description', 'bloggername', 'bloggerlink', 'postdate', 'created_at')
+    can_delete = False
+    fields = ('title', 'link', 'bloggername', 'postdate', 'created_at')
+
 class FacilityNonCoveredInline(admin.StackedInline):
     model = models.FacilityNonCovered
     extra = 0
@@ -47,7 +54,7 @@ class FacilityNonCoveredInline(admin.StackedInline):
 
 @admin.register(models.Facility)
 class FacilityAdmin(admin.ModelAdmin):
-    list_display = ('code', 'name', 'kind', 'grade', 'capacity', 'occupancy', 'waiting', 'availability', 'has_images', 'view_detail_link')
+    list_display = ('code', 'name', 'kind', 'grade', 'capacity', 'occupancy', 'waiting', 'availability', 'has_images', 'blog_count', 'view_detail_link')
     list_filter = ('kind', 'grade', 'availability', 'has_images')
     search_fields = ('code', 'name')
     readonly_fields = ('code', 'name', 'kind', 'grade', 'capacity', 'occupancy', 'waiting', 'availability', 'has_images')
@@ -60,7 +67,12 @@ class FacilityAdmin(admin.ModelAdmin):
         FacilityLocationInline,
         FacilityHomepageInline,
         FacilityNonCoveredInline,
+        BlogInline,
     ]
+
+    def blog_count(self, obj):
+        return obj.blogs.count()
+    blog_count.short_description = '블로그 수'
 
     def view_detail_link(self, obj):
         if obj.code:
@@ -72,43 +84,25 @@ class FacilityAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False  # 크롤링으로만 데이터 생성
 
-# 개별 모델들도 등록 (필요시 직접 접근)
-@admin.register(models.FacilityBasic)
-class FacilityBasicAdmin(admin.ModelAdmin):
-    list_display = ('facility', 'title', 'content_preview')
-    list_filter = ('title',)
-    search_fields = ('facility__name', 'title', 'content')
+@admin.register(models.Blog)
+class BlogAdmin(admin.ModelAdmin):
+    list_display = ('facility', 'title_preview', 'bloggername', 'postdate', 'created_at', 'view_blog_link')
+    list_filter = ('postdate', 'created_at', 'facility__sido', 'facility__sigungu')
+    search_fields = ('facility__name', 'title', 'description', 'bloggername')
+    readonly_fields = ('facility', 'title', 'link', 'description', 'bloggername', 'bloggerlink', 'postdate', 'created_at', 'updated_at')
 
-    def content_preview(self, obj):
-        return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
-    content_preview.short_description = '내용 미리보기'
+    def title_preview(self, obj):
+        return obj.title[:30] + '...' if len(obj.title) > 30 else obj.title
+    title_preview.short_description = '제목'
 
-@admin.register(models.FacilityEvaluation)
-class FacilityEvaluationAdmin(admin.ModelAdmin):
-    list_display = ('facility', 'title', 'content_preview')
-    list_filter = ('title',)
-    search_fields = ('facility__name', 'title', 'content')
+    def view_blog_link(self, obj):
+        if obj.link:
+            return format_html('<a href="{}" target="_blank">보기</a>', obj.link)
+        return '-'
+    view_blog_link.short_description = '블로그 링크'
 
-    def content_preview(self, obj):
-        return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
-    content_preview.short_description = '내용 미리보기'
+    def has_add_permission(self, request):
+        return False  # API를 통해서만 데이터 생성
 
-@admin.register(models.FacilityStaff)
-class FacilityStaffAdmin(admin.ModelAdmin):
-    list_display = ('facility', 'title', 'content_preview')
-    list_filter = ('title',)
-    search_fields = ('facility__name', 'title', 'content')
-
-    def content_preview(self, obj):
-        return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
-    content_preview.short_description = '내용 미리보기'
-
-@admin.register(models.FacilityProgram)
-class FacilityProgramAdmin(admin.ModelAdmin):
-    list_display = ('facility', 'title', 'content_preview')
-    list_filter = ('title',)
-    search_fields = ('facility__name', 'title', 'content')
-
-    def content_preview(self, obj):
-        return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
-    content_preview.short_description = '내용 미리보기'
+    def has_change_permission(self, request, obj=None):
+        return False  # 수정 불가

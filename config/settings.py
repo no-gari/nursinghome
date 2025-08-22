@@ -177,3 +177,9 @@ CHROMA_DB_PATH = BASE_DIR / 'chroma_db'
 
 # 임베딩 모델 설정
 EMBEDDING_MODEL = 'intfloat/multilingual-e5-large'
+
+# 네이버 검색 API 키 (환경변수 권장)
+NAVER_CLIENT_ID = os.environ.get("NAVER_CLIENT_ID", "")
+NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "")
+# (선택) requests 타임아웃/재시도 기본값
+NAVER_API_TIMEOUT = 5
