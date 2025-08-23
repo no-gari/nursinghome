@@ -2,7 +2,7 @@ import requests
 import time
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from core.models import Facility, Blog
+from core.models import Nursinghome, Hospital, Blog
 
 
 class Command(BaseCommand):
@@ -27,6 +27,13 @@ class Command(BaseCommand):
             default=1,
             help='검색 시작 위치 (기본값: 1)'
         )
+        parser.add_argument(
+            '--type',
+            type=str,
+            choices=['nursinghome', 'hospital', 'all'],
+            default='all',
+            help='처리할 시설 유형 (기본값: all)'
+        )
 
     def handle(self, *args, **options):
         # 네이버 API 키 확인
@@ -39,19 +46,29 @@ class Command(BaseCommand):
             )
             return
 
-        # 시설 목록 가져오기
-        facilities = Facility.objects.all()
+        facility_type = options['type']
+
+        # 처리할 시설 목록 결정
+        if facility_type == 'nursinghome':
+            facilities = [(facility, 'nursinghome') for facility in Nursinghome.objects.all()]
+        elif facility_type == 'hospital':
+            facilities = [(facility, 'hospital') for facility in Hospital.objects.all()]
+        else:  # all
+            nursinghomes = [(facility, 'nursinghome') for facility in Nursinghome.objects.all()]
+            hospitals = [(facility, 'hospital') for facility in Hospital.objects.all()]
+            facilities = nursinghomes + hospitals
+
         if options['limit']:
             facilities = facilities[:options['limit']]
 
-        self.stdout.write(f'총 {facilities.count()}개 시설에 대해 블로그 검색을 시작합니다.')
+        self.stdout.write(f'총 {len(facilities)}개 시설에 대해 블로그 검색을 시작합니다.')
 
         success_count = 0
         error_count = 0
 
-        for facility in facilities:
+        for facility, facility_type in facilities:
             try:
-                self.stdout.write(f'검색 중: {facility.name}')
+                self.stdout.write(f'검색 중: [{facility_type}] {facility.name}')
 
                 # 네이버 블로그 검색 API 호출
                 results = self.search_naver_blog(
@@ -64,22 +81,40 @@ class Command(BaseCommand):
 
                 if results:
                     # 기존 블로그 데이터 삭제 (중복 방지)
-                    Blog.objects.filter(facility=facility).delete()
+                    if facility_type == 'nursinghome':
+                        Blog.objects.filter(nursinghome=facility).delete()
+                    else:
+                        Blog.objects.filter(hospital=facility).delete()
 
                     # 새로운 블로그 데이터 저장
                     created_count = 0
                     for item in results:
-                        blog, created = Blog.objects.get_or_create(
-                            facility=facility,
-                            link=item['link'],
-                            defaults={
-                                'title': self.clean_html_tags(item['title']),
-                                'description': self.clean_html_tags(item['description']),
-                                'bloggername': item.get('bloggername', ''),
-                                'bloggerlink': item.get('bloggerlink', ''),
-                                'postdate': item.get('postdate', ''),
-                            }
-                        )
+                        # 중복 체크를 위한 필터
+                        if facility_type == 'nursinghome':
+                            blog, created = Blog.objects.get_or_create(
+                                nursinghome=facility,
+                                link=item['link'],
+                                defaults={
+                                    'title': self.clean_html_tags(item['title']),
+                                    'description': self.clean_html_tags(item['description']),
+                                    'bloggername': item.get('bloggername', ''),
+                                    'bloggerlink': item.get('bloggerlink', ''),
+                                    'postdate': item.get('postdate', ''),
+                                }
+                            )
+                        else:  # hospital
+                            blog, created = Blog.objects.get_or_create(
+                                hospital=facility,
+                                link=item['link'],
+                                defaults={
+                                    'title': self.clean_html_tags(item['title']),
+                                    'description': self.clean_html_tags(item['description']),
+                                    'bloggername': item.get('bloggername', ''),
+                                    'bloggerlink': item.get('bloggerlink', ''),
+                                    'postdate': item.get('postdate', ''),
+                                }
+                            )
+
                         if created:
                             created_count += 1
 

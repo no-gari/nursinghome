@@ -106,3 +106,163 @@ class BlogAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False  # 수정 불가
+
+
+@admin.register(models.FacilityBasic)
+class FacilityBasicAdmin(admin.ModelAdmin):
+    list_display = ('facility', 'title', 'created_at')
+    list_filter = ('created_at', 'facility__sido', 'facility__sigungu')
+    search_fields = ('facility__name', 'title', 'content')
+    readonly_fields = ('facility', 'title', 'content', 'created_at', 'updated_at')
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(models.FacilityEvaluation)
+class FacilityEvaluationAdmin(admin.ModelAdmin):
+    list_display = ('facility', 'title', 'created_at')
+    list_filter = ('created_at', 'facility__sido', 'facility__sigungu')
+    search_fields = ('facility__name', 'title', 'content')
+    readonly_fields = ('facility', 'title', 'content', 'created_at', 'updated_at')
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(models.FacilityStaff)
+class FacilityStaffAdmin(admin.ModelAdmin):
+    list_display = ('facility', 'title', 'created_at')
+    list_filter = ('created_at', 'facility__sido', 'facility__sigungu')
+    search_fields = ('facility__name', 'title', 'content')
+    readonly_fields = ('facility', 'title', 'content', 'created_at', 'updated_at')
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(models.FacilityProgram)
+class FacilityProgramAdmin(admin.ModelAdmin):
+    list_display = ('facility', 'title', 'created_at')
+    list_filter = ('created_at', 'facility__sido', 'facility__sigungu')
+    search_fields = ('facility__name', 'title', 'content')
+    readonly_fields = ('facility', 'title', 'content', 'created_at', 'updated_at')
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(models.FacilityLocation)
+class FacilityLocationAdmin(admin.ModelAdmin):
+    list_display = ('facility', 'title', 'created_at')
+    list_filter = ('created_at', 'facility__sido', 'facility__sigungu')
+    search_fields = ('facility__name', 'title', 'content')
+    readonly_fields = ('facility', 'title', 'content', 'created_at', 'updated_at')
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(models.FacilityHomepage)
+class FacilityHomepageAdmin(admin.ModelAdmin):
+    list_display = ('facility', 'title', 'created_at')
+    list_filter = ('created_at', 'facility__sido', 'facility__sigungu')
+    search_fields = ('facility__name', 'title', 'content')
+    readonly_fields = ('facility', 'title', 'content', 'created_at', 'updated_at')
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(models.FacilityNonCovered)
+class FacilityNonCoveredAdmin(admin.ModelAdmin):
+    list_display = ('facility', 'title', 'created_at')
+    list_filter = ('created_at', 'facility__sido', 'facility__sigungu')
+    search_fields = ('facility__name', 'title', 'content')
+    readonly_fields = ('facility', 'title', 'content', 'created_at', 'updated_at')
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(models.Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ('name', 'facility_count', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('name',)
+    filter_horizontal = ('facilities',)
+
+    def facility_count(self, obj):
+        return obj.facilities.count()
+    facility_count.short_description = '시설 수'
+
+
+@admin.register(models.FacilityImage)
+class FacilityImageAdmin(admin.ModelAdmin):
+    list_display = ('facility', 'image_preview', 'original_url', 'created_at')
+    list_filter = ('created_at', 'facility__sido', 'facility__sigungu')
+    search_fields = ('facility__name', 'original_url')
+    readonly_fields = ('facility', 'image', 'original_url', 'created_at', 'updated_at')
+
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" width="50" height="50" />', obj.image.url)
+        return '-'
+    image_preview.short_description = '이미지'
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(models.ChatHistory)
+class ChatHistoryAdmin(admin.ModelAdmin):
+    list_display = ('user', 'query_preview', 'created_at')
+    list_filter = ('created_at', 'user')
+    search_fields = ('user__username', 'query', 'answer')
+    readonly_fields = ('user', 'query', 'answer', 'created_at', 'updated_at')
+
+    def query_preview(self, obj):
+        return obj.query[:50] + '...' if len(obj.query) > 50 else obj.query
+    query_preview.short_description = '질문'
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(models.Hospital)
+class HospitalAdmin(admin.ModelAdmin):
+    list_display = ('code', 'name', 'grade', 'establishment_type', 'has_images', 'sido', 'sigungu')
+    list_filter = ('grade', 'establishment_type', 'has_images', 'sido', 'sigungu', 'establishment_date')
+    search_fields = ('code', 'name', 'phone', 'location')
+    readonly_fields = ('code', 'name', 'grade', 'establishment_type', 'phone', 'establishment_date',
+                      'bed_count', 'operation_facility', 'doctor_count', 'specialist_by_department',
+                      'department_specialists', 'other_staff', 'consultation_hours', 'medical_fee_info',
+                      'location', 'has_images', 'sido', 'sigungu', 'homepage_url', 'summary', 'created_at', 'updated_at')
+
+    fieldsets = (
+        ('기본 정보', {
+            'fields': ('code', 'name', 'grade', 'establishment_type', 'phone', 'establishment_date')
+        }),
+        ('시설 정보', {
+            'fields': ('bed_count', 'operation_facility', 'has_images')
+        }),
+        ('인력 정보', {
+            'fields': ('doctor_count', 'specialist_by_department', 'department_specialists', 'other_staff')
+        }),
+        ('진료 정보', {
+            'fields': ('consultation_hours', 'medical_fee_info')
+        }),
+        ('위치 정보', {
+            'fields': ('location', 'sido', 'sigungu')
+        }),
+        ('기타 정보', {
+            'fields': ('homepage_url', 'summary')
+        }),
+        ('시스템 정보', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+
+    def has_add_permission(self, request):
+        return False  # 크롤링으로만 데이터 생성
