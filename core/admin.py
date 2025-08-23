@@ -52,6 +52,24 @@ class FacilityNonCoveredInline(admin.StackedInline):
     readonly_fields = ('title', 'content')
     can_delete = False
 
+class HospitalImageInline(admin.TabularInline):
+    model = models.HospitalImage
+    extra = 0
+    can_delete = False
+    fields = ('image_preview', 'original_url', 'created_at')
+    readonly_fields = ('image_preview', 'original_url', 'created_at')
+
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html('<a href="{}" target="_blank"><img src="{}" width="100" height="75" style="object-fit: cover; border-radius: 5px;" /></a>',
+                              obj.image.url, obj.image.url)
+        return '-'
+    image_preview.short_description = '이미지'
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(models.Facility)
 class FacilityAdmin(admin.ModelAdmin):
     list_display = ('code', 'name', 'kind', 'grade', 'capacity', 'occupancy', 'waiting', 'availability', 'has_images', 'blog_count', 'view_detail_link')
@@ -231,7 +249,7 @@ class ChatHistoryAdmin(admin.ModelAdmin):
 
 @admin.register(models.Hospital)
 class HospitalAdmin(admin.ModelAdmin):
-    list_display = ('code', 'name', 'grade', 'establishment_type', 'has_images', 'sido', 'sigungu')
+    list_display = ('name', 'grade', 'establishment_type', 'image_status', 'sido', 'sigungu')
     list_filter = ('grade', 'establishment_type', 'has_images', 'sido', 'sigungu', 'establishment_date')
     search_fields = ('code', 'name', 'phone', 'location')
     filter_horizontal = ('tags',)
@@ -239,6 +257,8 @@ class HospitalAdmin(admin.ModelAdmin):
                       'bed_count', 'operation_facility', 'doctor_count', 'specialist_by_department',
                       'department_specialists', 'other_staff', 'consultation_hours', 'medical_fee_info',
                       'location', 'has_images', 'sido', 'sigungu', 'homepage_url', 'summary', 'created_at', 'updated_at')
+
+    inlines = [HospitalImageInline]
 
     fieldsets = (
         ('기본 정보', {
@@ -265,6 +285,15 @@ class HospitalAdmin(admin.ModelAdmin):
         })
     )
 
+    def image_status(self, obj):
+        if obj.has_images:
+            image_count = obj.images.count()
+            return format_html('<span style="color: green;">⚫ 있음 ({}장)</span>', image_count)
+        else:
+            return format_html('<span style="color: red;">⚪ 없음</span>')
+    image_status.short_description = '이미지'
+    image_status.admin_order_field = 'has_images'
+
     def has_add_permission(self, request):
         return False  # 크롤링으로만 데이터 생성
 
@@ -274,13 +303,20 @@ class HospitalImageAdmin(admin.ModelAdmin):
     list_display = ('hospital', 'image_preview', 'original_url', 'created_at')
     list_filter = ('created_at', 'hospital__sido', 'hospital__sigungu')
     search_fields = ('hospital__name', 'hospital__code', 'original_url')
-    readonly_fields = ('hospital', 'image', 'original_url', 'created_at', 'updated_at')
+    readonly_fields = ('hospital', 'image', 'original_url', 'created_at', 'updated_at', 'large_image_preview')
 
     def image_preview(self, obj):
         if obj.image:
-            return format_html('<img src="{}" width="50" height="50" />', obj.image.url)
+            return format_html('<a href="{}" target="_blank"><img src="{}" width="100" height="75" style="object-fit: cover; border-radius: 5px;" /></a>',
+                              obj.image.url, obj.image.url)
         return '-'
     image_preview.short_description = '이미지'
+
+    def large_image_preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" style="max-width: 800px; max-height: 600px;" />', obj.image.url)
+        return '-'
+    large_image_preview.short_description = '이미지 미리보기'
 
     def has_add_permission(self, request):
         return False
