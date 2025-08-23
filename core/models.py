@@ -25,10 +25,10 @@ class Facility(TimestampedModel):
     phone = models.CharField(max_length=20, blank=True, verbose_name='전화번호')
     homepage_url = models.URLField(blank=True, verbose_name='홈페이지 URL')
     location_info = models.TextField(blank=True, verbose_name='교통편 정보')
-    evaluation_info = models.JSONField(default=dict, verbose_name='평가정보', help_text='{"제목": "내용"} 형태')
-    staff_info = models.JSONField(default=dict, verbose_name='인력현황', help_text='{"제목": "내용"} 형태')
-    program_info = models.JSONField(default=dict, verbose_name='프로그램운영', help_text='{"제목": "내용"} 형태')
-    noncovered_info = models.JSONField(default=dict, verbose_name='비급여항목', help_text='{"제목": "금액"} 형태 (숫자만)')
+    evaluation_info = models.JSONField(blank=True, default=dict, verbose_name='평가정보', help_text='{"제목": "내용"} 형태')
+    staff_info = models.JSONField(blank=True, default=dict, verbose_name='인력현황', help_text='{"제목": "내용"} 형태')
+    program_info = models.JSONField(blank=True, default=dict, verbose_name='프로그램운영', help_text='{"제목": "내용"} 형태')
+    noncovered_info = models.JSONField(blank=True, default=dict, verbose_name='비급여항목', help_text='{"제목": "금액"} 형태 (숫자만)')
     summary = models.TextField(blank=True, verbose_name='AI 요약', help_text='AI가 생성한 시설 요약 내용')
 
     class Meta:
