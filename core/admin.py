@@ -234,6 +234,7 @@ class HospitalAdmin(admin.ModelAdmin):
     list_display = ('code', 'name', 'grade', 'establishment_type', 'has_images', 'sido', 'sigungu')
     list_filter = ('grade', 'establishment_type', 'has_images', 'sido', 'sigungu', 'establishment_date')
     search_fields = ('code', 'name', 'phone', 'location')
+    filter_horizontal = ('tags',)
     readonly_fields = ('code', 'name', 'grade', 'establishment_type', 'phone', 'establishment_date',
                       'bed_count', 'operation_facility', 'doctor_count', 'specialist_by_department',
                       'department_specialists', 'other_staff', 'consultation_hours', 'medical_fee_info',
@@ -256,7 +257,7 @@ class HospitalAdmin(admin.ModelAdmin):
             'fields': ('location', 'sido', 'sigungu')
         }),
         ('기타 정보', {
-            'fields': ('homepage_url', 'summary')
+            'fields': ('homepage_url', 'summary', 'tags')
         }),
         ('시스템 정보', {
             'fields': ('created_at', 'updated_at'),
@@ -266,3 +267,20 @@ class HospitalAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False  # 크롤링으로만 데이터 생성
+
+
+@admin.register(models.HospitalImage)
+class HospitalImageAdmin(admin.ModelAdmin):
+    list_display = ('hospital', 'image_preview', 'original_url', 'created_at')
+    list_filter = ('created_at', 'hospital__sido', 'hospital__sigungu')
+    search_fields = ('hospital__name', 'hospital__code', 'original_url')
+    readonly_fields = ('hospital', 'image', 'original_url', 'created_at', 'updated_at')
+
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" width="50" height="50" />', obj.image.url)
+        return '-'
+    image_preview.short_description = '이미지'
+
+    def has_add_permission(self, request):
+        return False

@@ -1,8 +1,10 @@
 import asyncio
 import random
 import os
+import requests
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urljoin, urlparse
+from django.core.files.base import ContentFile
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -283,6 +285,15 @@ class Command(BaseCommand):
                                 facility = await sync_to_async(self.save_to_db, thread_sensitive=True)(data)
                                 best_scores[code] = richness
                                 if facility:
+                                    # 병원 정보 저장 후 이미지와 태그 크롤링
+                                    try:
+                                        images_found = await sync_to_async(self.crawl_hospital_images_and_tags, thread_sensitive=True)(facility)
+                                        # has_images 필드 업데이트
+                                        facility.has_images = images_found
+                                        await sync_to_async(facility.save, thread_sensitive=True)(update_fields=['has_images'])
+                                    except Exception as img_e:
+                                        self.stderr.write(f"[이미지 크롤링 오류] {facility.code}: {img_e}")
+
                                     if updated:
                                         dup_updated += 1
                                         self.stdout.write(f"[갱신] {facility.code} (점수 {richness})")
@@ -333,10 +344,17 @@ class Command(BaseCommand):
         }
 
         try:
-            # URL을 해시해서 고유 코드로 사용
-            import hashlib
-            url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
-            data['overview']['code'] = f"hosp_{url_hash}"
+            # URL에서 실제 병원 코드 추출
+            # URL 형태: https://www.seniortalktalk.com/search/view/28/JDQ4MTYyMiM4MSMkMSMkOCMkOTkkNTgxMzUxIzExIyQxIyQzIyQ4OSQzNjEwMDIjNTEjJDEjJDIjJDgz?...
+            code_match = re.search(r'/search/view/\d+/([A-Za-z0-9+/=]+)', url)
+            if code_match:
+                data['overview']['code'] = code_match.group(1)
+            else:
+                # 백업: URL을 해시해서 고유 코드로 사용
+                import hashlib
+                url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
+                data['overview']['code'] = f"hosp_{url_hash}"
+                self.stdout.write(f"코드 추출 실패, 임시 코드 생성: {data['overview']['code']} for {url}")
 
             # 병원명 파싱
             name_elem = soup.select_one('em.fst-normal')
@@ -585,3 +603,114 @@ class Command(BaseCommand):
         except Exception as e:
             self.stderr.write(f"DB 저장 오류: {e}")
             return None
+
+    def crawl_hospital_images_and_tags(self, hospital):
+        """병원 코드를 사용해 eroum.co.kr에서 이미지와 태그 크롤링"""
+        # 요양병원의 경우 careCenterType을 NURSING_HOSPITAL로 변경
+        url = f"https://eroum.co.kr/search/hospitalDetail?careCenterType=NURSING_HOSPITAL&webYn=Y&ykiho={hospital.code}"
+
+        headers = {
+            'User-Agent': USER_AGENT,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+        }
+
+        try:
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            # 이미지 크롤링
+            images_found = self.crawl_hospital_images(hospital, soup)
+
+            # 태그 크롤링
+            self.crawl_hospital_tags(hospital, soup)
+
+            return images_found
+
+        except Exception as e:
+            self.stderr.write(f"이미지/태그 크롤링 오류 ({hospital.code}): {e}")
+            return False
+
+    def crawl_hospital_images(self, hospital, soup):
+        """이미지 크롤링 및 저장 - 이미지가 발견되면 True 반환"""
+        # swiper-slide 내의 이미지 찾기
+        image_slides = soup.select('div.swiper-slide img')
+
+        if not image_slides:
+            return False
+
+        images_saved = 0
+        for img_tag in image_slides:
+            img_src = img_tag.get('src')
+            if not img_src:
+                continue
+
+            try:
+                # 이미 존재하는 이미지인지 확인
+                if core_models.HospitalImage.objects.filter(original_url=img_src).exists():
+                    continue
+
+                # 이미지 다운로드
+                img_response = requests.get(img_src, headers={'User-Agent': USER_AGENT}, timeout=15)
+                img_response.raise_for_status()
+
+                # 파일명 생성
+                parsed_url = urlparse(img_src)
+                filename = os.path.basename(parsed_url.path)
+                if not filename or '.' not in filename:
+                    filename = f"hospital_{hospital.code}_{images_saved}.jpg"
+
+                # HospitalImage 객체 생성 및 이미지 저장
+                hospital_image = core_models.HospitalImage(
+                    hospital=hospital,
+                    original_url=img_src
+                )
+
+                # 이미지 파일을 ImageField에 저장
+                hospital_image.image.save(
+                    filename,
+                    ContentFile(img_response.content),
+                    save=True
+                )
+
+                images_saved += 1
+                self.stdout.write(f"이미지 저장 완료: {hospital.code} - {img_src}")
+
+            except Exception as e:
+                self.stderr.write(f"이미지 저장 실패 ({img_src}): {e}")
+                continue
+
+        return images_saved > 0
+
+    def crawl_hospital_tags(self, hospital, soup):
+        """태그 크롤링 및 저장"""
+        # 태그 관련 요소 찾기 (실제 HTML 구조에 따라 조정 필요)
+        tag_elements = soup.select('.tag, .badge, .label, [class*="tag"]')
+
+        if not tag_elements:
+            return
+
+        for tag_elem in tag_elements:
+            tag_text = tag_elem.get_text(strip=True)
+            if not tag_text or len(tag_text) > 50:  # 너무 긴 텍스트는 태그가 아닐 가능성
+                continue
+
+            try:
+                # 태그 생성 또는 가져오기
+                tag, created = core_models.Tag.objects.get_or_create(name=tag_text)
+
+                # 병원과 태그 연결
+                hospital.tags.add(tag)
+
+                if created:
+                    self.stdout.write(f"새 태그 생성: {tag_text}")
+
+            except Exception as e:
+                self.stderr.write(f"태그 저장 실패 ({tag_text}): {e}")
+                continue
+

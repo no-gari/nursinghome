@@ -214,6 +214,7 @@ class Hospital(TimestampedModel):
     sigungu = models.CharField(max_length=30, blank=True, db_index=True, verbose_name='시군구')
     homepage_url = models.URLField(blank=True, verbose_name='홈페이지 URL')
     summary = models.TextField(blank=True, verbose_name='AI 요약', help_text='AI가 생성한 병원 요약 내용')
+    tags = models.ManyToManyField('Tag', related_name='hospitals', blank=True, verbose_name='태그')
 
     class Meta:
         ordering = ["name"]
@@ -222,3 +223,17 @@ class Hospital(TimestampedModel):
 
     def __str__(self):
         return f"{self.name} ({self.code})"
+
+
+class HospitalImage(TimestampedModel):
+    hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='hospital_images/%Y/%m/%d')
+    original_url = models.URLField(max_length=500, unique=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "병원 이미지"
+        verbose_name_plural = "병원 이미지"
+
+    def __str__(self):
+        return f"{self.hospital.code} - {self.original_url.split('/')[-1]}"
