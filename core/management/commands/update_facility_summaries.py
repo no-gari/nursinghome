@@ -3,7 +3,7 @@ import os
 import codecs
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from core.models import Facility
+from core.models import Hospital
 
 
 class Command(BaseCommand):
@@ -12,7 +12,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             '--csv',
-            default='core/management/commands/summary.csv',
+            default='core/management/commands/hospital_data_with_summary.csv',
             help='요약 정보가 담긴 CSV 파일의 경로'
         )
         parser.add_argument(
@@ -49,7 +49,7 @@ class Command(BaseCommand):
 
                     try:
                         # 해당 코드를 가진 Facility 찾기
-                        facility = Facility.objects.get(code=code)
+                        facility = Hospital.objects.get(code=code)
 
                         # summary 업데이트
                         facility.summary = summary
@@ -58,7 +58,7 @@ class Command(BaseCommand):
                         updated_count += 1
                         self.stdout.write(f'시설 "{facility.name}" (코드: {code})의 요약이 업데이트되었습니다.')
 
-                    except Facility.DoesNotExist:
+                    except Hospital.DoesNotExist:
                         not_found_count += 1
                         self.stdout.write(self.style.WARNING(f'코드 {code}에 해당하는 시설을 찾을 수 없습니다.'))
         except UnicodeDecodeError:
