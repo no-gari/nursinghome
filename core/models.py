@@ -140,19 +140,6 @@ class FacilityNonCovered(TimestampedModel):
         return f"{self.facility.code}-{self.title}"
 
 
-class Tag(TimestampedModel):
-    name = models.CharField(max_length=100, unique=True)
-    facilities = models.ManyToManyField(Facility, related_name='tags', blank=True)
-
-    class Meta:
-        ordering = ["name"]
-        verbose_name = "태그"
-        verbose_name_plural = "태그"
-
-    def __str__(self):
-        return self.name
-
-
 class FacilityImage(TimestampedModel):
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='facility_images/%Y/%m/%d')
@@ -223,7 +210,6 @@ class Hospital(TimestampedModel):
     sigungu = models.CharField(max_length=30, blank=True, db_index=True, verbose_name='시군구')
     homepage_url = models.URLField(blank=True, verbose_name='홈페이지 URL')
     summary = models.TextField(blank=True, verbose_name='AI 요약', help_text='AI가 생성한 병원 요약 내용')
-    tags = models.ManyToManyField('Tag', related_name='hospitals', blank=True, verbose_name='태그')
     summary_embedding = VectorField(dimensions=1536, null=True, blank=True)
 
     class Meta:
@@ -254,3 +240,17 @@ class HospitalImage(TimestampedModel):
 
     def __str__(self):
         return f"{self.hospital.code} - {self.original_url.split('/')[-1]}"
+
+
+class Tag(TimestampedModel):
+    name = models.CharField(max_length=100, unique=True)
+    facilities = models.ManyToManyField(Facility, related_name='tags', blank=True)
+    hospitals = models.ManyToManyField(Hospital, related_name='tags', blank=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "태그"
+        verbose_name_plural = "태그"
+
+    def __str__(self):
+        return self.name

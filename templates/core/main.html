@@ -211,6 +211,7 @@
 <body>
 <!-- 로그인 상태 서버사이드 표시 -->
 <div class="site-header">
+    <a class="btn" href="/facilities/">시설 찾기</a>
     {% if request.user.is_authenticated %}
         <span class="link">안녕하세요, {{ request.user.username }}</span>
         <a class="btn" href="{% url 'auth-logout' %}?next={{ request.path }}">로그아웃</a>

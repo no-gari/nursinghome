@@ -252,7 +252,6 @@ class HospitalAdmin(admin.ModelAdmin):
     list_display = ('name', 'grade', 'establishment_type', 'image_status', 'sido', 'sigungu')
     list_filter = ('grade', 'establishment_type', 'has_images', 'sido', 'sigungu', 'establishment_date')
     search_fields = ('code', 'name', 'phone', 'location')
-    filter_horizontal = ('tags',)
     readonly_fields = ('code', 'name', 'grade', 'establishment_type', 'phone', 'establishment_date',
                       'bed_count', 'operation_facility', 'doctor_count', 'specialist_by_department',
                       'department_specialists', 'other_staff', 'consultation_hours', 'medical_fee_info',
@@ -277,7 +276,7 @@ class HospitalAdmin(admin.ModelAdmin):
             'fields': ('location', 'sido', 'sigungu')
         }),
         ('기타 정보', {
-            'fields': ('homepage_url', 'summary', 'tags')
+            'fields': ('homepage_url', 'summary')
         }),
         ('시스템 정보', {
             'fields': ('created_at', 'updated_at'),
