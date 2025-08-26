@@ -131,19 +131,6 @@
                         </div>
                     </div>
 
-                    <!-- 돌봄파트너 -->
-                    <div class="bg-white rounded-lg p-6 shadow-sm filter-card">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                            <i class="fas fa-hands-helping mr-2 text-blue-600"></i>돌봄파트너
-                        </h3>
-                        <label class="flex items-center">
-                            <input type="checkbox" name="care_partner" value="Y"
-                                   {% if current_filters.care_partner == 'Y' %}checked{% endif %}
-                                   class="mr-2 text-blue-600 focus:ring-blue-500">
-                            <span>돌봄파트너 인증시설</span>
-                        </label>
-                    </div>
-
                     <!-- 시설규모 -->
                     <div class="bg-white rounded-lg p-6 shadow-sm filter-card">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">
@@ -171,7 +158,6 @@
                         </div>
                     </div>
 
-                    <!-- 설립년도 -->
                     <div class="bg-white rounded-lg p-6 shadow-sm filter-card">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">
                             <i class="fas fa-calendar mr-2 text-blue-600"></i>설립년도
@@ -203,85 +189,6 @@
                             </label>
                         </div>
                     </div>
-
-                    <!-- 특수시설 -->
-                    <div class="bg-white rounded-lg p-6 shadow-sm filter-card">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                            <i class="fas fa-plus-circle mr-2 text-blue-600"></i>특수시설
-                        </h3>
-                        <div class="space-y-2">
-                            <label class="flex items-center">
-                                <input type="checkbox" name="special_facility" value="premium_room"
-                                       {% if 'premium_room' in current_filters.special_facility %}checked{% endif %}
-                                       class="mr-2 text-blue-600 focus:ring-blue-500">
-                                <span>상급침실 있음</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="special_facility" value="dementia_care"
-                                       {% if 'dementia_care' in current_filters.special_facility %}checked{% endif %}
-                                       class="mr-2 text-blue-600 focus:ring-blue-500">
-                                <span>치매전담실</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 프로그램 -->
-                    <div class="bg-white rounded-lg p-6 shadow-sm filter-card">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                            <i class="fas fa-tasks mr-2 text-blue-600"></i>프로그램
-                        </h3>
-                        <div class="space-y-2 max-h-48 overflow-y-auto">
-                            <label class="flex items-center">
-                                <input type="checkbox" name="programs" value="exercise_support"
-                                       {% if 'exercise_support' in current_filters.programs %}checked{% endif %}
-                                       class="mr-2 text-blue-600 focus:ring-blue-500">
-                                <span>운동보조</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="programs" value="exercise_therapy"
-                                       {% if 'exercise_therapy' in current_filters.programs %}checked{% endif %}
-                                       class="mr-2 text-blue-600 focus:ring-blue-500">
-                                <span>운동요법</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="programs" value="music_activity"
-                                       {% if 'music_activity' in current_filters.programs %}checked{% endif %}
-                                       class="mr-2 text-blue-600 focus:ring-blue-500">
-                                <span>음악활동</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="programs" value="cognitive_stimulation"
-                                       {% if 'cognitive_stimulation' in current_filters.programs %}checked{% endif %}
-                                       class="mr-2 text-blue-600 focus:ring-blue-500">
-                                <span>인지자극활동</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="programs" value="cognitive_improvement"
-                                       {% if 'cognitive_improvement' in current_filters.programs %}checked{% endif %}
-                                       class="mr-2 text-blue-600 focus:ring-blue-500">
-                                <span>인지기능향상</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="programs" value="reality_orientation"
-                                       {% if 'reality_orientation' in current_filters.programs %}checked{% endif %}
-                                       class="mr-2 text-blue-600 focus:ring-blue-500">
-                                <span>현실인식훈련</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="programs" value="family_participation"
-                                       {% if 'family_participation' in current_filters.programs %}checked{% endif %}
-                                       class="mr-2 text-blue-600 focus:ring-blue-500">
-                                <span>가족참여</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="programs" value="other"
-                                       {% if 'other' in current_filters.programs %}checked{% endif %}
-                                       class="mr-2 text-blue-600 focus:ring-blue-500">
-                                <span>기타</span>
-                            </label>
-                        </div>
-                    </div>
-
                     <!-- 버튼 -->
                     <div class="space-y-3">
                         <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
@@ -303,7 +210,7 @@
                             검색결과 <span class="text-blue-600">{{ total_count }}개</span>
                         </h2>
                         <div class="text-sm text-gray-500">
-                            {{ facilities.number }} / {{ facilities.paginator.num_pages }} 페이지
+                            {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
                         </div>
                     </div>
                 </div>
@@ -401,42 +308,23 @@
                 </div>
 
                 <!-- 페이지네이션 -->
-                {% if facilities.has_other_pages %}
-                    <div class="mt-8 flex justify-center">
-                        <nav class="flex space-x-2">
-                            {% if facilities.has_previous %}
-                                <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
-                                   class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                    <i class="fas fa-angle-double-left"></i>
-                                </a>
-                                <a href="?page={{ facilities.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
-                                   class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                    <i class="fas fa-angle-left"></i>
-                                </a>
-                            {% endif %}
+<div class="pagination">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+            <a href="?page=1">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+        {% endif %}
 
-                            {% for num in facilities.paginator.page_range %}
-                                {% if num == facilities.number %}
-                                    <span class="px-3 py-2 bg-blue-600 text-white rounded-lg">{{ num }}</span>
-                                {% elif num > facilities.number|add:'-3' and num < facilities.number|add:'3' %}
-                                    <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
-                                       class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">{{ num }}</a>
-                                {% endif %}
-                            {% endfor %}
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
 
-                            {% if facilities.has_next %}
-                                <a href="?page={{ facilities.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
-                                   class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                    <i class="fas fa-angle-right"></i>
-                                </a>
-                                <a href="?page={{ facilities.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
-                                   class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                    <i class="fas fa-angle-double-right"></i>
-                                </a>
-                            {% endif %}
-                        </nav>
-                    </div>
-                {% endif %}
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+        {% endif %}
+    </span>
+</div>
             </div>
         </div>
     </div>
