@@ -1,12 +1,9 @@
 from django.shortcuts import render, get_object_or_404
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, action
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Q
 from .models import Facility, ChatHistory, Tag
 from .serializers import FacilityListSerializer, FacilityDetailSerializer, ChatRequestSerializer, ChatResponseSerializer
 from .rag_service import RAGService
@@ -17,21 +14,16 @@ from django.views.generic import ListView
 
 @ensure_csrf_cookie
 def main_view(request):
-    """메인 페이지"""
     return render(request, 'core/main.html')
 
 
 @ensure_csrf_cookie
 def chat_view(request):
-    """채팅 페이지"""
     return render(request, 'core/chat.html')
 
 
 @ensure_csrf_cookie
-# 기존 Django 템플릿 뷰 (호환성을 위해 유지)
 def chatbot_view(request):
-    """Vue.js 챗봇 인터페이스 (CSRF 쿠키 강제 세팅)"""
-    # 메인 페이지로 리디렉션
     return render(request, 'core/main.html')
 
 
@@ -80,28 +72,33 @@ class FacilityListView(ListView):
         queryset = Facility.objects.all()
 
         # 필터 파라미터 가져오기
-        sido = self.request.GET.get('sido', '')
+        sido = self.request.GET.get('sido', '전체')
         sigungu = self.request.GET.get('sigungu', '')
         grade = self.request.GET.get('grade', '')
-        tags = self.request.GET.get('tags', '')
+        establishment = self.request.GET.get('establishment', '')
+        size = self.request.GET.get('size', '')
+        search = self.request.GET.get('search', '').strip()
 
         # 지역 필터링
-        if sido:
-            queryset = queryset.filter(sido=sido, sigungu=sigungu)
+        if sido and sido != '전체':
+            queryset = queryset.filter(sido=sido)
+            if sigungu:
+                queryset = queryset.filter(sigungu=sigungu)
 
         # 평가등급 필터링
         if grade:
             queryset = queryset.filter(grade=grade)
 
         # 태그 기반 필터링
-        tag_filters = []
-
-        # 태그 필터 적용
-        if tag_filters:
-            for tag_name in tag_filters:
+        tag_filters = [establishment, size]
+        for tag_name in tag_filters:
+            if tag_name:
                 queryset = queryset.filter(tags__name__icontains=tag_name)
 
-        # 중복 제거
+        # 검색(시설명)
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+
         return queryset.distinct()
 
     def get_context_data(self, **kwargs):
@@ -111,6 +108,9 @@ class FacilityListView(ListView):
         sido = self.request.GET.get('sido', '')
         sigungu = self.request.GET.get('sigungu', '')
         grade = self.request.GET.get('grade', '')
+        establishment = self.request.GET.get('establishment', '')
+        size = self.request.GET.get('size', '')
+        search = self.request.GET.get('search', '')
 
         context.update({
             'regions': regions,
@@ -118,10 +118,19 @@ class FacilityListView(ListView):
                 'sido': sido,
                 'sigungu': sigungu,
                 'grade': grade,
+                'establishment': establishment,
+                'size': size,
+                'search': search,
             },
             'total_count': self.get_queryset().count(),
         })
         return context
+
+    def render_to_response(self, context, **response_kwargs):
+        # AJAX(partial) 요청이면 결과 부분만 반환
+        if self.request.GET.get('ajax') == '1' or self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return render(self.request, 'core/_facility_list_results.html', context)
+        return super().render_to_response(context, **response_kwargs)
 
 
 class FacilityViewSet(viewsets.ReadOnlyModelViewSet):
@@ -174,6 +183,7 @@ class ChatbotAPI(APIView):
             return Response({'answer': answer, 'sources': sources}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': f'챗봇 처리 중 오류: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(['POST'])
 def initialize_rag(request):

@@ -41,7 +41,7 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
                     <a href="{% url 'core:main' %}" class="text-2xl font-bold text-blue-600">
-                        <i class="fas fa-home mr-2"></i>너싱홈
+                        CareBridge
                     </a>
                 </div>
                 <nav class="flex space-x-8">
@@ -64,7 +64,7 @@
                             <i class="fas fa-search mr-2 text-blue-600"></i>검색
                         </h3>
                         <input type="text" name="search" value="{{ current_filters.search }}"
-                               placeholder="시설명 또는 코드를 입력하세요"
+                               placeholder="시설명을 입력하세요"
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
 
@@ -92,6 +92,11 @@
                             <i class="fas fa-star mr-2 text-blue-600"></i>평가등급
                         </h3>
                         <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="grade" value="" {% if not current_filters.grade %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span class="tag tag-default">전체</span>
+                            </label>
                             <label class="flex items-center">
                                 <input type="radio" name="grade" value="A등급"
                                        {% if current_filters.grade == 'A등급' %}checked{% endif %}
@@ -138,6 +143,11 @@
                         </h3>
                         <div class="space-y-2">
                             <label class="flex items-center">
+                                <input type="radio" name="size" value="" {% if not current_filters.size %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>전체</span>
+                            </label>
+                            <label class="flex items-center">
                                 <input type="radio" name="size" value="대형"
                                        {% if current_filters.size == '대형' %}checked{% endif %}
                                        class="mr-2 text-blue-600 focus:ring-blue-500">
@@ -163,6 +173,11 @@
                             <i class="fas fa-calendar mr-2 text-blue-600"></i>설립년도
                         </h3>
                         <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="establishment" value="" {% if not current_filters.establishment %}checked{% endif %}
+                                       class="mr-2 text-blue-600 focus:ring-blue-500">
+                                <span>전체</span>
+                            </label>
                             <label class="flex items-center">
                                 <input type="radio" name="establishment" value="신규시설"
                                        {% if current_filters.establishment == '신규시설' %}checked{% endif %}
@@ -191,9 +206,6 @@
                     </div>
                     <!-- 버튼 -->
                     <div class="space-y-3">
-                        <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
-                            <i class="fas fa-search mr-2"></i>검색
-                        </button>
                         <a href="{% url 'core:facility_list' %}" class="block w-full bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors text-center">
                             <i class="fas fa-refresh mr-2"></i>초기화
                         </a>
@@ -202,129 +214,10 @@
             </div>
 
             <!-- 결과 영역 -->
-            <div class="flex-1">
-                <!-- 결과 헤더 -->
-                <div class="bg-white rounded-lg p-6 shadow-sm mb-6">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-xl font-semibold text-gray-900">
-                            검색결과 <span class="text-blue-600">{{ total_count }}개</span>
-                        </h2>
-                        <div class="text-sm text-gray-500">
-                            {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
-                        </div>
-                    </div>
+            <div class="flex-1" id="facility-results-wrapper">
+                <div id="facility-results">
+                    {% include 'core/_facility_list_results.html' %}
                 </div>
-
-                <!-- 시설 리스트 -->
-                <div class="space-y-6">
-                    {% for facility in facilities %}
-                        <div class="bg-white rounded-lg p-6 shadow-sm facility-card">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="flex-1">
-                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">
-                                        <a href="{% url 'core:facility_detail' facility.code %}" class="hover:text-blue-600 transition-colors">
-                                            {{ facility.name }}
-                                        </a>
-                                    </h3>
-                                    <div class="flex items-center space-x-4 text-sm text-gray-600 mb-3">
-                                        <span><i class="fas fa-map-marker-alt mr-1"></i>{{ facility.code }}</span>
-                                        {% if facility.kind %}
-                                            <span><i class="fas fa-building mr-1"></i>{{ facility.kind }}</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="flex flex-col items-end space-y-2">
-                                    {% if facility.grade %}
-                                        <span class="tag tag-grade-{{ facility.grade.0|lower }}">{{ facility.grade }}</span>
-                                    {% endif %}
-                                    {% if facility.has_images %}
-                                        <span class="tag bg-green-100 text-green-800">
-                                            <i class="fas fa-camera mr-1"></i>사진
-                                        </span>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- 시설 정보 -->
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                {% if facility.capacity %}
-                                    <div class="text-center bg-gray-50 rounded-lg py-3">
-                                        <div class="text-lg font-semibold text-gray-900">{{ facility.capacity }}</div>
-                                        <div class="text-sm text-gray-600">정원</div>
-                                    </div>
-                                {% endif %}
-                                {% if facility.occupancy %}
-                                    <div class="text-center bg-gray-50 rounded-lg py-3">
-                                        <div class="text-lg font-semibold text-gray-900">{{ facility.occupancy }}</div>
-                                        <div class="text-sm text-gray-600">현원</div>
-                                    </div>
-                                {% endif %}
-                                {% if facility.waiting %}
-                                    <div class="text-center bg-gray-50 rounded-lg py-3">
-                                        <div class="text-lg font-semibold text-gray-900">{{ facility.waiting }}</div>
-                                        <div class="text-sm text-gray-600">대기</div>
-                                    </div>
-                                {% endif %}
-                                {% if facility.availability %}
-                                    <div class="text-center bg-gray-50 rounded-lg py-3">
-                                        <div class="text-sm font-semibold text-gray-900">{{ facility.availability }}</div>
-                                        <div class="text-sm text-gray-600">이용가능</div>
-                                    </div>
-                                {% endif %}
-                            </div>
-
-                            <!-- 태그 -->
-                            {% if facility.tags.all %}
-                                <div class="flex flex-wrap gap-2 mb-4">
-                                    {% for tag in facility.tags.all %}
-                                        <span class="tag tag-default">{{ tag.name }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-
-                            <!-- 액션 버튼 -->
-                            <div class="flex justify-between items-center pt-4 border-t">
-                                <div class="text-sm text-gray-500">
-                                    {% if facility.summary.is_generated %}
-                                        <i class="fas fa-robot mr-1 text-green-600"></i>AI 요약 가능
-                                    {% endif %}
-                                </div>
-                                <a href="{% url 'core:facility_detail' facility.code %}"
-                                   class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                    상세보기
-                                </a>
-                            </div>
-                        </div>
-                    {% empty %}
-                        <div class="bg-white rounded-lg p-12 shadow-sm text-center">
-                            <i class="fas fa-search text-6xl text-gray-300 mb-4"></i>
-                            <h3 class="text-xl font-semibold text-gray-700 mb-2">검색 결과가 없습니다</h3>
-                            <p class="text-gray-500 mb-6">다른 조건으로 검색해보세요</p>
-                            <a href="{% url 'core:facility_list' %}" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                전체 시설 보기
-                            </a>
-                        </div>
-                    {% endfor %}
-                </div>
-
-                <!-- 페이지네이션 -->
-<div class="pagination">
-    <span class="step-links">
-        {% if page_obj.has_previous %}
-            <a href="?page=1">&laquo; first</a>
-            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
-        {% endif %}
-
-        <span class="current">
-            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
-        </span>
-
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}">next</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
-        {% endif %}
-    </span>
-</div>
             </div>
         </div>
     </div>
@@ -359,6 +252,75 @@
         if (sidoSelect.value) {
             updateSigungu();
         }
+
+        // === AJAX 필터링/페이지네이션 ===
+        const filterForm = document.querySelector('form');
+        const resultsContainer = document.getElementById('facility-results');
+        let typingTimer;
+        const DEBOUNCE_MS = 400;
+
+        function buildQueryParams(extra={}) {
+            const fd = new FormData(filterForm);
+            const params = new URLSearchParams();
+            for (const [k,v] of fd.entries()) { if (v) params.set(k,v); }
+            // extra override
+            Object.entries(extra).forEach(([k,v])=>{ if (v===null) params.delete(k); else params.set(k,v); });
+            params.set('ajax','1');
+            return params.toString();
+        }
+
+        function setLoading() {
+            resultsContainer.innerHTML = '<div class="py-16 text-center text-gray-500">불러오는 중...</div>';
+        }
+
+        function applyPaginationLinks() {
+            const links = resultsContainer.querySelectorAll('.pagination a');
+            links.forEach(a => {
+                a.addEventListener('click', evt => {
+                    evt.preventDefault();
+                    const pageMatch = a.getAttribute('href').match(/page=(\d+)/);
+                    const page = pageMatch ? pageMatch[1] : '1';
+                    fetchAndRender({page});
+                });
+            });
+        }
+
+        async function fetchAndRender(extraParams={}) {
+            setLoading();
+            const qs = buildQueryParams(extraParams);
+            const url = window.location.pathname + '?' + qs;
+            try {
+                const resp = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+                const html = await resp.text();
+                resultsContainer.innerHTML = html;
+                applyPaginationLinks();
+                // 히스토리 업데이트 (사용자 back 가능)
+                const historyParams = new URLSearchParams(qs);
+                historyParams.delete('ajax');
+                const historyUrl = window.location.pathname + '?' + historyParams.toString();
+                window.history.replaceState({}, '', historyUrl);
+            } catch(e) {
+                resultsContainer.innerHTML = '<div class="py-16 text-center text-red-500">오류가 발생했습니다.</div>';
+                console.error(e);
+            }
+        }
+
+        // 폼 submit 가로채기
+        filterForm.addEventListener('submit', e => { e.preventDefault(); fetchAndRender(); });
+
+        // 입력 즉시/변경시 자동 검색 (검색어 debounce)
+        filterForm.querySelectorAll('input[name="search"]').forEach(inp => {
+            inp.addEventListener('input', () => {
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(()=>fetchAndRender(), DEBOUNCE_MS);
+            });
+        });
+        filterForm.querySelectorAll('select, input[type=radio]').forEach(el => {
+            el.addEventListener('change', () => fetchAndRender());
+        });
+
+        // 초기 페이지네이션 링크 바인딩
+        applyPaginationLinks();
     </script>
 </body>
 </html>
