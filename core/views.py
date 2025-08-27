@@ -10,6 +10,7 @@ from .rag_service import RAGService
 from django.utils.decorators import method_decorator
 from .regions import regions
 from django.views.generic import ListView
+from django.db.models import Case, When, Value, IntegerField
 import json
 
 
@@ -79,6 +80,7 @@ class FacilityListView(ListView):
         establishment = self.request.GET.get('establishment', '')
         size = self.request.GET.get('size', '')
         search = self.request.GET.get('search', '').strip()
+        sort = self.request.GET.get('sort', 'grade')  # 새 정렬 기준
 
         # 지역 필터링
         if sido and sido != '전체':
@@ -100,6 +102,22 @@ class FacilityListView(ListView):
         if search:
             queryset = queryset.filter(name__icontains=search)
 
+        # 정렬 적용
+        if sort == 'grade':
+            grade_order = Case(
+                When(grade='A등급', then=Value(1)),
+                When(grade='B등급', then=Value(2)),
+                When(grade='C등급', then=Value(3)),
+                When(grade='D등급', then=Value(4)),
+                When(grade='E등급', then=Value(5)),
+                When(grade='등급외', then=Value(6)),
+                default=Value(7),
+                output_field=IntegerField()
+            )
+            queryset = queryset.annotate(_grade_order=grade_order).order_by('_grade_order', 'name')
+        else:  # 기본: 가나다 (이름 오름차순)
+            queryset = queryset.order_by('grade')
+
         return queryset.distinct()
 
     def get_context_data(self, **kwargs):
@@ -112,6 +130,7 @@ class FacilityListView(ListView):
         establishment = self.request.GET.get('establishment', '')
         size = self.request.GET.get('size', '')
         search = self.request.GET.get('search', '')
+        sort = self.request.GET.get('sort', 'name')
         current_filters = {
             'sido': sido,
             'sigungu': sigungu,
@@ -119,6 +138,7 @@ class FacilityListView(ListView):
             'establishment': establishment,
             'size': size,
             'search': search,
+            'sort': sort,
         }
         context.update({
             'regions': regions,

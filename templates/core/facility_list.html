@@ -11,143 +11,145 @@
     <style>
         body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;background:linear-gradient(160deg,#ffffff 0%,#f5f8fb 55%,#eef3f9 100%);color:#1e293b;}
         .hdr{transition:height .2s ease, box-shadow .2s ease, background .2s ease;}
-        .hdr:not(.shrink){height:70px;} /* 원래 높이 복원 */
+        .hdr:not(.shrink){height:70px;}
         .hdr.shrink{height:56px;}
         .segment-btn{position:relative;flex:1 1 0;display:flex;flex-direction:column;justify-content:center;padding:0 .65rem;min-width:0;cursor:pointer;}
         .segment-btn:hover{background:#f1f5f9;}
         .segment-label{font-size:10px;letter-spacing:.05em;color:#64748b;font-weight:600;text-transform:uppercase;}
         .segment-value{font-size:13px;font-weight:500;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0f172a;}
-        .capsule{height:48px;border-radius:9999px;background:#ffffff;display:flex;align-items:center;border:1px solid #e2e8f0;box-shadow:0 2px 4px rgba(15,23,42,.04);width:100%;max-width:680px;overflow:hidden;} /* 가로폭만 축소 */
+        .capsule{height:48px;border-radius:9999px;background:#ffffff;display:flex;align-items:center;border:1px solid #e2e8f0;box-shadow:0 2px 4px rgba(15,23,42,.04);width:100%;max-width:700px;overflow:hidden;}
         .capsule.divide > * + *{border-left:1px solid #e2e8f0;}
         .capsule:focus-within{box-shadow:0 0 0 3px rgba(99,102,241,.25);}
-        .pop{position:absolute;top:100%;left:0;margin-top:.75rem;z-index:60;min-width:320px;background:#fff;border:1px solid #e2e8f0;border-radius:1rem;box-shadow:0 12px 32px -8px rgba(15,23,42,.18),0 4px 12px -2px rgba(15,23,42,.08);padding:1rem;display:none;}
-        .pop.open{display:block;animation:fadeIn .18s ease;} @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+        .pop{position:absolute; top:100%; left:0; margin-top:8px; z-index:40; min-width:320px; background:#fff; border:1px solid #e2e8f0; border-radius:1rem; box-shadow:0 12px 32px -8px rgba(15,23,42,.18),0 4px 12px -2px rgba(15,23,42,.08); padding:1rem; display:none; opacity:0; transform:translateY(6px); transition:.18s ease;}
+        .pop.open{display:block; opacity:1; transform:translateY(0);}
         .filter-chip input{position:absolute;opacity:0;pointer-events:none;}
         .filter-chip span{display:inline-flex;align-items:center;justify-content:center;padding:0 .9rem;height:34px;border-radius:9999px;border:1px solid #cbd5e1;background:#fff;font-size:12px;font-weight:500;color:#334155;cursor:pointer;transition:.18s;} .filter-chip span:hover{border-color:#94a3b8;background:#f1f5f9;}
         .filter-chip input:checked + span{border-color:#6366f1;background:#eef2ff;color:#4338ca;box-shadow:0 0 0 1px #6366f1 inset;}
         .popover-section-title{font-size:12px;font-weight:600;letter-spacing:.05em;color:#64748b;margin-bottom:.5rem;text-transform:uppercase;}
-        @media (max-width:639px){.capsule{max-width:100%;} .pop{left:0;right:0;min-width:0;width:100vw;margin:0;border-radius:0 0 1.25rem 1.25rem;padding:1.25rem;border-left:0;border-right:0;}}
+        @media (max-width:639px){.capsule{max-width:100%;} .pop{position:fixed; left:0; right:0; top:60px; width:100vw; margin-top:0; border-radius:0 0 1.25rem 1.25rem;}}
     </style>
 </head>
 <body class="min-h-screen">
 <header id="siteHeader" class="hdr sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 flex flex-col justify-center">
-    <div class="w-full">
-        <div class="max-w-7xl mx-auto px-5 h-full flex items-center w-full">
-            <!-- Left: Logo -->
-            <div class="shrink-0 pr-3">
-                <a href="{% url 'core:main' %}" class="text-lg font-semibold tracking-tight bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-transparent bg-clip-text whitespace-nowrap">CareBridge</a>
-            </div>
-            <!-- Center: Capsule -->
-            <div class="flex-1 flex justify-center">
-                <div class="relative w-full flex justify-center">
-                    <div id="searchCapsule" class="capsule divide px-2" role="group" aria-label="검색 세그먼트">
-                        <!-- 지역 -->
-                        <button type="button" class="segment-btn" data-popover="region" aria-haspopup="dialog" aria-expanded="false">
-                            <span class="segment-label">지역</span>
-                            <span id="label-region" class="segment-value">{% if current_filters.sido or current_filters.sigungu %}{{ current_filters.sido }}{% if current_filters.sigungu %} · {{ current_filters.sigungu }}{% endif %}{% else %}지역 선택{% endif %}</span>
+    {% include 'core/_navbar.html' %}
+</header>
+<form id="filter-form" class="hidden"></form>
+<div id="active-filters" class="max-w-7xl mx-auto px-5 pt-2 pb-2 flex flex-wrap gap-2 text-xs"></div>
+
+<main class="max-w-7xl mx-auto px-5 pt-6 pb-16">
+    <!-- 결과 헤더 + 검색 캡슐 + 정렬 -->
+    <div class="mb-6 grid gap-6 md:grid-cols-3 items-start">
+        <!-- 좌: 제목 -->
+        <div class="min-w-[200px] flex flex-col justify-start">
+            <h1 class="text-xl font-semibold tracking-tight text-center md:text-left">시설 <span class="text-indigo-600">검색결과</span></h1>
+            <p class="text-xs text-slate-500 mt-1 text-center md:text-left">총 <strong id="facility-count" class="text-indigo-600">{{ total_count }}</strong>개 시설</p>
+        </div>
+        <!-- 가운데: 검색 캡슐 -->
+        <div class="flex justify-center order-last md:order-none md:justify-center">
+            <div class="relative w-full" style="max-width:700px;">
+                <div id="searchCapsule" class="capsule divide px-2" role="group" aria-label="검색 세그먼트">
+                    <!-- 지역 -->
+                    <button type="button" class="segment-btn" data-popover="region" aria-haspopup="dialog" aria-expanded="false">
+                        <span class="segment-label">지역</span>
+                        <span id="label-region" class="segment-value">{% if current_filters.sido or current_filters.sigungu %}{{ current_filters.sido }}{% if current_filters.sigungu %} · {{ current_filters.sigungu }}{% endif %}{% else %}지역 선택{% endif %}</span>
+                    </button>
+                    <!-- 등급 -->
+                    <button type="button" class="segment-btn" data-popover="grade" aria-haspopup="dialog" aria-expanded="false">
+                        <span class="segment-label">등급</span>
+                        <span id="label-grade" class="segment-value">{% if current_filters.grade %}{{ current_filters.grade|slice:':2' }}{% else %}전체 등급{% endif %}</span>
+                    </button>
+                    <!-- 연차 -->
+                    <button type="button" class="segment-btn" data-popover="establishment" aria-haspopup="dialog" aria-expanded="false">
+                        <span class="segment-label">연차</span>
+                        <span id="label-est" class="segment-value">{% if current_filters.establishment %}{{ current_filters.establishment }}{% else %}전체{% endif %}</span>
+                    </button>
+                    <!-- 규모 -->
+                    <button type="button" class="segment-btn" data-popover="size" aria-haspopup="dialog" aria-expanded="false">
+                        <span class="segment-label">규모</span>
+                        <span id="label-size" class="segment-value">{% if current_filters.size %}{{ current_filters.size }}{% else %}전체{% endif %}</span>
+                    </button>
+                    <!-- 검색 -->
+                    <button type="button" class="segment-btn" data-popover="q" aria-haspopup="dialog" aria-expanded="false">
+                        <span class="segment-label">검색</span>
+                        <span id="label-search" class="segment-value">{% if current_filters.search %}{{ current_filters.search|truncatechars:10 }}{% else %}검색어{% endif %}</span>
+                    </button>
+                    <!-- 실행 버튼 -->
+                    <div class="flex items-center pl-2 pr-2">
+                        <button id="resetFilters" type="button" class="w-10 h-10 rounded-full bg-slate-500 text-white flex items-center justify-center hover:bg-slate-600 focus:ring-4 focus:ring-slate-200" title="필터 초기화">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                         </button>
-                        <!-- 등급 -->
-                        <button type="button" class="segment-btn" data-popover="grade" aria-haspopup="dialog" aria-expanded="false">
-                            <span class="segment-label">등급</span>
-                            <span id="label-grade" class="segment-value">{% if current_filters.grade %}{{ current_filters.grade|slice:':2' }}{% else %}전체 등급{% endif %}</span>
-                        </button>
-                        <!-- 연차 -->
-                        <button type="button" class="segment-btn" data-popover="establishment" aria-haspopup="dialog" aria-expanded="false">
-                            <span class="segment-label">연차</span>
-                            <span id="label-est" class="segment-value">{% if current_filters.establishment %}{{ current_filters.establishment }}{% else %}전체{% endif %}</span>
-                        </button>
-                        <!-- 규모 -->
-                        <button type="button" class="segment-btn" data-popover="size" aria-haspopup="dialog" aria-expanded="false">
-                            <span class="segment-label">규모</span>
-                            <span id="label-size" class="segment-value">{% if current_filters.size %}{{ current_filters.size }}{% else %}전체{% endif %}</span>
-                        </button>
-                        <!-- 검색 -->
-                        <button type="button" class="segment-btn" data-popover="q" aria-haspopup="dialog" aria-expanded="false">
-                            <span class="segment-label">검색</span>
-                            <span id="label-search" class="segment-value">{% if current_filters.search %}{{ current_filters.search|truncatechars:10 }}{% else %}검색어{% endif %}</span>
-                        </button>
-                        <!-- 실행 버튼 -->
-                        <div class="flex items-center pl-2 pr-2">
-                            <button id="submitSearch" type="button" class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-200" title="검색 실행">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.35-4.35"/><circle cx="11" cy="11" r="8"/></svg>
-                            </button>
-                        </div>
                     </div>
-                    <!-- Popovers -->
-                    <div id="popover-region" class="pop" role="dialog" aria-modal="true" aria-label="지역 선택">
-                        <div class="popover-section-title">시/도</div>
-                        <select id="field-sido" class="w-full h-11 rounded-lg border border-slate-300 px-3 mb-4 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-sm">
-                            <option value="">전체 (시/도)</option>
-                            {% for sido_name in regions.keys %}
-                                <option value="{{ sido_name }}" {% if current_filters.sido == sido_name %}selected{% endif %}>{{ sido_name }}</option>
-                            {% endfor %}
-                        </select>
-                        <div class="popover-section-title">시/군/구</div>
-                        <select id="field-sigungu" class="w-full h-11 rounded-lg border border-slate-300 px-3 mb-4 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-sm">
-                            <option value="">전체 (시/군/구)</option>
-                        </select>
-                        <div class="flex justify-end"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
+                </div>
+                <!-- Popovers -->
+                <div id="popover-region" class="pop" role="dialog" aria-modal="true" aria-label="지역 선택">
+                    <div class="popover-section-title">시/도</div>
+                    <select id="field-sido" class="w-full h-11 rounded-lg border border-slate-300 px-3 mb-4 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-sm">
+                        <option value="">전체 (시/도)</option>
+                        {% for sido_name in regions.keys %}
+                            <option value="{{ sido_name }}" {% if current_filters.sido == sido_name %}selected{% endif %}>{{ sido_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="popover-section-title">시/군/구</div>
+                    <select id="field-sigungu" class="w-full h-11 rounded-lg border border-slate-300 px-3 mb-4 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-sm">
+                        <option value="">전체 (시/군/구)</option>
+                    </select>
+                    <div class="flex justify-end"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
+                </div>
+                <div id="popover-grade" class="pop" role="dialog" aria-modal="true" aria-label="등급 선택">
+                    <div class="popover-section-title">등급</div>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="" {% if not current_filters.grade %}checked{% endif %}><span>전체</span></label>
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="A등급" {% if current_filters.grade == 'A등급' %}checked{% endif %}><span>A</span></label>
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="B등급" {% if current_filters.grade == 'B등급' %}checked{% endif %}><span>B</span></label>
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="C등급" {% if current_filters.grade == 'C등급' %}checked{% endif %}><span>C</span></label>
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="D등급" {% if current_filters.grade == 'D등급' %}checked{% endif %}><span>D</span></label>
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="E등급" {% if current_filters.grade == 'E등급' %}checked{% endif %}><span>E</span></label>
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="등급외" {% if current_filters.grade == '등급외' %}checked{% endif %}><span>외</span></label>
                     </div>
-                    <div id="popover-grade" class="pop" role="dialog" aria-modal="true" aria-label="등급 선택">
-                        <div class="popover-section-title">등급</div>
-                        <div class="flex flex-wrap gap-2 mb-4">
-                            <label class="filter-chip"><input type="radio" name="grade-radio" value="" {% if not current_filters.grade %}checked{% endif %}><span>전체</span></label>
-                            <label class="filter-chip"><input type="radio" name="grade-radio" value="A등급" {% if current_filters.grade == 'A등급' %}checked{% endif %}><span>A</span></label>
-                            <label class="filter-chip"><input type="radio" name="grade-radio" value="B등급" {% if current_filters.grade == 'B등급' %}checked{% endif %}><span>B</span></label>
-                            <label class="filter-chip"><input type="radio" name="grade-radio" value="C등급" {% if current_filters.grade == 'C등급' %}checked{% endif %}><span>C</span></label>
-                            <label class="filter-chip"><input type="radio" name="grade-radio" value="D등급" {% if current_filters.grade == 'D등급' %}checked{% endif %}><span>D</span></label>
-                            <label class="filter-chip"><input type="radio" name="grade-radio" value="E등급" {% if current_filters.grade == 'E등급' %}checked{% endif %}><span>E</span></label>
-                            <label class="filter-chip"><input type="radio" name="grade-radio" value="등급외" {% if current_filters.grade == '등급외' %}checked{% endif %}><span>외</span></label>
-                        </div>
-                        <div class="flex justify-end"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
+                    <div class="flex justify-end"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
+                </div>
+                <div id="popover-establishment" class="pop" role="dialog" aria-modal="true" aria-label="설립 연차">
+                    <div class="popover-section-title">설립 연차</div>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <label class="filter-chip"><input type="radio" name="establishment-radio" value="" {% if not current_filters.establishment %}checked{% endif %}><span>전체</span></label>
+                        <label class="filter-chip"><input type="radio" name="establishment-radio" value="신규시설" {% if current_filters.establishment == '신규시설' %}checked{% endif %}><span>신규</span></label>
+                        <label class="filter-chip"><input type="radio" name="establishment-radio" value="5년이내" {% if current_filters.establishment == '5년이내' %}checked{% endif %}><span>5년</span></label>
+                        <label class="filter-chip"><input type="radio" name="establishment-radio" value="10년이내" {% if current_filters.establishment == '10년이내' %}checked{% endif %}><span>10년</span></label>
+                        <label class="filter-chip"><input type="radio" name="establishment-radio" value="10년이상" {% if current_filters.establishment == '10년이상' %}checked{% endif %}><span>10년+</span></label>
                     </div>
-                    <div id="popover-establishment" class="pop" role="dialog" aria-modal="true" aria-label="설립 연차">
-                        <div class="popover-section-title">설립 연차</div>
-                        <div class="flex flex-wrap gap-2 mb-2">
-                            <label class="filter-chip"><input type="radio" name="establishment-radio" value="" {% if not current_filters.establishment %}checked{% endif %}><span>전체</span></label>
-                            <label class="filter-chip"><input type="radio" name="establishment-radio" value="신규시설" {% if current_filters.establishment == '신규시설' %}checked{% endif %}><span>신규</span></label>
-                            <label class="filter-chip"><input type="radio" name="establishment-radio" value="5년이내" {% if current_filters.establishment == '5년이내' %}checked{% endif %}><span>5년</span></label>
-                            <label class="filter-chip"><input type="radio" name="establishment-radio" value="10년이내" {% if current_filters.establishment == '10년이내' %}checked{% endif %}><span>10년</span></label>
-                            <label class="filter-chip"><input type="radio" name="establishment-radio" value="10년이상" {% if current_filters.establishment == '10년이상' %}checked{% endif %}><span>10년+</span></label>
-                        </div>
-                        <div class="flex justify-end"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
+                    <div class="flex justify-end"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
+                </div>
+                <div id="popover-size" class="pop" role="dialog" aria-modal="true" aria-label="시설 규모">
+                    <div class="popover-section-title">규모</div>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <label class="filter-chip"><input type="radio" name="size-radio" value="" {% if not current_filters.size %}checked{% endif %}><span>전체</span></label>
+                        <label class="filter-chip"><input type="radio" name="size-radio" value="대형" {% if current_filters.size == '대형' %}checked{% endif %}><span>대형</span></label>
+                        <label class="filter-chip"><input type="radio" name="size-radio" value="중형" {% if current_filters.size == '중형' %}checked{% endif %}><span>중형</span></label>
+                        <label class="filter-chip"><input type="radio" name="size-radio" value="소형" {% if current_filters.size == '소형' %}checked{% endif %}><span>소형</span></label>
                     </div>
-                    <div id="popover-size" class="pop" role="dialog" aria-modal="true" aria-label="시설 규모">
-                        <div class="popover-section-title">규모</div>
-                        <div class="flex flex-wrap gap-2 mb-2">
-                            <label class="filter-chip"><input type="radio" name="size-radio" value="" {% if not current_filters.size %}checked{% endif %}><span>전체</span></label>
-                            <label class="filter-chip"><input type="radio" name="size-radio" value="대형" {% if current_filters.size == '대형' %}checked{% endif %}><span>대형</span></label>
-                            <label class="filter-chip"><input type="radio" name="size-radio" value="중형" {% if current_filters.size == '중형' %}checked{% endif %}><span>중형</span></label>
-                            <label class="filter-chip"><input type="radio" name="size-radio" value="소형" {% if current_filters.size == '소형' %}checked{% endif %}><span>소형</span></label>
-                        </div>
-                        <div class="flex justify-end"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
-                    </div>
-                    <div id="popover-q" class="pop" role="dialog" aria-modal="true" aria-label="검색어 입력">
-                        <label class="block text-[11px] font-semibold tracking-wide text-slate-500 mb-2">검색어</label>
-                        <input id="field-search" type="text" class="w-full h-11 rounded-lg border border-slate-300 px-4 mb-4 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-sm" value="{{ current_filters.search }}" placeholder="예: 서울 A등급" />
-                        <div class="flex justify-between gap-2">
-                            <button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button>
-                            <button type="button" id="applySearch" class="px-5 h-10 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">적용</button>
-                        </div>
+                    <div class="flex justify-end"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
+                </div>
+                <div id="popover-q" class="pop" role="dialog" aria-modal="true" aria-label="검색어 입력">
+                    <label class="block text-[11px] font-semibold tracking-wide text-slate-500 mb-2">검색어</label>
+                    <input id="field-search" type="text" class="w-full h-11 rounded-lg border border-slate-300 px-4 mb-4 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-sm" value="{{ current_filters.search }}" placeholder="예: 서울 A등급" />
+                    <div class="flex justify-between gap-2">
+                        <button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button>
+                        <button type="button" id="applySearch" class="px-5 h-10 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">검색</button>
                     </div>
                 </div>
             </div>
-            <!-- Right: Utilities -->
-            <div class="shrink-0 flex items-center gap-3"></div>
+        </div>
+        <!-- 우: 정렬 기준 -->
+        <div class="flex justify-center md:justify-end w-full md:w-auto">
+            <div class="flex flex-col gap-2 items-center md:items-end">
+                <select id="sortSelect" class="h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500">
+                    <option value="grade">평가 등급 순</option>
+                    <option value="name">가나다 순</option>
+                </select>
+            </div>
         </div>
     </div>
-    <form id="filter-form" class="hidden"></form>
-    <div id="active-filters" class="max-w-7xl mx-auto px-5 pt-2 pb-2 flex flex-wrap gap-2 text-xs"></div>
-</header>
 
-<main class="max-w-7xl mx-auto px-5 pt-6 pb-16">
-    <!-- ...existing code for results header and container... -->
-    <div class="mb-6 flex items-end justify-between flex-wrap gap-3">
-        <div>
-            <h1 class="text-xl font-semibold tracking-tight">시설 <span class="text-indigo-600">검색결과</span></h1>
-            <p class="text-xs text-slate-500 mt-1">총 <strong class="text-indigo-600">{{ total_count }}</strong>개 시설</p>
-        </div>
-    </div>
     <div id="facility-results">{% include 'core/_facility_list_results.html' %}</div>
 </main>
 
@@ -155,7 +157,7 @@
 const CURRENT_FILTERS = {{ current_filters_json|safe }};
 const REGIONS = {{ regions|safe }};
 const form = document.getElementById('filter-form');
-const hiddenFields = ['search','sido','sigungu','grade','establishment','size'];
+const hiddenFields = ['search','sido','sigungu','grade','establishment','size','sort'];
 hiddenFields.forEach(n=>{ if(!form.querySelector(`[name=${n}]`)){ const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value = CURRENT_FILTERS[n] || ''; form.appendChild(i);} else { form.querySelector(`[name=${n}]`).value = CURRENT_FILTERS[n] || ''; }});
 // Labels
 const labelRegion=document.getElementById('label-region');
@@ -167,12 +169,22 @@ const labelSearch=document.getElementById('label-search');
 const fieldSido=document.getElementById('field-sido');
 const fieldSigungu=document.getElementById('field-sigungu');
 const fieldSearch=document.getElementById('field-search');
+const sortSelect = document.getElementById('sortSelect');
 // Popovers mapping
 const popovers={region:document.getElementById('popover-region'),grade:document.getElementById('popover-grade'),establishment:document.getElementById('popover-establishment'),size:document.getElementById('popover-size'),q:document.getElementById('popover-q')};
 // Populate Sigungu
 function populateSigungu(){ const cur=fieldSido.value; fieldSigungu.innerHTML='<option value="">전체 (시/군/구)</option>'; if(cur&&REGIONS[cur]) REGIONS[cur].forEach(sg=>{ const opt=document.createElement('option'); opt.value=sg; opt.textContent=sg; if(CURRENT_FILTERS.sigungu===sg) opt.selected=true; fieldSigungu.appendChild(opt); }); }
 populateSigungu();
-fieldSido.addEventListener('change',()=>{ if(!REGIONS[fieldSido.value]) fieldSigungu.value=''; populateSigungu(); updateRegionLabel(); syncHidden('sido',fieldSido.value); syncHidden('sigungu',fieldSigungu.value); triggerFetch(); });
+fieldSido.addEventListener('change',()=>{
+  // 시/도 변경 시 시/군/구 선택 초기화 및 CURRENT_FILTERS 갱신
+  fieldSigungu.value='';
+  CURRENT_FILTERS.sigungu='';
+  populateSigungu();
+  updateRegionLabel();
+  syncHidden('sido',fieldSido.value);
+  syncHidden('sigungu','');
+  triggerFetch();
+});
 fieldSigungu.addEventListener('change',()=>{ updateRegionLabel(); syncHidden('sigungu',fieldSigungu.value); triggerFetch(); });
 // Hidden sync
 function syncHidden(name,val){ const f=form.querySelector(`[name=${name}]`); if(f) f.value=val; }
@@ -192,35 +204,128 @@ popovers.size.querySelectorAll('input[name=size-radio]').forEach(r=>r.addEventLi
 const applySearchBtn=document.getElementById('applySearch');
 applySearchBtn.addEventListener('click',()=>{ syncHidden('search',fieldSearch.value.trim()); updateSearchLabel(); triggerFetch(); closeAllPopovers(); });
 fieldSearch.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); syncHidden('search',fieldSearch.value.trim()); updateSearchLabel(); triggerFetch(); closeAllPopovers(); }});
+// Sort select
+if(sortSelect){
+  // 초기값 반영
+  const existingSort = CURRENT_FILTERS.sort || 'name';
+  sortSelect.value = existingSort;
+  // hidden input 동기화(혹시 생성된 직후 값 보장)
+  const sortHidden = form.querySelector('[name=sort]');
+  if(sortHidden) sortHidden.value = existingSort;
+  sortSelect.addEventListener('change', e=>{ syncHidden('sort', e.target.value); triggerFetch(); });
+}
 // Popover control
-let openName=null; function openPopover(name,btn){ closeAllPopovers(); const pv=popovers[name]; if(!pv)return; pv.classList.add('open'); openName=name; btn.setAttribute('aria-expanded','true'); trapFocus(pv); }
-function closeAllPopovers(){ Object.entries(popovers).forEach(([n,p])=>{ p.classList.remove('open'); const b=document.querySelector(`[data-popover="${n}"]`); if(b) b.setAttribute('aria-expanded','false'); }); openName=null; releaseFocusTrap(); }
-// Segment buttons
-document.querySelectorAll('#searchCapsule [data-popover]').forEach(btn=>btn.addEventListener('click',()=>{ const target=btn.getAttribute('data-popover'); if(openName===target) closeAllPopovers(); else openPopover(target,btn); }));
-// Outside / ESC
-document.addEventListener('mousedown',e=>{ if(openName){ const pv=popovers[openName]; if(!pv.contains(e.target) && !document.getElementById('searchCapsule').contains(e.target)) closeAllPopovers(); }});
-document.addEventListener('keydown',e=>{ if(e.key==='Escape' && openName) closeAllPopovers(); });
-// Close buttons
-Object.values(popovers).forEach(pv=> pv.querySelectorAll('.close-btn').forEach(b=> b.addEventListener('click',closeAllPopovers)));
-// Focus trap
-let lastFocused=null; function trapFocus(modal){ lastFocused=document.activeElement; const focusables=[...modal.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')]; if(focusables.length) focusables[0].focus(); function handle(e){ if(e.key==='Tab'){ const idx=focusables.indexOf(document.activeElement); if(e.shiftKey && idx===0){ e.preventDefault(); focusables[focusables.length-1].focus(); } else if(!e.shiftKey && idx===focusables.length-1){ e.preventDefault(); focusables[0].focus(); } } } modal.addEventListener('keydown',handle); modal._trapHandler=handle; }
-function releaseFocusTrap(){ Object.values(popovers).forEach(pv=>{ if(pv._trapHandler){ pv.removeEventListener('keydown',pv._trapHandler); delete pv._trapHandler; } }); if(lastFocused) lastFocused.focus(); }
-// Active filter chips
-const activeFiltersEl=document.getElementById('active-filters');
-function renderActiveFilters(){ activeFiltersEl.innerHTML=''; const labels={sido:'시/도',sigungu:'시군구',grade:'등급',establishment:'설립',size:'규모',search:'검색'}; hiddenFields.forEach(k=>{ const v=form.querySelector(`[name=${k}]`).value; if(v){ const chip=document.createElement('button'); chip.type='button'; chip.className='flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 transition'; chip.innerHTML=`<span class='text-[11px] tracking-wide font-medium'>${labels[k]}:${v}</span><span class='text-xs'>✕</span>`; chip.addEventListener('click',()=>{ syncHidden(k,''); if(k==='sido'){ syncHidden('sigungu',''); fieldSido.value=''; fieldSigungu.innerHTML='<option value="">전체 (시/군/구)</option>'; updateRegionLabel(); } if(k==='sigungu'){ fieldSigungu.value=''; updateRegionLabel(); } if(k==='grade'){ updateGradeLabel(); } if(k==='establishment'){ updateEstLabel(); } if(k==='size'){ updateSizeLabel(); } if(k==='search'){ fieldSearch.value=''; updateSearchLabel(); } triggerFetch(); }); activeFiltersEl.appendChild(chip);} }); }
-// Submit button
-const submitBtn=document.getElementById('submitSearch'); submitBtn.addEventListener('click',()=>{ triggerFetch(); });
+let openName = null;
+function openPopover(name, btn){
+  if(openName === name){ closeAllPopovers(); return; }
+  closeAllPopovers();
+  const pv = popovers[name];
+  if(!pv) return;
+  pv.classList.add('open');
+  btn.setAttribute('aria-expanded','true');
+  // 위치 설정 (렌더 프레임 후)
+  requestAnimationFrame(()=> positionPopover(btn, pv));
+  openName = name;
+}
+function closeAllPopovers(){
+  Object.entries(popovers).forEach(([k,p])=>{ if(p){ p.classList.remove('open'); const b=document.querySelector(`[data-popover="${k}"]`); if(b) b.setAttribute('aria-expanded','false'); }});
+  openName = null;
+}
+// 이벤트 바인딩 초기화(중복 제거 위해 먼저 기존 클릭 remove 불가하므로 새로 할당)
+Array.from(document.querySelectorAll('#searchCapsule [data-popover]')).forEach(btn=>{
+  btn.onclick = ()=> openPopover(btn.getAttribute('data-popover'), btn);
+});
+
+// 외부 클릭 / ESC 닫기
+window.addEventListener('mousedown', e=>{
+  if(!openName) return;
+  const capsule=document.getElementById('searchCapsule');
+  const pv=popovers[openName];
+  if(!pv) return;
+  if(!pv.contains(e.target) && !capsule.contains(e.target)) closeAllPopovers();
+});
+window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAllPopovers(); });
+window.addEventListener('resize', ()=>{ if(openName){ const btn=document.querySelector(`[data-popover="${openName}"]`); if(btn){ positionPopover(btn, popovers[openName]); } }});
+
+// 닫기 버튼 이벤트 리스너 추가
+document.querySelectorAll('.close-btn').forEach(btn => {
+  btn.addEventListener('click', closeAllPopovers);
+});
+
+// 필터 초기화 버튼 이벤트 리스너 추가
+const resetFiltersBtn = document.getElementById('resetFilters');
+resetFiltersBtn.addEventListener('click', () => {
+  // 모든 필터 값 초기화
+  hiddenFields.forEach(field => {
+    const input = form.querySelector(`[name=${field}]`);
+    if (input) input.value = '';
+  });
+
+  // UI 요소들 초기화
+  fieldSido.value = '';
+  fieldSigungu.value = '';
+  fieldSearch.value = '';
+  sortSelect.value = 'name';
+  // sort hidden 값 동기화(기본 정렬 유지)
+  syncHidden('sort','name');
+
+  // 시군구 옵션 초기화
+  populateSigungu();
+
+  // 라디오 버튼들 초기화
+  popovers.grade.querySelectorAll('input[name=grade-radio]').forEach(r => { r.checked = r.value === ''; });
+  popovers.establishment.querySelectorAll('input[name=establishment-radio]').forEach(r => { r.checked = r.value === ''; });
+  popovers.size.querySelectorAll('input[name=size-radio]').forEach(r => { r.checked = r.value === ''; });
+
+  // 라벨들 업데이트
+  updateRegionLabel(); updateGradeLabel(); updateEstLabel(); updateSizeLabel(); updateSearchLabel();
+
+  closeAllPopovers();
+  triggerFetch();
+});
+
+// Submit button (존재할 때만 바인딩 – 없으면 무시)
+const submitBtn=document.getElementById('submitSearch');
+if(submitBtn){ submitBtn.addEventListener('click',()=>{ triggerFetch(); }); }
 // AJAX fetch
 const resultsContainer=document.getElementById('facility-results');
 function skeleton(){ return `<div class='grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>${Array.from({length:8}).map(()=>`<div class='group overflow-hidden rounded-2xl bg-white border border-slate-200 p-0 shadow-sm'><div class='aspect-[4/3] bg-slate-100 animate-pulse'></div><div class='p-4 space-y-3'><div class='h-4 bg-slate-200 rounded'></div><div class='flex gap-2'><div class='h-5 w-14 bg-slate-200 rounded-full'></div><div class='h-5 w-10 bg-slate-200 rounded-full'></div><div class='h-5 w-16 bg-slate-200 rounded-full'></div></div></div></div>`).join('')}</div>`; }
 function setLoading(){ resultsContainer.innerHTML=skeleton(); }
 function buildQuery(){ const p=new URLSearchParams(); hiddenFields.forEach(k=>{ const v=form.querySelector(`[name=${k}]`).value; if(v) p.set(k,v); }); p.set('ajax','1'); return p; }
 function applyPaginationLinks(){ resultsContainer.querySelectorAll('.pagination a').forEach(a=>a.addEventListener('click',e=>{ e.preventDefault(); const m=a.getAttribute('href').match(/page=(\d+)/); triggerFetch({page:m?m[1]:'1'}); })); }
-async function triggerFetch(extra={}){ setLoading(); const params=buildQuery(); if(extra.page) params.set('page',extra.page); const url=location.pathname+'?'+params.toString(); try{ const r=await fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}}); const html=await r.text(); resultsContainer.innerHTML=html; applyPaginationLinks(); params.delete('ajax'); history.replaceState({},'',location.pathname+'?'+params.toString()); renderActiveFilters(); window.scrollTo({top:0,behavior:'smooth'});}catch(e){ resultsContainer.innerHTML='<div class="py-16 text-center text-red-500">오류가 발생했습니다.</div>'; console.error(e);} }
+async function triggerFetch(extra={}){ setLoading(); const params=buildQuery(); if(extra.page) params.set('page',extra.page); const url=location.pathname+'?'+params.toString(); fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}}).then(r=>r.text()).then(html=>{ resultsContainer.innerHTML=html; applyPaginationLinks(); // 개수 업데이트
+  const meta = resultsContainer.querySelector('#results-meta');
+  if(meta){ const total = meta.getAttribute('data-total'); const cntEl=document.getElementById('facility-count'); if(cntEl && total!==null){ cntEl.textContent=total; } }
+  params.delete('ajax'); history.replaceState({},'',location.pathname+'?'+params.toString()); if(typeof renderActiveFilters==='function') renderActiveFilters(); window.scrollTo({top:0,behavior:'smooth'}); }).catch(e=>{ resultsContainer.innerHTML='<div class="py-16 text-center text-red-500">오류가 발생했습니다.</div>'; console.error(e); }); }
 // Init
-updateRegionLabel(); updateGradeLabel(); updateEstLabel(); updateSizeLabel(); updateSearchLabel(); renderActiveFilters(); applyPaginationLinks();
+updateRegionLabel(); updateGradeLabel(); updateEstLabel(); updateSizeLabel(); updateSearchLabel(); if(typeof renderActiveFilters==='function'){ renderActiveFilters(); } applyPaginationLinks();
 // Header shrink
 const header=document.getElementById('siteHeader'); function onScroll(){ if(window.scrollY>16) header.classList.add('shrink'); else header.classList.remove('shrink'); } window.addEventListener('scroll',onScroll); onScroll();
+function positionPopover(btn, pv){
+  if(window.innerWidth < 640){
+    // 모바일: fixed 이미 적용됨 (CSS), 수직 위치만 약간 보정
+    const header=document.getElementById('siteHeader');
+    const hRect=header.getBoundingClientRect();
+    pv.style.top = (hRect.bottom)+'px';
+    return;
+  }
+  // 데스크톱: 캡슐 부모(relative 후보) 찾기
+  const capsule = document.getElementById('searchCapsule');
+  const wrapper = capsule.parentElement; // relative 컨텍스트
+  wrapper.style.position = wrapper.style.position || 'relative';
+  // 버튼 & 래퍼 상대 좌표
+  const btnRect = btn.getBoundingClientRect();
+  const wrapRect = wrapper.getBoundingClientRect();
+  // 먼저 보이게 해서 width/height 계산
+  pv.style.left = '0px';
+  pv.style.top = '0px';
+  const pvWidth = pv.offsetWidth || 320;
+  const centerLeft = btnRect.left - wrapRect.left + (btnRect.width/2) - (pvWidth/2);
+  const maxLeft = wrapRect.width - pvWidth;
+  const clampedLeft = Math.max(0, Math.min(centerLeft, maxLeft));
+  pv.style.left = clampedLeft + 'px';
+  pv.style.top = (capsule.offsetHeight + 8) + 'px';
+}
 </script>
 </body>
 </html>

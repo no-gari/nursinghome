@@ -1,11 +1,12 @@
 {# AJAX 부분 갱신용: 이미지 + 이름 + 태그 그리드 (라이트 테마) #}
+<div id="results-meta" data-total="{{ total_count }}" class="hidden" aria-hidden="true"></div>
 <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
     {% for facility in facilities %}
         <a href="{% url 'core:facility_detail' facility.code %}" class="group relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300/70 transition-all duration-300 flex flex-col">
-            <div class="relative aspect-[4/3] w-full bg-slate-100">
-                {% with img=facility.images.first %}
+            <div class="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden">
+                {% with img=facility.images.last %}
                     {% if img %}
-                        <img src="{{ img.image.url }}" alt="{{ facility.name }}" class="w-full h-full object-cover group-hover:scale-[1.02] transition duration-500" loading="lazy" />
+                        <img src="{{ img.image.url }}" alt="{{ facility.name }}" class="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-[1.02] transition duration-500" loading="lazy" />
                     {% else %}
                         <div class="w-full h-full flex items-center justify-center text-[11px] tracking-wide text-slate-400">NO IMAGE</div>
                     {% endif %}
