@@ -10,6 +10,7 @@ from .rag_service import RAGService
 from django.utils.decorators import method_decorator
 from .regions import regions
 from django.views.generic import ListView
+import json
 
 
 @ensure_csrf_cookie
@@ -69,7 +70,7 @@ class FacilityListView(ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        queryset = Facility.objects.all()
+        queryset = Facility.objects.all().prefetch_related('tags', 'images')
 
         # 필터 파라미터 가져오기
         sido = self.request.GET.get('sido', '전체')
@@ -111,17 +112,18 @@ class FacilityListView(ListView):
         establishment = self.request.GET.get('establishment', '')
         size = self.request.GET.get('size', '')
         search = self.request.GET.get('search', '')
-
+        current_filters = {
+            'sido': sido,
+            'sigungu': sigungu,
+            'grade': grade,
+            'establishment': establishment,
+            'size': size,
+            'search': search,
+        }
         context.update({
             'regions': regions,
-            'current_filters': {
-                'sido': sido,
-                'sigungu': sigungu,
-                'grade': grade,
-                'establishment': establishment,
-                'size': size,
-                'search': search,
-            },
+            'current_filters': current_filters,
+            'current_filters_json': json.dumps(current_filters, ensure_ascii=False),
             'total_count': self.get_queryset().count(),
         })
         return context
