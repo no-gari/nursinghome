@@ -211,8 +211,8 @@ applySearchBtn.addEventListener('click',()=>{ syncHidden('search',fieldSearch.va
 fieldSearch.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); syncHidden('search',fieldSearch.value.trim()); updateSearchLabel(); triggerFetch(); closeAllPopovers(); }});
 // Sort select
 if(sortSelect){
-  // 초기값 반영
-  const existingSort = CURRENT_FILTERS.sort || 'name';
+  // 초기값 반영 - 기본값을 'grade'로 변경
+  const existingSort = CURRENT_FILTERS.sort || 'grade';
   sortSelect.value = existingSort;
   // hidden input 동기화(혹시 생성된 직후 값 보장)
   const sortHidden = form.querySelector('[name=sort]');
@@ -270,9 +270,9 @@ resetFiltersBtn.addEventListener('click', () => {
   fieldSido.value = '';
   fieldSigungu.value = '';
   fieldSearch.value = '';
-  sortSelect.value = 'name';
+  sortSelect.value = 'grade';  // 기본값을 'grade'로 변경
   // sort hidden 값 동기화(기본 정렬 유지)
-  syncHidden('sort','name');
+  syncHidden('sort','grade');
 
   // 시군구 옵션 초기화
   populateSigungu();

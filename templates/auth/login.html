@@ -5,6 +5,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>로그인 - CareBridge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
           --bg: #fafafa;
@@ -12,63 +16,46 @@
           --text: #111827;
           --muted: #6b7280;
           --line: #e5e7eb;
-          --primary: #111827; /* 단색 톤 */
+          --primary: #111827;
         }
         * { box-sizing: border-box; }
-        body {
-          margin: 0; background: var(--bg); color: var(--text);
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        .wrap {
-          min-height: 100dvh; display: grid; place-items: center; padding: 24px;
-        }
-        .card {
-          width: 100%; max-width: 520px; background: var(--panel);
-          border: 1px solid var(--line); border-radius: 20px; padding: 40px 28px;
-          box-shadow: 0 6px 24px rgba(0,0,0,.06);
-        }
-        .logo { text-align: center; font-weight: 700; font-size: 28px; margin-bottom: 6px; }
-        .subtitle { text-align: center; color: var(--muted); margin-bottom: 28px; }
-        .btn {
-          display: flex; align-items: center; justify-content: center; gap: 10px;
-          width: 100%; height: 52px; border-radius: 12px; border: 1px solid var(--line);
-          background: #fdfdfd; color: #191919; font-weight: 600; text-decoration: none;
-          transition: transform .15s ease, box-shadow .15s ease;
-        }
-        .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,.06); }
-        .btn .icon { width: 22px; height: 22px; display: inline-block; }
-        .alt { text-align: center; margin-top: 18px; color: var(--muted); font-size: 14px; }
-        .topbar {
-          position: fixed; top: 12px; right: 12px; display: flex; gap: 8px;
-        }
-        .topbar a { color: var(--muted); text-decoration: none; font-size: 14px; }
-        .speech {
-          position: absolute; top: -34px; left: 12px; background: #fff; border:1px solid var(--line);
-          padding: 6px 10px; border-radius: 10px; font-size: 12px; color: var(--muted);
-          box-shadow: 0 4px 16px rgba(0,0,0,.04);
-        }
-        .btn-wrap { position: relative; }
+        body { margin:0; background:linear-gradient(160deg,#ffffff 0%,#f5f8fb 55%,#eef3f9 100%); color:var(--text); font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+        .wrap { min-height:calc(100dvh - 120px); display:grid; place-items:center; padding:40px 24px 56px; }
+        .card { width:100%; max-width:540px; background:var(--panel); border:1px solid var(--line); border-radius:24px; padding:52px 36px 46px; box-shadow:0 8px 32px rgba(0,0,0,.06); position:relative; }
+        .logo { text-align:center; font-weight:700; font-size:32px; margin-bottom:10px; letter-spacing:-.5px; }
+        .subtitle { text-align:center; color:var(--muted); margin-bottom:34px; line-height:1.5; font-size:15px; }
+        .btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; height:56px; border-radius:14px; border:1px solid var(--line); background:#fdfdfd; color:#191919; font-weight:600; text-decoration:none; font-size:15px; letter-spacing:-.2px; transition:transform .15s ease, box-shadow .15s ease, background .15s; }
+        .btn:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(0,0,0,.08); background:#ffffff; }
+        .btn:active { transform:translateY(0); box-shadow:0 4px 16px rgba(0,0,0,.06); }
+        .btn .icon { width:22px; height:22px; display:inline-block; }
+        .speech { position:absolute; top:0; left:0; background:#ffffff; border:1px solid var(--line); padding:6px 12px; border-radius:12px; font-size:12px; color:var(--muted); box-shadow:0 4px 18px rgba(0,0,0,.05); font-weight:500; }
+        .btn-wrap { position:relative; padding-top:34px; margin-top:12px; }
+        .alt { text-align:center; margin-top:22px; color:var(--muted); font-size:13px; }
+        /* Header (공통 높이 적용) */
+        .hdr{transition:height .25s ease, box-shadow .25s ease, background .25s ease;}
+        .hdr:not(.shrink){height:70px;}
+        .hdr.shrink{height:56px; box-shadow:0 2px 6px rgba(15,23,42,.06);}
     </style>
 </head>
 <body>
-<div class="topbar"><a href="/">← 돌아가기</a></div>
+<header id="siteHeader" class="hdr sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 flex flex-col justify-center">
+  {% include 'core/_navbar.html' %}
+</header>
+<script>
+  (function(){ const h=document.getElementById('siteHeader'); function onScroll(){ if(window.scrollY>16) h.classList.add('shrink'); else h.classList.remove('shrink'); } window.addEventListener('scroll',onScroll,{passive:true}); onScroll(); })();
+</script>
 <div class="wrap">
     <div class="card">
         <div class="logo">CareBridge</div>
-        <div class="subtitle">로그인하고 더 빠른 AI 검색을 경험하세요</div>
-
+        <div class="subtitle">간편 로그인으로 맞춤형 요양시설 인사이트와 AI 상담을 빠르게 시작하세요.</div>
         <div class="btn-wrap">
-            <div class="speech">더 빠르게 시작하기!</div>
-            <a class="btn" href="{{ kakao_login_url }}">
-                <!-- 카카오 아이콘(모노톤) -->
-                <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M12 3C6.477 3 2 6.52 2 10.86c0 2.59 1.67 4.87 4.2 6.25L5.47 21l3.44-1.89c1.01.2 2.04.3 3.09.3 5.523 0 10-3.52 10-7.86S17.523 3 12 3z"/>
-                </svg>
+            <div class="speech">3초만에 시작</div>
+            <a class="btn" href="{{ kakao_login_url }}" aria-label="카카오로 계속하기">
+                <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.477 3 2 6.52 2 10.86c0 2.59 1.67 4.87 4.2 6.25L5.47 21l3.44-1.89c1.01.2 2.04.3 3.09.3 5.523 0 10-3.52 10-7.86S17.523 3 12 3z"/></svg>
                 카카오로 계속하기
             </a>
         </div>
-
-        <div class="alt">다른 방법은 지원하지 않습니다</div>
+        <div class="alt">현재는 카카오 로그인만 지원합니다</div>
     </div>
 </div>
 </body>

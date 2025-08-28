@@ -1,23 +1,108 @@
 <div class="w-full">
   <div class="max-w-7xl mx-auto px-5 h-full flex items-center w-full">
       <!-- Left: Logo -->
-      <div class="shrink-0 pr-3">
+      <div class="shrink-0 pr-3 flex items-center gap-2">
           <a href="{% url 'core:main' %}" class="text-lg font-semibold tracking-tight text-slate-800 whitespace-nowrap">CareBridge</a>
       </div>
       <!-- Spacer -->
       <div class="flex-1"></div>
-      <!-- Right: Utilities -->
-      <div class="shrink-0 flex items-center gap-2 text-sm">
+      <!-- Right: Utilities (Desktop) -->
+      <div class="shrink-0 hidden md:flex items-center gap-2 text-sm">
           {% with current=request.resolver_match.url_name %}
-            <a href="{% url 'core:facility_list' %}" class="px-3 h-9 inline-flex items-center rounded-lg border text-[13px] font-medium transition
-            border-slate-300 bg-white hover:border-slate-500 hover:text-slate-700">시설 찾기</a>
+            <a href="{% url 'core:facility_list' %}" class="px-3 h-9 inline-flex items-center rounded-lg border text-[13px] font-medium transition border-slate-300 bg-white hover:border-slate-500 hover:text-slate-700 {% if current == 'facility_list' %}underline underline-offset-4{% endif %}">시설 찾기</a>
+            <a href="{% url 'core:chat' %}" class="px-3 h-9 inline-flex items-center rounded-lg border text-[13px] font-medium transition border-slate-300 bg-white hover:border-slate-500 hover:text-slate-700 {% if current == 'chat' %}underline underline-offset-4{% endif %}">AI 상담</a>
           {% endwith %}
           {% if request.user.is_authenticated %}
-              <span class="hidden md:inline-block px-2 text-slate-600 text-[13px]">안녕하세요, <strong>{{ request.user.username }}</strong></span>
+              <span class="hidden lg:inline-block px-2 text-slate-600 text-[13px]">안녕하세요, <strong>{{ request.user.username }}</strong></span>
               <a href="{% url 'auth-logout' %}?next={{ request.path }}" class="px-3 h-9 inline-flex items-center rounded-lg border border-slate-300 bg-white hover:border-slate-500 hover:text-slate-700 transition text-[13px] font-medium">로그아웃</a>
           {% else %}
               <a href="{% url 'login-page' %}?next={{ request.path }}" class="px-3 h-9 inline-flex items-center rounded-lg border border-slate-300 bg-white hover:border-slate-500 hover:text-slate-700 transition text-[13px] font-medium">로그인</a>
           {% endif %}
       </div>
+      <!-- Mobile Hamburger -->
+      <button type="button" aria-label="메뉴 열기" id="navMobileBtn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-300 bg-white text-slate-600 hover:border-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <svg id="navMobileIconOpen" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <svg id="navMobileIconClose" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
   </div>
 </div>
+
+<!-- Mobile Slide Panel -->
+<div id="navMobileOverlay" class="fixed inset-0 z-[999] hidden" aria-hidden="true">
+  <div class="absolute inset-0 bg-black/30 backdrop-blur-sm opacity-0 transition-opacity duration-300" data-overlay></div>
+  <nav aria-label="모바일 메뉴" class="absolute top-0 right-0 h-full w-[60%] max-w-xs bg-white shadow-xl translate-x-full transition-transform duration-300 flex flex-col rounded-l-2xl" id="navMobilePanel">
+    <div class="px-5 h-16 flex items-center justify-between border-b border-slate-200 rounded-tl-2xl">
+      <span class="text-base font-semibold tracking-tight text-slate-800">메뉴</span>
+      <button type="button" id="navMobileCloseBtn" aria-label="닫기" class="w-9 h-9 inline-flex items-center justify-center rounded-lg hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="flex-1 overflow-y-auto py-5">
+      <ul class="flex flex-col gap-2 px-4 text-sm font-medium" id="navMobileList">
+        {% with current=request.resolver_match.url_name %}
+          <li>
+            <a href="{% url 'core:main' %}" class="block px-3 py-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition {% if current == 'main' %}bg-slate-100 border-slate-300 underline underline-offset-4 decoration-2{% endif %}">홈</a>
+          </li>
+          <li>
+            <a href="{% url 'core:facility_list' %}" class="block px-3 py-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition {% if current == 'facility_list' %}bg-slate-100 border-slate-300 underline underline-offset-4 decoration-2{% endif %}">시설 찾기</a>
+          </li>
+          <li>
+            <a href="{% url 'core:chat' %}" class="block px-3 py-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition {% if current == 'chat' %}bg-slate-100 border-slate-300 underline underline-offset-4 decoration-2{% endif %}">AI 상담</a>
+          </li>
+          <li class="pt-2">
+            {% if request.user.is_authenticated %}
+              <a href="{% url 'auth-logout' %}?next={{ request.path }}" class="block w-full text-center px-4 py-2.5 rounded-full bg-slate-900 text-white text-sm font-medium hover:bg-slate-700 transition">로그아웃</a>
+              <div class="mt-2 text-[11px] text-slate-500 text-center">{{ request.user.username }} 님</div>
+            {% else %}
+              <a href="{% url 'login-page' %}?next={{ request.path }}" class="block w-full text-center px-4 py-2.5 rounded-full bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">로그인</a>
+            {% endif %}
+          </li>
+        {% endwith %}
+      </ul>
+    </div>
+  </nav>
+</div>
+
+<script>
+(function(){
+  const btn = document.getElementById('navMobileBtn');
+  if(!btn) return;
+  const overlay = document.getElementById('navMobileOverlay');
+  const panel = document.getElementById('navMobilePanel');
+  const iconOpen = document.getElementById('navMobileIconOpen');
+  const iconClose = document.getElementById('navMobileIconClose');
+  const closeBtn = document.getElementById('navMobileCloseBtn');
+  let open = false;
+  function lockScroll(on){ document.documentElement.style.overflow = on? 'hidden':'auto'; }
+  function update(){
+    if(open){
+      overlay.classList.remove('hidden');
+      requestAnimationFrame(()=>{
+        overlay.querySelector('[data-overlay]').classList.remove('opacity-0');
+        panel.classList.remove('translate-x-full');
+        iconOpen.classList.add('hidden');
+        iconClose.classList.remove('hidden');
+      });
+      lockScroll(true);
+    } else {
+      overlay.querySelector('[data-overlay]').classList.add('opacity-0');
+      panel.classList.add('translate-x-full');
+      iconOpen.classList.remove('hidden');
+      iconClose.classList.add('hidden');
+      lockScroll(false);
+      setTimeout(()=>{ if(!open) overlay.classList.add('hidden'); },300);
+    }
+  }
+  function toggle(){ if(!open) overlay.classList.remove('hidden'); open = !open; update(); }
+  btn.addEventListener('click', toggle);
+  if(closeBtn) closeBtn.addEventListener('click', ()=>{ open=false; update(); });
+  overlay.addEventListener('click', e=>{ if(e.target === overlay || e.target.hasAttribute('data-overlay')){ open=false; update(); }});
+  window.addEventListener('keydown', e=>{ if(e.key==='Escape' && open){ open=false; update(); }});
+})();
+(function ensureMobileOverlayRoot(){
+  const overlay = document.getElementById('navMobileOverlay');
+  if(overlay && overlay.parentElement !== document.body){
+    document.body.appendChild(overlay);
+  }
+})();
+</script>

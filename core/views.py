@@ -80,7 +80,7 @@ class FacilityListView(ListView):
         establishment = self.request.GET.get('establishment', '')
         size = self.request.GET.get('size', '')
         search = self.request.GET.get('search', '').strip()
-        sort = self.request.GET.get('sort', 'grade')  # 새 정렬 기준
+        sort = self.request.GET.get('sort', 'grade')  # 새 정렬 기준 (기본: 등급)
 
         # 지역 필터링
         if sido and sido != '전체':
@@ -115,8 +115,8 @@ class FacilityListView(ListView):
                 output_field=IntegerField()
             )
             queryset = queryset.annotate(_grade_order=grade_order).order_by('_grade_order', 'name')
-        else:  # 기본: 가나다 (이름 오름차순)
-            queryset = queryset.order_by('grade')
+        else:  # 이름 오름차순
+            queryset = queryset.order_by('name')
 
         return queryset.distinct()
 
@@ -130,7 +130,7 @@ class FacilityListView(ListView):
         establishment = self.request.GET.get('establishment', '')
         size = self.request.GET.get('size', '')
         search = self.request.GET.get('search', '')
-        sort = self.request.GET.get('sort', 'name')
+        sort = self.request.GET.get('sort', 'grade')  # 기본 표시도 등급 정렬
         current_filters = {
             'sido': sido,
             'sigungu': sigungu,
