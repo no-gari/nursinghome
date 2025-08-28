@@ -26,6 +26,11 @@
         .filter-chip span{display:inline-flex;align-items:center;justify-content:center;padding:0 .9rem;height:34px;border-radius:9999px;border:1px solid #cbd5e1;background:#fff;font-size:12px;font-weight:500;color:#334155;cursor:pointer;transition:.18s;} .filter-chip span:hover{border-color:#94a3b8;background:#f1f5f9;}
         .filter-chip input:checked + span{border-color:#6366f1;background:#eef2ff;color:#4338ca;box-shadow:0 0 0 1px #6366f1 inset;}
         .popover-section-title{font-size:12px;font-weight:600;letter-spacing:.05em;color:#64748b;margin-bottom:.5rem;text-transform:uppercase;}
+        /* circular loader */
+        .loader{width:56px;height:56px;position:relative;}
+        .loader:before,.loader:after{content:"";position:absolute;inset:0;border-radius:50%;border:6px solid #e2e8f0;}
+        .loader:after{border-color:#6366f1 transparent #6366f1 transparent;animation:spin 1s linear infinite;}
+        @keyframes spin{to{transform:rotate(360deg);}}
         @media (max-width:639px){.capsule{max-width:100%;} .pop{position:fixed; left:0; right:0; top:60px; width:100vw; margin-top:0; border-radius:0 0 1.25rem 1.25rem;}}
     </style>
 </head>
@@ -290,7 +295,9 @@ if(submitBtn){ submitBtn.addEventListener('click',()=>{ triggerFetch(); }); }
 // AJAX fetch
 const resultsContainer=document.getElementById('facility-results');
 function skeleton(){ return `<div class='grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>${Array.from({length:8}).map(()=>`<div class='group overflow-hidden rounded-2xl bg-white border border-slate-200 p-0 shadow-sm'><div class='aspect-[4/3] bg-slate-100 animate-pulse'></div><div class='p-4 space-y-3'><div class='h-4 bg-slate-200 rounded'></div><div class='flex gap-2'><div class='h-5 w-14 bg-slate-200 rounded-full'></div><div class='h-5 w-10 bg-slate-200 rounded-full'></div><div class='h-5 w-16 bg-slate-200 rounded-full'></div></div></div></div>`).join('')}</div>`; }
-function setLoading(){ resultsContainer.innerHTML=skeleton(); }
+function setLoading(){
+  resultsContainer.innerHTML = `\n  <div class="w-full flex flex-col items-center justify-center py-24 gap-4" role="status" aria-live="polite">\n    <div class="loader" aria-hidden="true"></div>\n    <div class="text-sm text-slate-500 font-medium">시설 목록 불러오는 중...</div>\n  </div>`;
+}
 function buildQuery(){ const p=new URLSearchParams(); hiddenFields.forEach(k=>{ const v=form.querySelector(`[name=${k}]`).value; if(v) p.set(k,v); }); p.set('ajax','1'); return p; }
 function applyPaginationLinks(){ resultsContainer.querySelectorAll('.pagination a').forEach(a=>a.addEventListener('click',e=>{ e.preventDefault(); const m=a.getAttribute('href').match(/page=(\d+)/); triggerFetch({page:m?m[1]:'1'}); })); }
 async function triggerFetch(extra={}){ setLoading(); const params=buildQuery(); if(extra.page) params.set('page',extra.page); const url=location.pathname+'?'+params.toString(); fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}}).then(r=>r.text()).then(html=>{ resultsContainer.innerHTML=html; applyPaginationLinks(); // 개수 업데이트

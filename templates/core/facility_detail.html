@@ -19,69 +19,25 @@
         .tag-grade-e { @apply bg-red-100 text-red-800 border border-red-200; }
         .tag-default { @apply bg-gray-100 text-gray-800 border border-gray-200; }
 
-        .section-card {
-            transition: all 0.3s ease;
-        }
-        .section-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
+        .section-card { transition: all 0.3s ease; }
+        .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
 
-        .swiper-container {
-            width: 100%;
-            height: 400px;
-        }
+        .swiper-container { width: 100%; height: 400px; }
+        .swiper-slide { text-align: center; font-size: 18px; background: #fff; display: flex; justify-content: center; align-items: center; }
+        .swiper-slide img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
 
-        .swiper-slide {
-            text-align: center;
-            font-size: 18px;
-            background: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .no-image-placeholder { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem; }
 
-        .swiper-slide img {
-            display: block;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 8px;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-        }
-
-        .no-image-placeholder {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 3rem;
-        }
+        /* 공유된 헤더 스타일 */
+        .hdr{transition:height .2s ease, box-shadow .2s ease, background .2s ease; height:70px;}
+        .hdr.shrink{height:56px;}
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- 헤더 -->
-    <header class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <a href="{% url 'core:main' %}" class="text-2xl font-bold text-blue-600">
-                        <i class="fas fa-home mr-2"></i>너싱홈
-                    </a>
-                </div>
-                <nav class="flex space-x-8">
-                    <a href="{% url 'core:main' %}" class="text-gray-700 hover:text-blue-600 transition-colors">홈</a>
-                    <a href="{% url 'core:facility_list' %}" class="text-gray-700 hover:text-blue-600 transition-colors">시설검색</a>
-                    <a href="{% url 'core:chat' %}" class="text-gray-700 hover:text-blue-600 transition-colors">AI 상담</a>
-                </nav>
-            </div>
-        </div>
+    <!-- 헤더: 공용 네비게이션 -->
+    <header id="siteHeader" class="hdr sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 flex flex-col justify-center">
+        {% include 'core/_navbar.html' %}
     </header>
 
     <!-- 브레드크럼 -->
@@ -353,26 +309,17 @@
         if (document.querySelector('.swiper-container')) {
             const swiper = new Swiper('.swiper-container', {
                 loop: true,
-                autoplay: {
-                    delay: 5000,
-                },
-                pagination: {
-                    el: '.swiper-pagination',
-                    clickable: true,
-                },
-                navigation: {
-                    nextEl: '.swiper-button-next',
-                    prevEl: '.swiper-button-prev',
-                },
+                autoplay: { delay: 5000 },
+                pagination: { el: '.swiper-pagination', clickable: true },
+                navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
             });
         }
-
         // URL 복사 함수
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(function() {
-                alert('링크가 복사되었습니다!');
-            });
-        }
+        function copyToClipboard(text) { navigator.clipboard.writeText(text).then(()=> alert('링크가 복사되었습니다!')); }
+        // 헤더 shrink 효과
+        const header = document.getElementById('siteHeader');
+        function onScroll(){ if(window.scrollY>16) header.classList.add('shrink'); else header.classList.remove('shrink'); }
+        window.addEventListener('scroll', onScroll); onScroll();
     </script>
 </body>
 </html>
