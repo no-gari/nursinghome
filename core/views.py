@@ -45,7 +45,7 @@ def facility_detail(request, code: str):
     summary_info = getattr(facility, 'summary', None)
 
     # 이미지 및 태그 정보
-    images = list(facility.images.all())
+    images = list(facility.images.all().reverse())
     tags = list(facility.tags.all())
 
     context = {
