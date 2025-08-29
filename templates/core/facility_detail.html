@@ -106,29 +106,31 @@
           {% endfor %}
         </div>
       {% endif %}
-      {% if facility.grade %}
-        {% with g=facility.grade.0|lower %}
-          {% if g in 'abcde' %}
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs border
-                   {% if g == 'a' %} bg-green-100 text-green-800 border-green-200
-                   {% elif g == 'b' %} bg-blue-100 text-blue-800 border-blue-200
-                   {% elif g == 'c' %} bg-yellow-100 text-yellow-800 border-yellow-200
-                   {% elif g == 'd' %} bg-orange-100 text-orange-800 border-orange-200
-                   {% elif g == 'e' %} bg-red-100 text-red-800 border-red-200 {% endif %}">{{ facility.grade }}</span>
-          {% else %}
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs border bg-gray-100 text-gray-800 border-gray-200">{{ facility.grade }}</span>
-          {% endif %}
-        {% endwith %}
-      {% endif %}
     </div>
     <div class="space-y-1 text-sm text-slate-600">
       {% if location_items and location_items|length > 0 %}
         {% with loc=location_items.0 %}
-          {% if loc.content %}<div class="truncate max-w-[60ch]">{{ loc.content }}</div>{% endif %}
+          {% if loc.content %}
+            <div class="flex items-start gap-1 max-w-[60ch] truncate">
+              <i class="fa fa-location-dot text-slate-400 mt-0.5 shrink-0" aria-hidden="true"></i>
+              <span class="truncate">{{ loc.content }}</span>
+            </div>
+          {% endif %}
         {% endwith %}
       {% endif %}
       {% if homepage_info %}
-        <div class="truncate max-w-[50ch]">{{ homepage_info.content }}</div>
+        <div class="flex items-start gap-1 max-w-[50ch] truncate">
+          <i class="fa fa-globe text-slate-400 mt-0.5 shrink-0" aria-hidden="true"></i>
+          {% with raw=homepage_info.content %}
+            {% if raw %}
+              {% if '://' in raw %}
+                <a href="{{ raw }}" target="_blank" rel="noopener noreferrer" class="truncate text-slate-700 hover:text-indigo-600 hover:underline" aria-label="홈페이지 새 창에서 열기">{{ raw }}</a>
+              {% else %}
+                <a href="http://{{ raw }}" target="_blank" rel="noopener noreferrer" class="truncate text-slate-700 hover:text-indigo-600 hover:underline" aria-label="홈페이지 새 창에서 열기">{{ raw }}</a>
+              {% endif %}
+            {% endif %}
+          {% endwith %}
+        </div>
       {% endif %}
     </div>
   </div>
@@ -261,6 +263,8 @@
   </aside>
 </main>
 </div><!-- /max-width wrapper -->
+
+{% include 'core/_footer.html' %}
 
 <!-- Lightbox Modal 컨테이너 (동적 생성) -->
 <div id="galleryModalRoot"></div>

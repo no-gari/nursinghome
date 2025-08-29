@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"><!-- Font Awesome for footer icons -->
     <style>
         body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;background:linear-gradient(160deg,#ffffff 0%,#f5f8fb 55%,#eef3f9 100%);color:#1e293b;}
         .hdr{transition:height .2s ease, box-shadow .2s ease, background .2s ease;}
@@ -172,6 +173,8 @@
 
     <div id="facility-results">{% include 'core/_facility_list_results.html' %}</div>
 </main>
+
+{% include 'core/_footer.html' %}
 
 <button class="scroll-top-btn" aria-label="위로 스크롤" title="위로 스크롤">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
