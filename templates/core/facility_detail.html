@@ -267,182 +267,222 @@
 
 <script>
 (function(){
-  // Swiper 초기화를 DOM 로드 후 실행
-  function initSwiper() {
-    const swiperEl = document.getElementById('mobileGallery');
-    if(swiperEl && typeof Swiper !== 'undefined'){
-      new Swiper('#mobileGallery', {
-        loop: true,
-        pagination: {
-          el: '.swiper-pagination',
-          clickable: true
+  console.log('스크립트 시작');
+
+  // DOM이 완전히 로드된 후 실행
+  function initializeComponents() {
+    console.log('컴포넌트 초기화 시작');
+
+    // Swiper 초기화
+    function initSwiper() {
+      const swiperEl = document.getElementById('mobileGallery');
+      if(swiperEl && typeof Swiper !== 'undefined'){
+        console.log('Swiper 초기화');
+        new Swiper('#mobileGallery', {
+          loop: true,
+          pagination: {
+            el: '.swiper-pagination',
+            clickable: true
+          }
+        });
+      }
+    }
+
+    // Swiper 스크립트 로드 확인 후 초기화
+    if(typeof Swiper !== 'undefined') {
+      initSwiper();
+    } else {
+      // Swiper가 아직 로드되지 않은 경우 잠시 후 재시도
+      let retryCount = 0;
+      const maxRetries = 10;
+      const retryInterval = setInterval(() => {
+        if(typeof Swiper !== 'undefined') {
+          initSwiper();
+          clearInterval(retryInterval);
+        } else if(retryCount >= maxRetries) {
+          console.warn('Swiper 로드 실패');
+          clearInterval(retryInterval);
         }
-      });
+        retryCount++;
+      }, 100);
     }
-  }
 
-  // Swiper 스크립트 로드 확인 후 초기화
-  if(typeof Swiper !== 'undefined') {
-    initSwiper();
-  } else {
-    // Swiper가 아직 로드되지 않은 경우 잠시 후 재시도
-    setTimeout(initSwiper, 100);
-  }
-
-  // 헤더 shrink
-  const header=document.getElementById('siteHeader');
-  const shrinkTitle=document.getElementById('shrinkTitle');
-  function onScroll(){
-    if(window.scrollY>120){
-      header.classList.add('shrink');
-      shrinkTitle.classList.remove('hidden');
-    } else {
-      header.classList.remove('shrink');
-      shrinkTitle.classList.add('hidden');
+    // 헤더 shrink
+    const header=document.getElementById('siteHeader');
+    const shrinkTitle=document.getElementById('shrinkTitle');
+    function onScroll(){
+      if(window.scrollY>120){
+        header.classList.add('shrink');
+        if(shrinkTitle) shrinkTitle.classList.remove('hidden');
+      } else {
+        header.classList.remove('shrink');
+        if(shrinkTitle) shrinkTitle.classList.add('hidden');
+      }
     }
-  }
-  window.addEventListener('scroll',onScroll,{passive:true});
-  onScroll();
+    window.addEventListener('scroll',onScroll,{passive:true});
+    onScroll();
 
-  // 공유 기능
-  function doShare(){
-    const data={title:'{{ facility.name }}', text:'{{ facility.name }}', url:window.location.href};
-    if(navigator.share){
-      navigator.share(data).catch(()=>copy());
-    } else {
-      copy();
+    // 공유 기능
+    function doShare(){
+      const data={title:'{{ facility.name }}', text:'{{ facility.name }}', url:window.location.href};
+      if(navigator.share){
+        navigator.share(data).catch(()=>copy());
+      } else {
+        copy();
+      }
     }
-  }
-  function copy(){
-    if(navigator.clipboard){
-      navigator.clipboard.writeText(window.location.href).then(()=>alert('링크가 복사되었습니다.'));
+    function copy(){
+      if(navigator.clipboard){
+        navigator.clipboard.writeText(window.location.href).then(()=>alert('링크가 복사되었습니다.'));
+      }
     }
+    ['shareTopBtn','shareBottomBtn','shareSideBtn'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.addEventListener('click',doShare);
+    });
+
+    // 갤러리 모달 초기화
+    initGalleryModal();
   }
-  ['shareTopBtn','shareBottomBtn','shareSideBtn'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.addEventListener('click',doShare);
-  });
 
-  // 갤러리 모달 - 개선된 버전
-  const modalRoot=document.getElementById('galleryModalRoot');
+  // 갤러리 모달 기능
+  function initGalleryModal() {
+    console.log('갤러리 모달 초기화 시작');
 
-  function openModal(){
-    console.log('갤러리 모달 열기 시도');
+    const modalRoot=document.getElementById('galleryModalRoot');
     if(!modalRoot) {
-      console.error('modalRoot를 찾을 수 없습니다');
+      console.error('galleryModalRoot를 찾을 수 없습니다');
       return;
     }
 
-    // 이미 열린 모달이 있으면 무시
-    if(modalRoot.querySelector('[data-lightbox-root]')) {
-      console.log('이미 모달이 열려있습니다');
-      return;
-    }
+    function openModal(){
+      console.log('갤러리 모달 열기 시도');
 
-    const imgs=[
-      {% if images and images|length > 0 %}
-        {% for image in images %}'{{ image.image.url }}'{% if not forloop.last %},{% endif %}{% endfor %}
-      {% endif %}
-    ];
-
-    console.log('이미지 배열:', imgs);
-
-    if(imgs.length === 0) {
-      alert('표시할 이미지가 없습니다.');
-      return;
-    }
-
-    const html = `
-      <div data-lightbox-root class="fixed inset-0 z-[70]" role="dialog" aria-modal="true">
-        <div data-backdrop class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
-        <div class="absolute inset-0 flex flex-col">
-          <div class="flex items-center justify-between px-4 h-14 text-white">
-            <span class="font-medium truncate pr-4">사진 (${imgs.length})</span>
-            <button aria-label="닫기" class="h-8 px-3 rounded-md hover:bg-white/10 text-sm" data-close>닫기</button>
-          </div>
-          <div class="flex-1 overflow-hidden flex items-center justify-center relative">
-            <button class="hidden md:inline-flex absolute left-3 top-1/2 -translate-y-1/2 h-10 px-3 items-center justify-center text-white rounded-md bg-black/30 hover:bg-black/50 text-sm" data-prev aria-label="이전">이전</button>
-            <img class="max-h-full max-w-full object-contain transition" alt="{{ facility.name }} 확대 이미지" data-main />
-            <button class="hidden md:inline-flex absolute right-3 top-1/2 -translate-y-1/2 h-10 px-3 items-center justify-center text-white rounded-md bg-black/30 hover:bg-black/50 text-sm" data-next aria-label="다음">다음</button>
-          </div>
-          <div class="p-4 overflow-x-auto bg-black/40">
-            <div class="flex gap-2" data-thumbs></div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    modalRoot.insertAdjacentHTML('beforeend', html);
-
-    const root = modalRoot.querySelector('[data-lightbox-root]');
-    const main = root.querySelector('[data-main]');
-    const thumbs = root.querySelector('[data-thumbs]');
-    let idx = 0;
-
-    function render(){
-      if(!imgs.length) return;
-      main.src = imgs[idx];
-      console.log('이미지 로드:', imgs[idx]);
-    }
-
-    // 썸네일 생성
-    imgs.forEach((src,i)=>{
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'relative flex-shrink-0 h-16 w-24 rounded-md overflow-hidden border border-white/20 ring-offset-2 focus:outline-none focus:ring-2 focus:ring-indigo-400';
-      b.innerHTML = `<img src="${src}" alt="썸네일 ${i+1}" class="w-full h-full object-cover" loading="lazy" />`;
-      b.addEventListener('click',()=>{ idx=i; render(); });
-      thumbs.appendChild(b);
-    });
-
-    function close(){
-      console.log('모달 닫기');
-      root.remove();
-    }
-
-    // 이벤트 리스너 등록
-    root.querySelector('[data-close]').addEventListener('click', close);
-    root.addEventListener('click', e => {
-      if(e.target.hasAttribute('data-backdrop')) close();
-    });
-
-    const prevBtn = root.querySelector('[data-prev]');
-    const nextBtn = root.querySelector('[data-next]');
-
-    function prev(){ idx = (idx-1+imgs.length) % imgs.length; render(); }
-    function next(){ idx = (idx+1) % imgs.length; render(); }
-
-    if(prevBtn) prevBtn.addEventListener('click', prev);
-    if(nextBtn) nextBtn.addEventListener('click', next);
-
-    // 키보드 이벤트
-    function keyHandler(ev){
-      if(!root.isConnected) {
-        document.removeEventListener('keydown', keyHandler);
+      // 이미 열린 모달이 있으면 무시
+      if(modalRoot.querySelector('[data-lightbox-root]')) {
+        console.log('이미 모달이 열려있습니다');
         return;
       }
-      if(ev.key === 'Escape') close();
-      else if(ev.key === 'ArrowLeft') prev();
-      else if(ev.key === 'ArrowRight') next();
-    }
-    document.addEventListener('keydown', keyHandler);
 
-    // 첫 번째 이미지 로드
-    render();
-    console.log('모달이 성공적으로 열렸습니다');
+      const imgs=[
+        {% if images and images|length > 0 %}
+          {% for image in images %}'{{ image.image.url }}'{% if not forloop.last %},{% endif %}{% endfor %}
+        {% endif %}
+      ];
+
+      console.log('이미지 배열:', imgs);
+
+      if(imgs.length === 0) {
+        alert('표시할 이미지가 없습니다.');
+        return;
+      }
+
+      const html = `
+        <div data-lightbox-root class="fixed inset-0 z-[70]" role="dialog" aria-modal="true">
+          <div data-backdrop class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+          <div class="absolute inset-0 flex flex-col">
+            <div class="flex items-center justify-between px-4 h-14 text-white">
+              <span class="font-medium truncate pr-4">사진 (${imgs.length})</span>
+              <button aria-label="닫기" class="h-8 px-3 rounded-md hover:bg-white/10 text-sm" data-close>닫기</button>
+            </div>
+            <div class="flex-1 overflow-hidden flex items-center justify-center relative">
+              <button class="hidden md:inline-flex absolute left-3 top-1/2 -translate-y-1/2 h-10 px-3 items-center justify-center text-white rounded-md bg-black/30 hover:bg-black/50 text-sm" data-prev aria-label="이전">이전</button>
+              <img class="max-h-full max-w-full object-contain transition" alt="{{ facility.name }} 확대 이미지" data-main />
+              <button class="hidden md:inline-flex absolute right-3 top-1/2 -translate-y-1/2 h-10 px-3 items-center justify-center text-white rounded-md bg-black/30 hover:bg-black/50 text-sm" data-next aria-label="다음">다음</button>
+            </div>
+            <div class="p-4 overflow-x-auto bg-black/40">
+              <div class="flex gap-2" data-thumbs></div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      modalRoot.insertAdjacentHTML('beforeend', html);
+
+      const root = modalRoot.querySelector('[data-lightbox-root]');
+      const main = root.querySelector('[data-main]');
+      const thumbs = root.querySelector('[data-thumbs]');
+      let idx = 0;
+
+      function render(){
+        if(!imgs.length) return;
+        main.src = imgs[idx];
+        console.log('이미지 로드:', imgs[idx]);
+      }
+
+      // 썸네일 생성
+      imgs.forEach((src,i)=>{
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'relative flex-shrink-0 h-16 w-24 rounded-md overflow-hidden border border-white/20 ring-offset-2 focus:outline-none focus:ring-2 focus:ring-indigo-400';
+        b.innerHTML = `<img src="${src}" alt="썸네일 ${i+1}" class="w-full h-full object-cover" loading="lazy" />`;
+        b.addEventListener('click',()=>{ idx=i; render(); });
+        thumbs.appendChild(b);
+      });
+
+      function close(){
+        console.log('모달 닫기');
+        root.remove();
+      }
+
+      // 이벤트 리스너 등록
+      root.querySelector('[data-close]').addEventListener('click', close);
+      root.addEventListener('click', e => {
+        if(e.target.hasAttribute('data-backdrop')) close();
+      });
+
+      const prevBtn = root.querySelector('[data-prev]');
+      const nextBtn = root.querySelector('[data-next]');
+
+      function prev(){ idx = (idx-1+imgs.length) % imgs.length; render(); }
+      function next(){ idx = (idx+1) % imgs.length; render(); }
+
+      if(prevBtn) prevBtn.addEventListener('click', prev);
+      if(nextBtn) nextBtn.addEventListener('click', next);
+
+      // 키보드 이벤트
+      function keyHandler(ev){
+        if(!root.isConnected) {
+          document.removeEventListener('keydown', keyHandler);
+          return;
+        }
+        if(ev.key === 'Escape') close();
+        else if(ev.key === 'ArrowLeft') prev();
+        else if(ev.key === 'ArrowRight') next();
+      }
+      document.addEventListener('keydown', keyHandler);
+
+      // 첫 번째 이미지 로드
+      render();
+      console.log('모달이 성공적으로 열렸습니다');
+    }
+
+    // 갤러리 모달 버튼에 이벤트 리스너 등록
+    const galleryButtons = document.querySelectorAll('[data-gallery-modal]');
+    console.log('찾은 갤러리 버튼 수:', galleryButtons.length);
+
+    galleryButtons.forEach((btn, index) => {
+      console.log(`갤러리 버튼 ${index + 1} 찾음:`, btn);
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('갤러리 버튼 클릭됨');
+        openModal();
+      });
+    });
+
+    console.log('갤러리 모달 초기화 완료');
   }
 
-  // 갤러리 모달 버튼에 이벤트 리스너 등록
-  document.querySelectorAll('[data-gallery-modal]').forEach(btn => {
-    console.log('갤러리 버튼 찾음:', btn);
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      console.log('갤러리 버튼 클릭됨');
-      openModal();
-    });
-  });
+  // DOM 로드 완료 확인
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeComponents);
+  } else {
+    // 이미 로드된 경우 즉시 실행
+    initializeComponents();
+  }
 
-  console.log('스크립트 초기화 완료');
+  console.log('스크립트 설정 완료');
 })();
 </script>
 </body>
