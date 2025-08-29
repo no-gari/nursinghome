@@ -17,7 +17,7 @@
         .segment-btn:hover{background:#f1f5f9;}
         .segment-label{font-size:10px;letter-spacing:.05em;color:#64748b;font-weight:600;text-transform:uppercase;}
         .segment-value{font-size:13px;font-weight:500;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0f172a;}
-        .capsule{height:48px;border-radius:9999px;background:#ffffff;display:flex;align-items:center;border:1px solid #e2e8f0;box-shadow:0 2px 4px rgba(15,23,42,.04);width:100%;max-width:700px;overflow:hidden;}
+        .capsule{height:48px;border-radius:9999px;background:#ffffff;display:flex;align-items:center;border:1px solid #e2e8f0;box-shadow:0 2px 4px rgba(15,23,42,.04);width:100%;max-width:800px;overflow:hidden;}
         .capsule.divide > * + *{border-left:1px solid #e2e8f0;}
         .capsule:focus-within{box-shadow:0 0 0 3px rgba(99,102,241,.25);}
         .pop{position:absolute; top:100%; left:0; margin-top:8px; z-index:40; min-width:320px; background:#fff; border:1px solid #e2e8f0; border-radius:1rem; box-shadow:0 12px 32px -8px rgba(15,23,42,.18),0 4px 12px -2px rgba(15,23,42,.08); padding:1rem; display:none; opacity:0; transform:translateY(6px); transition:.18s ease;}
@@ -31,7 +31,11 @@
         .loader:before,.loader:after{content:"";position:absolute;inset:0;border-radius:50%;border:6px solid #e2e8f0;}
         .loader:after{border-color:#6366f1 transparent #6366f1 transparent;animation:spin 1s linear infinite;}
         @keyframes spin{to{transform:rotate(360deg);}}
-        @media (max-width:639px){.capsule{max-width:100%;} .pop{position:fixed; left:0; right:0; top:60px; width:100vw; margin-top:0; border-radius:0 0 1.25rem 1.25rem;}}
+        /* scroll to top button */
+        .scroll-top-btn{position:fixed;bottom:2rem;right:2rem;width:3rem;height:3rem;background:#6366f1;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(99,102,241,.25);cursor:pointer;transition:all .3s ease;z-index:30;opacity:0;visibility:hidden;transform:translateY(1rem);}
+        .scroll-top-btn.visible{opacity:1;visibility:visible;transform:translateY(0);}
+        .scroll-top-btn:hover{background:#5855eb;box-shadow:0 6px 16px rgba(99,102,241,.35);transform:translateY(-2px);}
+        @media (max-width:639px){.capsule{max-width:100%;} .pop{position:fixed; left:0; right:0; top:60px; width:100vw; margin-top:0; border-radius:0 0 1.25rem 1.25rem;} .scroll-top-btn{bottom:1.5rem;right:1.5rem;width:2.75rem;height:2.75rem;}}
     </style>
 </head>
 <body class="min-h-screen">
@@ -43,15 +47,26 @@
 
 <main class="max-w-7xl mx-auto px-5 pt-6 pb-16">
     <!-- 결과 헤더 + 검색 캡슐 + 정렬 -->
-    <div class="mb-6 grid gap-6 md:grid-cols-3 items-start">
+    <div class="mb-6 grid gap-6 md:grid-cols-5 items-start">
         <!-- 좌: 제목 -->
         <div class="min-w-[200px] flex flex-col justify-start">
-            <h1 class="text-xl font-semibold tracking-tight text-center md:text-left">시설 <span class="text-indigo-600">검색결과</span></h1>
-            <p class="text-xs text-slate-500 mt-1 text-center md:text-left">총 <strong id="facility-count" class="text-indigo-600">{{ total_count }}</strong>개 시설</p>
+            <div class="flex items-center justify-between md:justify-start md:flex-col md:items-start">
+                <div class="flex flex-col md:text-left">
+                    <h1 class="text-lg md:text-xl font-semibold tracking-tight">시설 <span class="text-indigo-600">검색결과</span></h1>
+                    <p class="text-xs text-slate-500 mt-1">총 <strong id="facility-count" class="text-indigo-600">{{ total_count }}</strong>개 시설</p>
+                </div>
+                <!-- 모바일에서만 보이는 정렬 -->
+                <div class="md:hidden">
+                    <select id="sortSelectMobile" class="h-8 px-2 rounded-lg border border-slate-300 bg-white text-xs font-medium text-slate-700 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500">
+                        <option value="grade">평가 등급 순</option>
+                        <option value="name">가나다 순</option>
+                    </select>
+                </div>
+            </div>
         </div>
         <!-- 가운데: 검색 캡슐 -->
-        <div class="flex justify-center order-last md:order-none md:justify-center">
-            <div class="relative w-full" style="max-width:700px;">
+        <div class="flex justify-center order-last md:order-none md:justify-center md:col-span-3">
+            <div class="relative w-full" style="max-width:800px;">
                 <div id="searchCapsule" class="capsule divide px-2" role="group" aria-label="검색 세그먼트">
                     <!-- 지역 -->
                     <button type="button" class="segment-btn" data-popover="region" aria-haspopup="dialog" aria-expanded="false">
@@ -145,7 +160,7 @@
             </div>
         </div>
         <!-- 우: 정렬 기준 -->
-        <div class="flex justify-center md:justify-end w-full md:w-auto">
+        <div class="hidden md:flex justify-center md:justify-end w-full md:w-auto">
             <div class="flex flex-col gap-2 items-center md:items-end">
                 <select id="sortSelect" class="h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500">
                     <option value="grade">평가 등급 순</option>
@@ -157,6 +172,12 @@
 
     <div id="facility-results">{% include 'core/_facility_list_results.html' %}</div>
 </main>
+
+<button class="scroll-top-btn" aria-label="위로 스크롤" title="위로 스크롤">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+    </svg>
+</button>
 
 <script>
 const CURRENT_FILTERS = {{ current_filters_json|safe }};
@@ -210,6 +231,7 @@ const applySearchBtn=document.getElementById('applySearch');
 applySearchBtn.addEventListener('click',()=>{ syncHidden('search',fieldSearch.value.trim()); updateSearchLabel(); triggerFetch(); closeAllPopovers(); });
 fieldSearch.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); syncHidden('search',fieldSearch.value.trim()); updateSearchLabel(); triggerFetch(); closeAllPopovers(); }});
 // Sort select
+const sortSelectMobile = document.getElementById('sortSelectMobile');
 if(sortSelect){
   // 초기값 반영 - 기본값을 'grade'로 변경
   const existingSort = CURRENT_FILTERS.sort || 'grade';
@@ -217,7 +239,24 @@ if(sortSelect){
   // hidden input 동기화(혹시 생성된 직후 값 보장)
   const sortHidden = form.querySelector('[name=sort]');
   if(sortHidden) sortHidden.value = existingSort;
-  sortSelect.addEventListener('change', e=>{ syncHidden('sort', e.target.value); triggerFetch(); });
+  sortSelect.addEventListener('change', e=>{
+    syncHidden('sort', e.target.value);
+    // 모바일 정렬 박스와 동기화
+    if(sortSelectMobile) sortSelectMobile.value = e.target.value;
+    triggerFetch();
+  });
+}
+// 모바일 정렬 선택 박스
+if(sortSelectMobile){
+  // 초기값 반영
+  const existingSort = CURRENT_FILTERS.sort || 'grade';
+  sortSelectMobile.value = existingSort;
+  sortSelectMobile.addEventListener('change', e=>{
+    syncHidden('sort', e.target.value);
+    // 데스크톱 정렬 박스와 동기화
+    if(sortSelect) sortSelect.value = e.target.value;
+    triggerFetch();
+  });
 }
 // Popover control
 let openName = null;
@@ -308,6 +347,23 @@ async function triggerFetch(extra={}){ setLoading(); const params=buildQuery(); 
 updateRegionLabel(); updateGradeLabel(); updateEstLabel(); updateSizeLabel(); updateSearchLabel(); if(typeof renderActiveFilters==='function'){ renderActiveFilters(); } applyPaginationLinks();
 // Header shrink
 const header=document.getElementById('siteHeader'); function onScroll(){ if(window.scrollY>16) header.classList.add('shrink'); else header.classList.remove('shrink'); } window.addEventListener('scroll',onScroll); onScroll();
+// Scroll to top button
+const scrollTopBtn = document.querySelector('.scroll-top-btn');
+function toggleScrollTopBtn() {
+  if (window.scrollY > 300) {
+    scrollTopBtn.classList.add('visible');
+  } else {
+    scrollTopBtn.classList.remove('visible');
+  }
+}
+scrollTopBtn.addEventListener('click', () => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+});
+window.addEventListener('scroll', toggleScrollTopBtn);
+toggleScrollTopBtn(); // 초기 상태 설정
 function positionPopover(btn, pv){
   if(window.innerWidth < 640){
     // 모바일: fixed 이미 적용됨 (CSS), 수직 위치만 약간 보정
