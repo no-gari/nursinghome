@@ -12,8 +12,8 @@
     <style>
         body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;background:linear-gradient(160deg,#ffffff 0%,#f5f8fb 55%,#eef3f9 100%);color:#1e293b;}
         .hdr{transition:height .2s ease, box-shadow .2s ease, background .2s ease;}
-        .hdr:not(.shrink){height:70px;}
-        .hdr.shrink{height:56px;}
+        .hdr:not(.shrink){height:62px;} /* 기존 70px -> 62px */
+        .hdr.shrink{height:52px;} /* 기존 56px -> 52px */
         .segment-btn{position:relative;flex:1 1 0;display:flex;flex-direction:column;justify-content:center;padding:0 .65rem;min-width:0;cursor:pointer;}
         .segment-btn:hover{background:#f1f5f9;}
         .segment-label{font-size:10px;letter-spacing:.05em;color:#64748b;font-weight:600;text-transform:uppercase;}
@@ -36,7 +36,37 @@
         .scroll-top-btn{position:fixed;bottom:2rem;right:2rem;width:3rem;height:3rem;background:#6366f1;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(99,102,241,.25);cursor:pointer;transition:all .3s ease;z-index:30;opacity:0;visibility:hidden;transform:translateY(1rem);}
         .scroll-top-btn.visible{opacity:1;visibility:visible;transform:translateY(0);}
         .scroll-top-btn:hover{background:#5855eb;box-shadow:0 6px 16px rgba(99,102,241,.35);transform:translateY(-2px);}
-        @media (max-width:639px){.capsule{max-width:100%;} .pop{position:fixed; left:0; right:0; top:60px; width:100vw; margin-top:0; border-radius:0 0 1.25rem 1.25rem;} .scroll-top-btn{bottom:1.5rem;right:1.5rem;width:2.75rem;height:2.75rem;}}
+        /* Mobile full-screen filter panel */
+        #mobileFilterPanel{background:#ffffff;}
+        #mobileFilterPanel .section-title{font-size:11px;font-weight:600;letter-spacing:.05em;color:#64748b;margin-bottom:.5rem;text-transform:uppercase;}
+        #mobileFilterPanel .panel-inner{padding:1.25rem 1.25rem 6rem;}
+        #mobileFilterPanel .panel-footer{position:fixed;left:0;right:0;bottom:0;background:#ffffff;border-top:1px solid #e2e8f0;padding:.75rem 1rem;display:flex;gap:.75rem;}
+        @media (min-width:640px){#mobileFilterPanel{display:none !important;}}
+        .fade-in{animation:fadeIn .25s ease;}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+        /* Fancy select wrapper */
+        .fancy-select{position:relative;}
+        .fancy-select select{appearance:none;-webkit-appearance:none;-moz-appearance:none;background:#ffffff;border:1.5px solid #dbe2ea;border-radius:0.85rem;padding:0 2.6rem 0 2.4rem;height:46px;line-height:44px;font-size:13px;font-weight:500;color:#1e293b;width:100%;box-shadow:0 2px 4px rgba(15,23,42,.04);}
+        .fancy-select select:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.25);}
+        .fancy-select .icon{position:absolute;left:0.9rem;top:50%;transform:translateY(-50%);color:#64748b;font-size:14px;pointer-events:none;}
+        .fancy-select .chevron{position:absolute;right:0.95rem;top:50%;width:0.65rem;height:0.65rem;border-right:2px solid #64748b;border-bottom:2px solid #64748b;transform:translateY(-60%) rotate(45deg);pointer-events:none;transition:.25s;}
+        .fancy-select select:focus + .chevron{border-color:#6366f1;}
+        /* Segmented sort control */
+        .sort-segment{display:inline-flex;align-items:center;background:#fff;border:1px solid #e2e8f0;border-radius:9999px;padding:4px;gap:4px;box-shadow:0 2px 4px rgba(15,23,42,.05);}
+        .sort-segment .seg-btn{position:relative;font-size:12px;font-weight:600;letter-spacing:.02em;padding:0 14px;height:34px;border-radius:9999px;color:#475569;display:inline-flex;align-items:center;gap:4px;transition:.28s;}
+        .sort-segment .seg-btn:hover{background:#f1f5f9;}
+        .sort-segment .seg-btn.active{background:#6366f1;color:#fff;box-shadow:0 4px 10px -3px rgba(99,102,241,.4);}
+        .sort-segment .seg-btn.active .dot{background:#fff;}
+        .sort-segment .seg-btn .dot{width:6px;height:6px;border-radius:50%;background:#cbd5e1;transition:.28s;}
+        @media (max-width:639px){.sort-segment{padding:3px;}.sort-segment .seg-btn{height:32px;font-size:11px;padding:0 11px;}}
+        /* Region popover spacing tweak */
+        #popover-region .fancy-select + .fancy-select{margin-top:.85rem;}
+        @media (max-width:639px){
+            .hdr:not(.shrink){height:54px;} /* 모바일 비축소 높이 추가 감축 */
+            .hdr.shrink{height:46px;}        /* 모바일 스크롤 후 높이 감축 */
+            #active-filters{padding-top:0.15rem;padding-bottom:0.15rem;} /* 더 얇게 */
+            main{padding-top:0.55rem !important; padding-bottom:3rem !important;} /* 상단 더 붙이고 하단 살짝 축소 */
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -44,9 +74,9 @@
     {% include 'core/_navbar.html' %}
 </header>
 <form id="filter-form" class="hidden"></form>
-<div id="active-filters" class="max-w-7xl mx-auto px-5 pt-2 pb-2 flex flex-wrap gap-2 text-xs"></div>
+<div id="active-filters" class="max-w-7xl mx-auto px-5 pt-1 pb-1 flex flex-wrap gap-2 text-xs"></div><!-- pt-2 pb-2 -> pt-1 pb-1 -->
 
-<main class="max-w-7xl mx-auto px-5 pt-6 pb-16">
+<main class="max-w-7xl mx-auto px-5 pt-3 pb-14"><!-- pt-6 pb-16 -> pt-3 pb-14 -->
     <!-- 결과 헤더 + 검색 캡슐 + 정렬 -->
     <div class="mb-6 grid gap-6 md:grid-cols-5 items-start">
         <!-- 좌: 제목 -->
@@ -58,10 +88,10 @@
                 </div>
                 <!-- 모바일에서만 보이는 정렬 -->
                 <div class="md:hidden">
-                    <select id="sortSelectMobile" class="h-8 px-2 rounded-lg border border-slate-300 bg-white text-xs font-medium text-slate-700 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500">
-                        <option value="grade">평가 등급 순</option>
-                        <option value="name">가나다 순</option>
-                    </select>
+                    <div id="sortSegmentMobile" class="sort-segment" role="group" aria-label="정렬 선택(모바일)">
+                        <button type="button" class="seg-btn" data-sort="grade"><span class="dot"></span><span>등급 순</span></button>
+                        <button type="button" class="seg-btn" data-sort="name"><span class="dot"></span><span>가나다 순</span></button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -103,18 +133,27 @@
                 </div>
                 <!-- Popovers -->
                 <div id="popover-region" class="pop" role="dialog" aria-modal="true" aria-label="지역 선택">
-                    <div class="popover-section-title">시/도</div>
-                    <select id="field-sido" class="w-full h-11 rounded-lg border border-slate-300 px-3 mb-4 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-sm">
-                        <option value="">전체 (시/도)</option>
-                        {% for sido_name in regions.keys %}
-                            <option value="{{ sido_name }}" {% if current_filters.sido == sido_name %}selected{% endif %}>{{ sido_name }}</option>
-                        {% endfor %}
-                    </select>
-                    <div class="popover-section-title">시/군/구</div>
-                    <select id="field-sigungu" class="w-full h-11 rounded-lg border border-slate-300 px-3 mb-4 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-sm">
-                        <option value="">전체 (시/군/구)</option>
-                    </select>
-                    <div class="flex justify-end"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
+                    <div class="popover-section-title">시/군/구 선택</div>
+                    <div class="space-y-3">
+                        <div class="fancy-select">
+                            <i class="fa fa-map-marker-alt icon" aria-hidden="true"></i>
+                            <select id="field-sido" aria-label="시/도 선택">
+                                <option value="">전체 (시/도)</option>
+                                {% for sido_name in regions.keys %}
+                                    <option value="{{ sido_name }}" {% if current_filters.sido == sido_name %}selected{% endif %}>{{ sido_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="chevron" aria-hidden="true"></span>
+                        </div>
+                        <div class="fancy-select">
+                            <i class="fa fa-location-dot icon" aria-hidden="true"></i>
+                            <select id="field-sigungu" aria-label="시/군/구 선택">
+                                <option value="">전체 (시/군/구)</option>
+                            </select>
+                            <span class="chevron" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                    <div class="flex justify-end mt-5"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
                 </div>
                 <div id="popover-grade" class="pop" role="dialog" aria-modal="true" aria-label="등급 선택">
                     <div class="popover-section-title">등급</div>
@@ -160,13 +199,13 @@
                 </div>
             </div>
         </div>
-        <!-- 우: 정렬 기준 -->
+        <!-- 우: 정렬 기준 (세그먼트) -->
         <div class="hidden md:flex justify-center md:justify-end w-full md:w-auto">
             <div class="flex flex-col gap-2 items-center md:items-end">
-                <select id="sortSelect" class="h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500">
-                    <option value="grade">평가 등급 순</option>
-                    <option value="name">가나다 순</option>
-                </select>
+                <div id="sortSegment" class="sort-segment" role="group" aria-label="정렬 선택">
+                    <button type="button" class="seg-btn" data-sort="grade"><span class="dot"></span><span>등급 순</span></button>
+                    <button type="button" class="seg-btn" data-sort="name"><span class="dot"></span><span>가나다 순</span></button>
+                </div>
             </div>
         </div>
     </div>
@@ -175,6 +214,64 @@
 </main>
 
 {% include 'core/_footer.html' %}
+
+<!-- 모바일 전체 필터 패널 -->
+<div id="mobileFilterPanel" class="sm:hidden hidden fixed inset-0 z-[70] flex flex-col">
+    <div class="flex items-center justify-between px-4 h-14 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div class="flex items-center gap-2 font-semibold text-slate-800 text-sm"><i class="fa fa-sliders-h text-slate-500"></i> <span>필터 설정</span></div>
+        <button type="button" id="mobileFilterClose" class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-700" aria-label="닫기">
+            <i class="fa fa-times text-lg"></i>
+        </button>
+    </div>
+    <div class="panel-inner overflow-y-auto grow">
+        <div class="mb-6">
+            <div class="section-title">지역</div>
+            <div class="space-y-3">
+                <div class="fancy-select">
+                    <i class="fa fa-map-marker-alt icon" aria-hidden="true"></i>
+                    <select id="field-sido-mobile" aria-label="시/도 선택 (모바일)">
+                        <option value="">전체 (시/도)</option>
+                        {% for sido_name in regions.keys %}
+                            <option value="{{ sido_name }}">{{ sido_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="chevron" aria-hidden="true"></span>
+                </div>
+                <div class="fancy-select">
+                    <i class="fa fa-location-dot icon" aria-hidden="true"></i>
+                    <select id="field-sigungu-mobile" aria-label="시/군/구 선택 (모바일)">
+                        <option value="">전체 (시/군/구)</option>
+                    </select>
+                    <span class="chevron" aria-hidden="true"></span>
+                </div>
+            </div>
+        </div>
+        <!-- 등급 -->
+        <div class="mb-6">
+            <div class="section-title">등급</div>
+            <div id="mobile-grade-group" class="flex flex-wrap gap-2"></div>
+        </div>
+        <!-- 연차 -->
+        <div class="mb-6">
+            <div class="section-title">설립 연차</div>
+            <div id="mobile-est-group" class="flex flex-wrap gap-2"></div>
+        </div>
+        <!-- 규모 -->
+        <div class="mb-6">
+            <div class="section-title">규모</div>
+            <div id="mobile-size-group" class="flex flex-wrap gap-2"></div>
+        </div>
+        <!-- 검색어 -->
+        <div class="mb-2">
+            <div class="section-title">검색어</div>
+            <input id="field-search-mobile" type="text" class="w-full h-11 rounded-lg border border-slate-300 px-4 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-sm" placeholder="예: 서울 A등급" />
+        </div>
+    </div>
+    <div class="panel-footer">
+        <button type="button" id="mobileFilterReset" class="flex-1 h-11 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50">초기화</button>
+        <button type="button" id="mobileFilterApply" class="flex-[2] h-11 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">적용하기</button>
+    </div>
+</div>
 
 <button class="scroll-top-btn" aria-label="위로 스크롤" title="위로 스크롤">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -187,7 +284,16 @@ const CURRENT_FILTERS = {{ current_filters_json|safe }};
 const REGIONS = {{ regions|safe }};
 const form = document.getElementById('filter-form');
 const hiddenFields = ['search','sido','sigungu','grade','establishment','size','sort'];
-hiddenFields.forEach(n=>{ if(!form.querySelector(`[name=${n}]`)){ const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value = CURRENT_FILTERS[n] || ''; form.appendChild(i);} else { form.querySelector(`[name=${n}]`).value = CURRENT_FILTERS[n] || ''; }});
+hiddenFields.forEach(n=>{ if(!form.querySelector(`[name=${n}]`)){ const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value = CURRENT_FILTERS[n] || (n==='sort'?'grade':''); form.appendChild(i);} else { form.querySelector(`[name=${n}]`).value = CURRENT_FILTERS[n] || (n==='sort'?'grade':''); }});
+// --- 정렬 세그먼트 로직 ---
+const sortHiddenInput = form.querySelector('[name=sort]');
+const sortSegment = document.getElementById('sortSegment');
+const sortSegmentMobile = document.getElementById('sortSegmentMobile');
+function currentSort(){ return sortHiddenInput.value || 'grade'; }
+function updateSortSegments(active){ [sortSegment, sortSegmentMobile].forEach(seg=>{ if(!seg) return; seg.querySelectorAll('.seg-btn').forEach(btn=>{ const val=btn.getAttribute('data-sort'); btn.classList.toggle('active', val===active); }); }); }
+function setSort(value,{silent=false}={}){ if(sortHiddenInput.value===value) return; sortHiddenInput.value=value; updateSortSegments(value); if(!silent) triggerFetch(); }
+[sortSegment, sortSegmentMobile].forEach(seg=>{ if(!seg) return; seg.querySelectorAll('.seg-btn').forEach(btn=> btn.addEventListener('click',()=> setSort(btn.getAttribute('data-sort')))); });
+updateSortSegments(currentSort());
 // Labels
 const labelRegion=document.getElementById('label-region');
 const labelGrade=document.getElementById('label-grade');
@@ -198,7 +304,6 @@ const labelSearch=document.getElementById('label-search');
 const fieldSido=document.getElementById('field-sido');
 const fieldSigungu=document.getElementById('field-sigungu');
 const fieldSearch=document.getElementById('field-search');
-const sortSelect = document.getElementById('sortSelect');
 // Popovers mapping
 const popovers={region:document.getElementById('popover-region'),grade:document.getElementById('popover-grade'),establishment:document.getElementById('popover-establishment'),size:document.getElementById('popover-size'),q:document.getElementById('popover-q')};
 // Populate Sigungu
@@ -233,34 +338,6 @@ popovers.size.querySelectorAll('input[name=size-radio]').forEach(r=>r.addEventLi
 const applySearchBtn=document.getElementById('applySearch');
 applySearchBtn.addEventListener('click',()=>{ syncHidden('search',fieldSearch.value.trim()); updateSearchLabel(); triggerFetch(); closeAllPopovers(); });
 fieldSearch.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); syncHidden('search',fieldSearch.value.trim()); updateSearchLabel(); triggerFetch(); closeAllPopovers(); }});
-// Sort select
-const sortSelectMobile = document.getElementById('sortSelectMobile');
-if(sortSelect){
-  // 초기값 반영 - 기본값을 'grade'로 변경
-  const existingSort = CURRENT_FILTERS.sort || 'grade';
-  sortSelect.value = existingSort;
-  // hidden input 동기화(혹시 생성된 직후 값 보장)
-  const sortHidden = form.querySelector('[name=sort]');
-  if(sortHidden) sortHidden.value = existingSort;
-  sortSelect.addEventListener('change', e=>{
-    syncHidden('sort', e.target.value);
-    // 모바일 정렬 박스와 동기화
-    if(sortSelectMobile) sortSelectMobile.value = e.target.value;
-    triggerFetch();
-  });
-}
-// 모바일 정렬 선택 박스
-if(sortSelectMobile){
-  // 초기값 반영
-  const existingSort = CURRENT_FILTERS.sort || 'grade';
-  sortSelectMobile.value = existingSort;
-  sortSelectMobile.addEventListener('change', e=>{
-    syncHidden('sort', e.target.value);
-    // 데스크톱 정렬 박스와 동기화
-    if(sortSelect) sortSelect.value = e.target.value;
-    triggerFetch();
-  });
-}
 // Popover control
 let openName = null;
 function openPopover(name, btn){
@@ -301,39 +378,23 @@ document.querySelectorAll('.close-btn').forEach(btn => {
 
 // 필터 초기화 버튼 이벤트 리스너 추가
 const resetFiltersBtn = document.getElementById('resetFilters');
-resetFiltersBtn.addEventListener('click', () => {
-  // 모든 필터 값 초기화
-  hiddenFields.forEach(field => {
-    const input = form.querySelector(`[name=${field}]`);
-    if (input) input.value = '';
+if(resetFiltersBtn){
+  resetFiltersBtn.addEventListener('click',()=>{
+    hiddenFields.forEach(field=>{ const input=form.querySelector(`[name=${field}]`); if(input) input.value = (field==='sort'?'grade':''); });
+    // UI 초기화
+    document.getElementById('field-sido').value='';
+    document.getElementById('field-sigungu').value='';
+    const fieldSearch=document.getElementById('field-search'); if(fieldSearch) fieldSearch.value='';
+    populateSigungu();
+    // 라디오 초기화
+    ['grade','establishment','size'].forEach(name=>{ document.querySelectorAll(`#popover-${name} input[type=radio]`).forEach(r=>{ r.checked = r.value===""; }); });
+    updateRegionLabel(); updateGradeLabel(); updateEstLabel(); updateSizeLabel(); updateSearchLabel();
+    setSort('grade',{silent:true});
+    closeAllPopovers();
+    triggerFetch();
   });
+}
 
-  // UI 요소들 초기화
-  fieldSido.value = '';
-  fieldSigungu.value = '';
-  fieldSearch.value = '';
-  sortSelect.value = 'grade';  // 기본값을 'grade'로 변경
-  // sort hidden 값 동기화(기본 정렬 유지)
-  syncHidden('sort','grade');
-
-  // 시군구 옵션 초기화
-  populateSigungu();
-
-  // 라디오 버튼들 초기화
-  popovers.grade.querySelectorAll('input[name=grade-radio]').forEach(r => { r.checked = r.value === ''; });
-  popovers.establishment.querySelectorAll('input[name=establishment-radio]').forEach(r => { r.checked = r.value === ''; });
-  popovers.size.querySelectorAll('input[name=size-radio]').forEach(r => { r.checked = r.value === ''; });
-
-  // 라벨들 업데이트
-  updateRegionLabel(); updateGradeLabel(); updateEstLabel(); updateSizeLabel(); updateSearchLabel();
-
-  closeAllPopovers();
-  triggerFetch();
-});
-
-// Submit button (존재할 때만 바인딩 – 없으면 무시)
-const submitBtn=document.getElementById('submitSearch');
-if(submitBtn){ submitBtn.addEventListener('click',()=>{ triggerFetch(); }); }
 // AJAX fetch
 const resultsContainer=document.getElementById('facility-results');
 function skeleton(){ return `<div class='grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>${Array.from({length:8}).map(()=>`<div class='group overflow-hidden rounded-2xl bg-white border border-slate-200 p-0 shadow-sm'><div class='aspect-[4/3] bg-slate-100 animate-pulse'></div><div class='p-4 space-y-3'><div class='h-4 bg-slate-200 rounded'></div><div class='flex gap-2'><div class='h-5 w-14 bg-slate-200 rounded-full'></div><div class='h-5 w-10 bg-slate-200 rounded-full'></div><div class='h-5 w-16 bg-slate-200 rounded-full'></div></div></div></div>`).join('')}</div>`; }
@@ -392,6 +453,60 @@ function positionPopover(btn, pv){
   pv.style.left = clampedLeft + 'px';
   pv.style.top = (capsule.offsetHeight + 8) + 'px';
 }
+/* --- Mobile unified filter panel logic --- */
+const mobilePanel = document.getElementById('mobileFilterPanel');
+const mobileFilterClose = document.getElementById('mobileFilterClose');
+const mobileFilterApply = document.getElementById('mobileFilterApply');
+const mobileFilterReset = document.getElementById('mobileFilterReset');
+const mobileSido = document.getElementById('field-sido-mobile');
+const mobileSigungu = document.getElementById('field-sigungu-mobile');
+const mobileSearch = document.getElementById('field-search-mobile');
+const mobileGradeGroup = document.getElementById('mobile-grade-group');
+const mobileEstGroup = document.getElementById('mobile-est-group');
+const mobileSizeGroup = document.getElementById('mobile-size-group');
+
+// 재사용: 데스크톱 라디오 템플릿에서 복제
+function cloneFilterRadios(srcSelector, nameAttr, container){
+  container.innerHTML='';
+  document.querySelectorAll(srcSelector).forEach(lbl=>{
+    const clone = lbl.cloneNode(true); // label.filter-chip
+    // name 충돌 방지 위해 mobile-* 로 바꿈
+    const input = clone.querySelector('input');
+    if(input){ input.name = 'mobile-' + nameAttr; }
+    container.appendChild(clone);
+  });
+}
+cloneFilterRadios('#popover-grade .filter-chip','grade',mobileGradeGroup);
+cloneFilterRadios('#popover-establishment .filter-chip','establishment',mobileEstGroup);
+cloneFilterRadios('#popover-size .filter-chip','size',mobileSizeGroup);
+
+function openMobilePanel(){ if(!mobilePanel) return; syncMobileFromHidden(); mobilePanel.classList.remove('hidden'); mobilePanel.classList.add('fade-in'); document.body.classList.add('overflow-hidden'); }
+function closeMobilePanel(){ if(!mobilePanel) return; mobilePanel.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); }
+mobileFilterClose && mobileFilterClose.addEventListener('click', closeMobilePanel);
+
+// 캡슐 전체 클릭 시 (모바일 전용) 열기
+const searchCapsule = document.getElementById('searchCapsule');
+searchCapsule.addEventListener('click', (e)=>{ if(window.innerWidth < 640){ e.preventDefault(); openMobilePanel(); } });
+
+// 기존 openPopover 가 모바일에서 개별 팝업 열지 않도록 가드
+const originalOpenPopover = openPopover;
+openPopover = function(name, btn){ if(window.innerWidth < 640){ openMobilePanel(); return; } originalOpenPopover(name, btn); };
+
+function populateSigunguMobile(){ const cur = mobileSido.value; mobileSigungu.innerHTML='<option value="">전체 (시/군/구)</option>'; if(cur && REGIONS[cur]) REGIONS[cur].forEach(sg=>{ const opt=document.createElement('option'); opt.value=sg; opt.textContent=sg; mobileSigungu.appendChild(opt); }); }
+mobileSido.addEventListener('change', ()=>{ if(mobileSido.value !== form.querySelector('[name=sido]').value){ mobileSigungu.value=''; } populateSigunguMobile(); });
+
+function syncMobileFromHidden(){ const get=(n)=>form.querySelector(`[name=${n}]`).value||''; mobileSido.value=get('sido'); populateSigunguMobile(); mobileSigungu.value=get('sigungu'); // grade radios
+  const gradeVal=get('grade'); mobileGradeGroup.querySelectorAll('input').forEach(i=>{ i.checked = (i.value === gradeVal); });
+  const estVal=get('establishment'); mobileEstGroup.querySelectorAll('input').forEach(i=>{ i.checked = (i.value === estVal); });
+  const sizeVal=get('size'); mobileSizeGroup.querySelectorAll('input').forEach(i=>{ i.checked = (i.value === sizeVal); });
+  mobileSearch.value=get('search'); }
+
+function applyMobileToHidden(){ syncHidden('sido', mobileSido.value); syncHidden('sigungu', mobileSigungu.value); const gradeSel = mobileGradeGroup.querySelector('input:checked'); syncHidden('grade', gradeSel?gradeSel.value:''); const estSel = mobileEstGroup.querySelector('input:checked'); syncHidden('establishment', estSel?estSel.value:''); const sizeSel = mobileSizeGroup.querySelector('input:checked'); syncHidden('size', sizeSel?sizeSel.value:''); syncHidden('search', mobileSearch.value.trim()); updateRegionLabel(); updateGradeLabel(); updateEstLabel(); updateSizeLabel(); updateSearchLabel(); }
+
+mobileFilterApply.addEventListener('click', ()=>{ applyMobileToHidden(); triggerFetch(); closeMobilePanel(); });
+mobileFilterReset.addEventListener('click', ()=>{ mobileSido.value=''; mobileSigungu.value=''; populateSigunguMobile(); mobileGradeGroup.querySelectorAll('input').forEach(i=>{ i.checked = i.value===""; }); mobileEstGroup.querySelectorAll('input').forEach(i=>{ i.checked = i.value===""; }); mobileSizeGroup.querySelectorAll('input').forEach(i=>{ i.checked = i.value===""; }); mobileSearch.value=''; applyMobileToHidden(); triggerFetch(); });
+
+window.addEventListener('resize', ()=>{ if(window.innerWidth >= 640 && mobilePanel && !mobilePanel.classList.contains('hidden')){ closeMobilePanel(); } });
 </script>
 </body>
 </html>
