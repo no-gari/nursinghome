@@ -52,13 +52,6 @@
                 <div class="example-prompt" @click="setExamplePrompt('비급여 비용이 저렴한 곳은 어디인가요?')"><h3>💰 비용 정보</h3><p>비급여 비용이 저렴한 곳은 어디인가요?</p></div>
                 <div class="example-prompt" @click="setExamplePrompt('물리치료 프로그램이 있는 요양원 추천해주세요')"><h3>🏃‍♂️ 특별 프로그램</h3><p>물리치료 프로그램이 있는 요양원 추천해주세요</p></div>
             </div>
-            <div v-if="!isRagInitialized" class="init-notice">
-                <span>💡 더 정확한 답변을 위해 AI 시스템을 초기화하세요</span>
-                <button class="init-btn" @click="initializeRAG" :disabled="isInitializing">
-                    <span v-if="isInitializing">초기화 중...</span>
-                    <span v-else>AI 초기화</span>
-                </button>
-            </div>
         </div>
     </div>
 </div>
@@ -73,7 +66,6 @@ createApp({
     methods:{
         setExamplePrompt(p){this.currentMessage=p;},
         startChat(){if(!this.currentMessage.trim()||this.isLoading)return;const encoded=encodeURIComponent(this.currentMessage);window.location.href=`/chat/?message=${encoded}`;},
-        async initializeRAG(){this.isInitializing=true;try{const r=await axios.post('/api/initialize-rag/');if(r.status===200){this.isRagInitialized=true;localStorage.setItem('rag_initialized','true');this.showSuccessNotice('AI 시스템이 초기화되었습니다!');}}catch(e){console.error('RAG 초기화 실패:',e);alert('초기화에 실패했습니다. 다시 시도해주세요.');}finally{this.isInitializing=false;}},
         showSuccessNotice(msg){const n=document.createElement('div');n.className='success-notice';n.textContent=msg;document.body.appendChild(n);setTimeout(()=>n.remove(),3000);}
     }
 }).mount('#app');
