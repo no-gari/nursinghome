@@ -151,9 +151,9 @@
   <div class="lg:col-span-2 space-y-8">
 
     <!-- 공통 섹션 렌더 헬퍼 패턴 반복 -->
+    {% if basic_items and basic_items|length > 0 %}
     <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
       <h2 class="text-xl font-bold mb-5">기본 정보</h2>
-      {% if basic_items and basic_items|length > 0 %}
         <div class="space-y-5">
           {% for item in basic_items %}
             <div class="flex flex-col sm:flex-row gap-2 sm:gap-6">
@@ -162,21 +162,8 @@
             </div>
           {% endfor %}
         </div>
-      {% else %}<p class="text-gray-500">등록된 항목이 없습니다.</p>{% endif %}
     </section>
-    <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
-      <h2 class="text-xl font-bold mb-5">평가 정보</h2>
-      {% if evaluation_items and evaluation_items|length > 0 %}
-        <div class="space-y-5">
-          {% for item in evaluation_items %}
-            <div class="flex flex-col sm:flex-row gap-2 sm:gap-6">
-              <h3 class="sm:w-40 font-medium text-slate-700 shrink-0">{{ item.title }}</h3>
-              <p class="flex-1 text-slate-900 whitespace-pre-line">{{ item.content|default:"정보 없음" }}</p>
-            </div>
-          {% endfor %}
-        </div>
-      {% else %}<p class="text-gray-500">등록된 항목이 없습니다.</p>{% endif %}
-    </section>
+    {% endif %}
     <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
       <h2 class="text-xl font-bold mb-5">인력 현황</h2>
       {% if staff_items and staff_items|length > 0 %}
@@ -275,25 +262,45 @@
 
   <!-- 우측 사이드바 -->
   <aside class="mt-10 lg:mt-0 space-y-6">
-    <div class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm sticky top-24">
-      <h2 class="text-lg font-bold mb-5">시설 현황</h2>
-      <div class="space-y-4 text-sm">
-        {% if facility.capacity is not None %}
-          <div class="flex justify-between"><span class="text-slate-600">정원</span><span class="font-semibold text-slate-900">{{ facility.capacity }}명</span></div>
-        {% endif %}
-        {% if facility.occupancy is not None %}
-          <div class="flex justify-between"><span class="text-slate-600">현원</span><span class="font-semibold text-indigo-600">{{ facility.occupancy }}명</span></div>
-        {% endif %}
-        {% if facility.waiting is not None %}
-          <div class="flex justify-between"><span class="text-slate-600">대기</span><span class="font-semibold text-orange-600">{{ facility.waiting }}명</span></div>
-        {% endif %}
-        {% if facility.capacity is not None and facility.occupancy is not None %}
-          <div class="flex justify-between pt-3 border-t"><span class="text-slate-600">입소율</span><span class="font-semibold text-slate-900">{% widthratio facility.occupancy facility.capacity 100 %}%</span></div>
-        {% endif %}
-      </div>
-      <div class="mt-6 flex flex-col gap-3">
-        <button type="button" class="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500" id="shareSideBtn" aria-label="공유하기">공유</button>
-      </div>
+    <div class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm sticky top-24" id="feeCalculatorBox">
+      <h2 class="text-lg font-bold mb-5">부담금 계산기</h2>
+      <form class="space-y-4 text-sm" onsubmit="return false;" id="feeCalcForm">
+        <div>
+          <label class="block text-slate-600 mb-1" for="fc_daily">1일 요양급여비용(수가)</label>
+          <input id="fc_daily" type="number" inputmode="numeric" min="0" class="w-full rounded-md border px-3 h-9 text-sm" placeholder="예: 70000" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-600 mb-1" for="fc_days">이용일수(일)</label>
+            <input id="fc_days" type="number" inputmode="numeric" min="0" value="30" class="w-full rounded-md border px-3 h-9 text-sm" />
+          </div>
+          <div>
+            <label class="block text-slate-600 mb-1" for="fc_rate">본인부담율(%)</label>
+            <input id="fc_rate" type="number" inputmode="decimal" min="0" max="100" value="20" class="w-full rounded-md border px-3 h-9 text-sm" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-600 mb-1" for="fc_extra">비급여·추가비용(월)</label>
+          <input id="fc_extra" type="number" inputmode="numeric" min="0" value="0" class="w-full rounded-md border px-3 h-9 text-sm" />
+        </div>
+        <div>
+          <label class="block text-slate-600 mb-1" for="fc_grade">장기요양등급(선택)</label>
+          <select id="fc_grade" class="w-full rounded-md border px-3 h-9 text-sm bg-white">
+            <option value="">선택 안함</option>
+            <option>1등급</option>
+            <option>2등급</option>
+            <option>3등급</option>
+            <option>4등급</option>
+            <option>5등급</option>
+            <option>인지지원</option>
+          </select>
+        </div>
+        <div class="pt-2 border-t">
+          <p class="text-slate-600 mb-1">예상 월 부담금</p>
+          <p id="fc_result" class="text-2xl font-semibold text-indigo-600 tracking-tight">- 원</p>
+          <p class="mt-1 text-[11px] leading-snug text-slate-400">실제 금액은 시설 유형, 감경 여부, 급여 제한 등 조건에 따라 달라질 수 있습니다.</p>
+        </div>
+      </form>
     </div>
   </aside>
 </main>
@@ -308,7 +315,7 @@
 (function(){
   console.log('스크립트 시작');
 
-  // DOM이 완전히 로드된 후 실행
+  // DOM이 ��전히 로드된 후 실행
   function initializeComponents() {
     console.log('컴포넌트 초기화 시작');
 
@@ -448,7 +455,7 @@
         main.src = imgs[idx];
         console.log('이미지 로드:', imgs[idx]);
 
-        // 현재 선택된 썸네일 하이라이트
+        // 현재 ��택된 썸네일 하이라이트
         thumbs.querySelectorAll('button').forEach((btn, i) => {
           if(i === idx) {
             btn.classList.add('ring-2', 'ring-indigo-400');
@@ -521,7 +528,7 @@
 
     // 개별 이미지 클릭 이벤�� 리스너 등록
     const galleryImages = document.querySelectorAll('[data-gallery-image]');
-    console.log('찾은 갤러리 이미지 수:', galleryImages.length);
+    console.log('찾은 갤러리 이��지 수:', galleryImages.length);
 
     galleryImages.forEach((element, index) => {
       console.log(`갤러리 이미지 ${index + 1} 찾음:`, element);
@@ -546,6 +553,54 @@
   }
 
   console.log('스크립트 설정 완료');
+})();
+
+// Calculator Logic
+(function(){
+  const daily = document.getElementById('fc_daily');
+  const days = document.getElementById('fc_days');
+  const rate = document.getElementById('fc_rate');
+  const extra = document.getElementById('fc_extra');
+  const grade = document.getElementById('fc_grade');
+  const resultEl = document.getElementById('fc_result');
+  if(!resultEl) return;
+
+  function fmt(n){
+    if(isNaN(n)||!isFinite(n)||n<=0) return '- 원';
+    return n.toLocaleString('ko-KR') + ' 원';
+  }
+  function calc(){
+    const d = parseFloat(daily.value)||0;
+    const ds = parseFloat(days.value)||0;
+    const r = (parseFloat(rate.value)||0)/100;
+    const ex = parseFloat(extra.value)||0;
+    // 단순 계산: (수가 * 일수 * 본인부담율) + 비급여
+    const own = d * ds * r + ex;
+    resultEl.textContent = fmt(Math.round(own));
+  }
+  [daily, days, rate, extra, grade].forEach(el=> el && el.addEventListener('input', calc));
+  grade && grade.addEventListener('change', ()=>{
+    // 등급 선택에 따른 기본 본인부담율(예시) - 실제 정책과 다를 수 있음
+    if(!rate) return;
+    switch(grade.value){
+      case '1등급':
+      case '2등급':
+      case '3등급':
+      case '4등급':
+      case '5등급':
+        if(!rate.dataset.userChanged) rate.value = 20; // 예시
+        break;
+      case '인지지원':
+        if(!rate.dataset.userChanged) rate.value = 20;
+        break;
+      default:
+        // 선택 안함
+        break;
+    }
+    calc();
+  });
+  rate && rate.addEventListener('input', ()=>{ rate.dataset.userChanged = '1'; });
+  calc();
 })();
 
 // Google Maps 초기화 함수 (전역 함수로 선언)
