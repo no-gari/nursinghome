@@ -41,6 +41,23 @@ def facility_detail(request, code: str):
     location_items = list(facility.location_items.all())
     noncovered_items = list(facility.noncovered_items.all())
 
+    # 프로그램 tokens 처리 (템플릿 태그 제거 대체)
+    program_items_tokens = []
+    for p in program_items:
+        raw = p.content or ''
+        # 개행, 한글쉼표 변형 통합 → 콤마 기준 분리
+        normalized = raw.replace('\n', ',').replace('，', ',')
+        tokens = [t.strip() for t in normalized.split(',') if t.strip()]
+        program_items_tokens.append({
+            'title': p.title,
+            'tokens': tokens,
+        })
+
+    # 배지 키워드(존재 여부 표시 용도 필요시 유지)
+    badge_keywords = ["인지프로그램", "여가프로그램", "특화프로그램"]
+    flat_text = ' '.join([' '.join(pi['tokens']) for pi in program_items_tokens])
+    program_badges = [kw for kw in badge_keywords if kw in flat_text]
+
     # OneToOne 관계 정보
     homepage_info = getattr(facility, 'homepage_info', None)
     summary_info = getattr(facility, 'summary', None)
@@ -54,7 +71,8 @@ def facility_detail(request, code: str):
         'basic_items': basic_items,
         'evaluation_items': evaluation_items,
         'staff_items': staff_items,
-        'program_items': program_items,
+        'program_items': program_items,  # 원본 유지
+        'program_items_tokens': program_items_tokens,  # 신규
         'location_items': location_items,
         'noncovered_items': noncovered_items,
         'homepage_info': homepage_info,
@@ -62,6 +80,7 @@ def facility_detail(request, code: str):
         'images': images,
         'tags': tags,
         'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+        'program_badges': program_badges,
     }
     return render(request, 'core/facility_detail.html', context)
 
@@ -216,7 +235,7 @@ def initialize_rag(request):
         rag_service = RAGService()
         count = rag_service.embed_facilities()
         return Response({
-            'message': f'RAG 시스템이 초기화되었습니다. {count}개 시���이 벡터화되었습니다.',
+            'message': f'RAG 시스템이 초기���되었습니다. {count}개 시���이 벡터화되었습니다.',
             'facilities_count': count
         })
     except Exception as e:

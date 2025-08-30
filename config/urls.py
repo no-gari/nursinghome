@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls', namespace='core')),
     path('account/', include('account.urls')),
+    path('blog/', include('blog.urls', namespace='blog')),  # 블로그
 ]
 
 # DEBUG 모드에서 미디어 파일 제공

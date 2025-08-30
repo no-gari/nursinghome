@@ -40,7 +40,7 @@
     {% include 'core/_navbar.html' %}
 </header>
 <div class="max-w-6xl mx-auto">
-
+<!-- program_extras 로드 제거 -->
 <!-- 브레드크럼 -->
 <nav aria-label="Breadcrumb" class="px-4 sm:px-6 lg:px-8 pt-4">
   <ol class="flex items-center text-xs sm:text-sm text-slate-500 gap-2">
@@ -164,40 +164,109 @@
         </div>
     </section>
     {% endif %}
-    <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
-      <h2 class="text-xl font-bold mb-5">인력 현황</h2>
-      {% if staff_items and staff_items|length > 0 %}
-        <div class="space-y-5">
-          {% for item in staff_items %}
-            <div class="flex flex-col sm:flex-row gap-2 sm:gap-6">
-              <h3 class="sm:w-40 font-medium text-slate-700 shrink-0">{{ item.title }}</h3>
-              <p class="flex-1 text-slate-900 whitespace-pre-line">{{ item.content|default:"정보 없음" }}</p>
+<!-- 기존 인력현황 섹션을 이것으로 교체하세요 -->
+<section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
+  <h2 class="text-xl font-bold mb-5">인력현황</h2>
+  {% if staff_items and staff_items|length > 0 %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
+      {% for item in staff_items %}
+        <div class="flex items-center gap-2.5 p-3 rounded-xl bg-gray-50 border">
+          {# 아이콘 색상/배경 통일: bg-indigo-50 + text-indigo-600 #}
+          {% if '의사' in item.title %}
+            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
+              <i class="fas fa-user-md text-indigo-600 text-base"></i>
             </div>
-          {% endfor %}
-        </div>
-      {% else %}<p class="text-gray-500">등록된 항목이 없습니다.</p>{% endif %}
-    </section>
-    <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
-      <h2 class="text-xl font-bold mb-5">프로그램 운영</h2>
-      {% if program_items and program_items|length > 0 %}
-        <div class="space-y-5">
-          {% for item in program_items %}
-            <div class="flex flex-col sm:flex-row gap-2 sm:gap-6">
-              <h3 class="sm:w-40 font-medium text-slate-700 shrink-0">{{ item.title }}</h3>
-              <p class="flex-1 text-slate-900 whitespace-pre-line">{{ item.content|default:"정보 없음" }}</p>
+          {% elif '시설장' in item.title %}
+            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
+              <i class="fas fa-crown text-indigo-600 text-base"></i>
             </div>
-          {% endfor %}
+          {% elif '사무국장' in item.title or '사무원' in item.title %}
+            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
+              <i class="fas fa-briefcase text-indigo-600 text-base"></i>
+            </div>
+          {% elif '간호' in item.title %}
+            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
+              <i class="fas fa-user-nurse text-indigo-600 text-base"></i>
+            </div>
+          {% elif '요양보호사' in item.title %}
+            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
+              <i class="fas fa-hands-helping text-indigo-600 text-base"></i>
+            </div>
+          {% elif '사회복지사' in item.title %}
+            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
+              <i class="fas fa-heart text-indigo-600 text-base"></i>
+            </div>
+          {% elif '물리치료사' in item.title %}
+            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
+              <i class="fas fa-dumbbell text-indigo-600 text-base"></i>
+            </div>
+          {% elif '작업치료사' in item.title %}
+            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
+              <i class="fas fa-tools text-indigo-600 text-base"></i>
+            </div>
+          {% elif '영양사' in item.title %}
+            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
+              <i class="fas fa-apple-alt text-indigo-600 text-base"></i>
+            </div>
+          {% elif '조리원' in item.title %}
+            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
+              <i class="fas fa-utensils text-indigo-600 text-base"></i>
+            </div>
+          {% elif '위생원' in item.title %}
+            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
+              <i class="fas fa-broom text-indigo-600 text-base"></i>
+            </div>
+          {% elif '관리인' in item.title %}
+            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
+              <i class="fas fa-wrench text-indigo-600 text-base"></i>
+            </div>
+          {% else %}
+            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
+              <i class="fas fa-user text-indigo-600 text-base"></i>
+            </div>
+          {% endif %}
+          <div class="flex-1 min-w-0">
+            <h3 class="font-medium text-slate-800 text-xs truncate">{{ item.title }}</h3>
+            <p class="text-sm font-semibold text-slate-700 mt-0.5 leading-tight">{{ item.content|default:"-" }}</p>
+          </div>
         </div>
-      {% else %}<p class="text-gray-500">등록된 항목이 없습니다.</p>{% endif %}
-    </section>
-    <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-gray-500 text-sm">등록된 항목이 없습니다.</p>
+  {% endif %}
+</section>
+<section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
+  <h2 class="text-xl font-bold mb-5">프로그램 운영</h2>
+  {% if program_items_tokens and program_items_tokens|length > 0 %}
+    <div class="space-y-6">
+      {% for item in program_items_tokens %}
+        <div class="space-y-2">
+          {% if item.title and item.title != '프로그램운영' %}
+            <h3 class="text-sm font-semibold text-slate-700">{{ item.title }}</h3>
+          {% endif %}
+          {% if item.tokens %}
+            <div class="flex flex-wrap gap-2">
+              {% for token in item.tokens %}
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">{{ token }}</span>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-xs text-gray-400">내용 없음</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}<p class="text-gray-500">등록된 항목이 없습니다.</p>{% endif %}
+</section>
+<section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
       <h2 class="text-xl font-bold mb-5">위치 정보</h2>
       {% if location_items and location_items|length > 0 %}
         <div class="space-y-5">
           {% for item in location_items %}
             <div class="flex flex-col sm:flex-row gap-2 sm:gap-6">
-              <h3 class="sm:w-40 font-medium text-slate-700 shrink-0">{{ item.title }}</h3>
-              <p class="flex-1 text-slate-900 whitespace-pre-line">{{ item.content|default:"정보 없음" }}</p>
+              <h3 class="sm:w-40 font-medium text-slate-700 shrink-0 text-sm">{{ item.title }}</h3>
+              <p class="flex-1 text-slate-900 whitespace-pre-line text-sm">{{ item.content|default:"정보 없음" }}</p>
             </div>
           {% endfor %}
         </div>
@@ -235,26 +304,16 @@
         <div class="space-y-5">
           {% for item in noncovered_items %}
             <div class="flex flex-col sm:flex-row gap-2 sm:gap-6">
-              <h3 class="sm:w-40 font-medium text-slate-700 shrink-0">{{ item.title }}</h3>
-              <p class="flex-1 text-slate-900 whitespace-pre-line">{{ item.content|default:"정보 없음" }}</p>
+              <h3 class="sm:w-40 font-medium text-slate-700 shrink-0 text-sm">{{ item.title }}</h3>
+              <p class="flex-1 text-slate-900 whitespace-pre-line text-sm">{{ item.content|default:"정보 없음" }}</p>
             </div>
           {% endfor %}
-        </div>
-      {% else %}<p class="text-gray-500">등록된 항목이 없습니다.</p>{% endif %}
-    </section>
-    <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
-      <h2 class="text-xl font-bold mb-5">홈페이지</h2>
-      {% if homepage_info %}
-        <div class="flex flex-col sm:flex-row gap-2 sm:gap-6">
-          <h3 class="sm:w-40 font-medium text-slate-700 shrink-0">{{ homepage_info.title|default:"정보" }}</h3>
-          <div class="flex-1 text-slate-900 whitespace-pre-line">{{ homepage_info.content|default:"정보 없음" }}</div>
         </div>
       {% else %}<p class="text-gray-500">등록된 항목이 없습니다.</p>{% endif %}
     </section>
 
     <!-- 하단 액션 -->
     <div class="flex flex-wrap gap-3 pt-4">
-      <a href="{% url 'core:facility_list' %}" class="inline-flex items-center gap-2 px-5 h-11 rounded-xl border border-slate-300 bg-white hover:border-slate-500 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"><i class="fa fa-arrow-left"></i>목록으로</a>
       <button type="button" onclick="window.print()" class="inline-flex items-center gap-2 px-5 h-11 rounded-xl border border-slate-300 bg-white hover:border-slate-500 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="인쇄하기"><i class="fa fa-print"></i>인쇄하기</button>
       <button type="button" class="inline-flex items-center gap-2 px-5 h-11 rounded-xl border border-slate-300 bg-white hover:border-slate-500 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" id="shareBottomBtn" aria-label="공유하기"><i class="fa fa-share"></i>공유하기</button>
     </div>
@@ -509,7 +568,7 @@
 
       // 선택된 인덱스의 이미지로 시작
       render();
-      console.log('모달이 성공적으로 열렸습니다');
+      console.log('모달이 성공적으로 열���습니다');
     }
 
     // 갤러리 모달 버튼에 이벤트 리스너 등록 ("사진 모두 보기" 버튼)
@@ -522,7 +581,7 @@
         e.preventDefault();
         e.stopPropagation();
         console.log('갤러리 버튼 클릭됨');
-        openModal(0); // 첫 번째 이미지부터 시작
+        openModal(0); // 첫 번째 이미���부터 시작
       });
     });
 
@@ -594,7 +653,7 @@
         if(!rate.dataset.userChanged) rate.value = 20;
         break;
       default:
-        // 선택 안함
+        // 선�� 안함
         break;
     }
     calc();
@@ -603,7 +662,7 @@
   calc();
 })();
 
-// Google Maps 초기화 함수 (전역 함수로 선언)
+// Google Maps 초기화 함수 (전역 ��수로 선언)
 {% if facility.latitude and facility.longitude and google_maps_api_key %}
 function initMap() {
   const mapElement = document.getElementById('facilityMap');
@@ -621,7 +680,7 @@ function initMap() {
   const loadingEl = document.getElementById('mapLoading');
   if (loadingEl) loadingEl.remove();
 
-  // 지도 생성
+  // 지도 ��성
   const facilityLocation = { lat, lng };
   const map = new google.maps.Map(mapElement, {
     zoom: 16,

@@ -12,6 +12,7 @@ chroma-hnswlib==0.7.6
 chromadb==0.5.20
 click==8.2.1
 coloredlogs==15.0.1
+django-ckeditor==6.7.1
 distro==1.9.0
 Django==5.2.5
 django-cors-headers==4.4.0

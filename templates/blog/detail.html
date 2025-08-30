@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full" data-page="blog-detail">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{{ post.title }} - CareBridge 블로그</title>
+    <meta name="description" content="{{ post.excerpt|truncatechars:155 }}">
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+    <meta property="og:type" content="article"/>
+    <meta property="og:title" content="{{ post.title }}"/>
+    <meta property="og:description" content="{{ post.excerpt|truncatechars:180 }}"/>
+    <meta property="og:url" content="{{ request.build_absolute_uri }}"/>
+    {% if post.cover_image %}<meta property="og:image" content="{{ post.cover_image.url }}"/>{% endif %}
+    <meta name="twitter:card" content="summary_large_image"/>
+    <meta name="twitter:title" content="{{ post.title }}"/>
+    <meta name="twitter:description" content="{{ post.excerpt|truncatechars:180 }}"/>
+    {% if post.cover_image %}<meta name="twitter:image" content="{{ post.cover_image.url }}"/>{% endif %}
+    <script type="application/ld+json">{
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": {{ post.title|json_script:"post_title" }},
+      "datePublished": "{{ post.published_at|date:'c' }}",
+      "dateModified": "{{ post.updated_at|date:'c' }}",
+      "author": {"@type": "Organization", "name": "CareBridge"},
+      {% if post.cover_image %}"image": ["{{ request.build_absolute_uri(post.cover_image.url) }}"],{% endif %}
+      "mainEntityOfPage": {"@type": "WebPage", "@id": "{{ request.build_absolute_uri }}"}
+    }</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-ZqPRXU19HhYbjFFBXd+nSyfJYWtTybcEjhKiUNbhtS/dG4AkyBIPrn4lFE8qOK2vPGOBiRWbYa7N4IcdOx6G2w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root{color-scheme:light dark;}
+        html.dark body{background:#0f172a;color:#e2e8f0;}
+        .prose h2{margin-top:3rem;font-size:1.5rem;font-weight:700;}
+        .prose h3{margin-top:2rem;font-size:1.2rem;font-weight:600;}
+        .prose p{margin:1rem 0;line-height:1.75;}
+        .prose blockquote{margin:1.5rem 0;padding:1rem 1.25rem;border-left:4px solid #6366f1;background:rgba(99,102,241,0.05);font-style:italic;border-radius:.5rem;}
+        html.dark .prose blockquote{background:#1e293b;border-color:#818cf8;}
+        .prose img{border-radius:1rem;margin:2rem auto;}
+        .prose pre{background:#1e293b !important;color:#f8fafc;font-size:.85rem;border-radius:1rem;padding:1rem 1.25rem;overflow-x:auto;}
+        .toc-link{display:block;padding:.35rem .75rem;border-radius:.5rem;font-size:.75rem;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .toc-link.active{background:#6366f1;color:#fff;font-weight:600;}
+        .toc-sticky{position:sticky;top:92px;max-height:calc(100vh - 120px);overflow:auto;}
+        .fade-bottom{mask:linear-gradient(#000 calc(100% - 40px),transparent);}
+    </style>
+</head>
+<body class="min-h-full font-[Pretendard,Inter,_sans-serif] bg-white text-slate-900 antialiased dark:bg-slate-900 dark:text-slate-100 selection:bg-indigo-200/60 dark:selection:bg-indigo-500/40">
+<header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800">{% include 'core/_navbar.html' %}</header>
+<main class="max-w-7xl mx-auto px-5 py-10">
+    <div class="grid lg:grid-cols-[1fr_260px] gap-12">
+        <article class="max-w-2xl mx-auto lg:mx-0">
+            <header class="mb-10 space-y-6">
+                <div class="flex flex-wrap gap-2">
+                    {% if post.category %}<a href="{% url 'blog:list' %}?category={{ post.category.slug }}" class="px-3 py-1 text-[11px] rounded-full bg-indigo-50 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-300 font-medium">{{ post.category.name }}</a>{% endif %}
+                    {% for t in post.tags.all %}<a href="{% url 'blog:list' %}?tag={{ t.slug }}" class="px-3 py-1 text-[11px] rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">#{{ t.name }}</a>{% endfor %}
+                </div>
+                <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight">{{ post.title }}</h1>
+                <div class="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
+                    <span>{{ post.published_at|date:'Y.m.d H:i' }}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>예상 {{ post.reading_minutes }}분 읽기</span>
+                </div>
+                {% if post.cover_image %}
+                <figure class="rounded-2xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700">
+                    <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" class="w-full aspect-video object-cover" loading="lazy">
+                </figure>
+                {% endif %}
+            </header>
+            <div id="post-content" class="prose prose-indigo max-w-none dark:prose-invert">{{ post.content|safe }}</div>
+            <hr class="my-12 border-slate-200 dark:border-slate-700">
+            <footer class="space-y-8">
+                <section aria-label="태그" class="flex flex-wrap gap-2">
+                    {% for t in post.tags.all %}<a href="{% url 'blog:list' %}?tag={{ t.slug }}" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px]">#{{ t.name }}</a>{% empty %}<span class="text-xs text-slate-400">태그 없음</span>{% endfor %}
+                </section>
+                <section aria-label="공유" class="flex flex-wrap gap-3">
+                    <button type="button" data-share="copy" class="px-4 h-10 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700">링크 복사</button>
+                    <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri|urlencode }}&text={{ post.title|urlencode }}" target="_blank" rel="noopener" class="px-4 h-10 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600">X 공유</a>
+                </section>
+                <nav aria-label="이전 다음" class="grid gap-4 md:grid-cols-2">
+                    {% if prev_post %}
+                    <a href="{{ prev_post.get_absolute_url }}" class="group p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500 transition flex flex-col">
+                        <span class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 tracking-wide">이전 글</span>
+                        <span class="mt-1 text-sm font-medium leading-snug line-clamp-2">{{ prev_post.title }}</span>
+                    </a>
+                    {% endif %}
+                    {% if next_post %}
+                    <a href="{{ next_post.get_absolute_url }}" class="group p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500 transition flex flex-col md:items-end text-right">
+                        <span class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 tracking-wide">다음 글</span>
+                        <span class="mt-1 text-sm font-medium leading-snug line-clamp-2">{{ next_post.title }}</span>
+                    </a>
+                    {% endif %}
+                </nav>
+            </footer>
+        </article>
+        <aside class="hidden lg:block">
+            <div class="toc-sticky pr-2 fade-bottom" id="toc" aria-label="목차"></div>
+        </aside>
+    </div>
+</main>
+{% include 'core/_footer.html' %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-kGhcXd1LSeX776BF3/f6/Dr7guPmyAnbcW2CYwiVdc+GqOR/mdrIW6DCeA44yWiNysGEKMluSleqrs9jwELyWw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+// TOC 생성
+(function(){
+  const content=document.getElementById('post-content'); const toc=document.getElementById('toc'); if(!content||!toc)return;
+  const heads=content.querySelectorAll('h2, h3'); if(!heads.length){toc.innerHTML='<div class="text-xs text-slate-400">목차 없음</div>'; return;}
+  const list=document.createElement('div'); list.className='flex flex-col gap-1 text-[11px]';
+  heads.forEach((h,i)=>{ if(!h.id){ h.id='h-'+i; } const a=document.createElement('a'); a.href='#'+h.id; a.textContent=h.textContent.trim(); a.className='toc-link text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300'; if(h.tagName==='H3') a.style.paddingLeft='1rem'; list.appendChild(a); });
+  toc.appendChild(list);
+  const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){const id=e.target.id; document.querySelectorAll('.toc-link').forEach(l=>{l.classList.toggle('active', l.getAttribute('href')==='#'+id);});}}); },{rootMargin:'-40% 0px -55% 0px', threshold:[0,1]}); heads.forEach(h=>obs.observe(h));
+})();
+// 공유
+(function(){const btn=document.querySelector('[data-share=copy]'); if(!btn) return; btn.addEventListener('click',()=>{navigator.clipboard.writeText(window.location.href).then(()=>{btn.textContent='복사 완료'; setTimeout(()=>btn.textContent='링크 복사',2000);});});})();
+// 헤더 그림자
+window.addEventListener('scroll',()=>{const h=document.querySelector('header'); if(window.scrollY>8){h.classList.add('shadow-sm');} else {h.classList.remove('shadow-sm');}});
+</script>
+</body>
+</html>
+
