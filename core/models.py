@@ -23,6 +23,7 @@ class Facility(TimestampedModel):
     has_images = models.BooleanField(default=False, verbose_name='이미지 존재 여부', help_text='크롤링 가능하고 이미지가 있으면 True')
     sido = models.CharField(max_length=20, blank=True, db_index=True, verbose_name='시도')
     sigungu = models.CharField(max_length=30, blank=True, db_index=True, verbose_name='시군구')
+    location = models.CharField(max_length=512, blank=True, verbose_name='주소', help_text='시설 전체 주소(도로명/지번 포함)')
     phone = models.CharField(max_length=20, blank=True, verbose_name='전화번호')
     homepage_url = models.URLField(blank=True, verbose_name='홈페이지 URL')
     location_info = models.TextField(blank=True, verbose_name='교통편 정보')
@@ -32,6 +33,8 @@ class Facility(TimestampedModel):
     noncovered_info = models.JSONField(blank=True, default=dict, verbose_name='비급여항목', help_text='{"제목": "금액"} 형태 (숫자만)')
     summary = models.TextField(blank=True, verbose_name='AI 요약', help_text='AI가 생성한 시설 요약 내용')
     summary_embedding = VectorField(dimensions=1536, null=True, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, db_index=True, help_text='위도 (WGS84)')
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, db_index=True, help_text='경도 (WGS84)')
 
     class Meta:
         ordering = ["name"]
@@ -68,7 +71,7 @@ class FacilityEvaluation(TimestampedModel):
     content = models.TextField(blank=True)
 
     class Meta:
-        verbose_name = "평가정보"
+        verbose_name = "��가정보"
         verbose_name_plural = "평가정보"
 
     def __str__(self):
@@ -211,6 +214,8 @@ class Hospital(TimestampedModel):
     homepage_url = models.URLField(blank=True, verbose_name='홈페이지 URL')
     summary = models.TextField(blank=True, verbose_name='AI 요약', help_text='AI가 생성한 병원 요약 내용')
     summary_embedding = VectorField(dimensions=1536, null=True, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, db_index=True, help_text='위도 (WGS84)')
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, db_index=True, help_text='경도 (WGS84)')
 
     class Meta:
         ordering = ["name"]

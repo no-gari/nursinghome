@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
+from django.conf import settings
 from .models import Facility, ChatHistory, Tag
 from .serializers import FacilityListSerializer, FacilityDetailSerializer, ChatRequestSerializer, ChatResponseSerializer
 from .rag_service import RAGService
@@ -60,6 +61,7 @@ def facility_detail(request, code: str):
         'summary_info': summary_info,
         'images': images,
         'tags': tags,
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
     }
     return render(request, 'core/facility_detail.html', context)
 
@@ -214,7 +216,7 @@ def initialize_rag(request):
         rag_service = RAGService()
         count = rag_service.embed_facilities()
         return Response({
-            'message': f'RAG 시스템이 초기화되었습니다. {count}개 시설이 벡터화되었습니다.',
+            'message': f'RAG 시스템이 초기화되었습니다. {count}개 시���이 벡터화되었습니다.',
             'facilities_count': count
         })
     except Exception as e:

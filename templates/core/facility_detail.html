@@ -21,6 +21,12 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" rel="stylesheet">
     <script defer src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+
+    <!-- Google Maps JavaScript API -->
+    {% if facility.latitude and facility.longitude and google_maps_api_key %}
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap&language=ko&region=KR"></script>
+    {% endif %}
+
     <style>
         body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;background:linear-gradient(160deg,#ffffff 0%,#f5f8fb 55%,#eef3f9 100%);color:#1e293b;}
         .hdr{transition:height .2s ease, box-shadow .2s ease, background .2s ease;}
@@ -208,7 +214,33 @@
             </div>
           {% endfor %}
         </div>
-      {% else %}<p class="text-gray-500">등록된 항목이 없습니다.</p>{% endif %}
+      {% else %}
+        <p class="text-gray-500">등록된 항목이 없습니다.</p>
+      {% endif %}
+
+      <!-- Google Maps 추가 -->
+      {% if facility.latitude and facility.longitude and google_maps_api_key %}
+        <div class="mt-6">
+          <h3 class="font-medium text-slate-700 mb-3">지도</h3>
+          <div id="facilityMap" data-lat="{{ facility.latitude }}" data-lng="{{ facility.longitude }}" class="w-full h-64 rounded-lg border bg-gray-100 flex items-center justify-center">
+            <div class="text-gray-500" id="mapLoading">
+              <i class="fas fa-spinner fa-spin mr-2"></i>
+              지도를 불러오는 중...
+            </div>
+          </div>
+        </div>
+      {% elif facility.location %}
+        <div class="mt-6">
+          <h3 class="font-medium text-slate-700 mb-3">지도</h3>
+          <div class="w-full h-32 rounded-lg border bg-gray-50 flex items-center justify-center">
+            <div class="text-gray-500 text-center">
+              <i class="fas fa-map-marker-alt mb-2"></i>
+              <p class="text-sm">좌표 정보가 없어 지도를 표시할 수 없습니다.</p>
+              <p class="text-xs text-gray-400">주소: {{ facility.location }}</p>
+            </div>
+          </div>
+        </div>
+      {% endif %}
     </section>
     <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
       <h2 class="text-xl font-bold mb-5">비급여 항목</h2>
@@ -487,7 +519,7 @@
       });
     });
 
-    // 개별 이미지 클릭 이벤트 리스너 등록
+    // 개별 이미지 클릭 이벤�� 리스너 등록
     const galleryImages = document.querySelectorAll('[data-gallery-image]');
     console.log('찾은 갤러리 이미지 수:', galleryImages.length);
 
@@ -498,7 +530,7 @@
         e.stopPropagation();
         const imageIndex = parseInt(element.getAttribute('data-gallery-image')) || 0;
         console.log('개별 이미지 클릭됨, 인덱스:', imageIndex);
-        openModal(imageIndex); // 클릭한 이미지부터 시작
+        openModal(imageIndex); // 클릭한 이미지부터 ���작
       });
     });
 
@@ -515,6 +547,68 @@
 
   console.log('스크립트 설정 완료');
 })();
+
+// Google Maps 초기화 함수 (전역 함수로 선언)
+{% if facility.latitude and facility.longitude and google_maps_api_key %}
+function initMap() {
+  const mapElement = document.getElementById('facilityMap');
+  if (!mapElement) return;
+
+  // dataset에서 안전하게 숫자 파싱
+  const lat = parseFloat(mapElement.dataset.lat);
+  const lng = parseFloat(mapElement.dataset.lng);
+  if (isNaN(lat) || isNaN(lng)) {
+    mapElement.innerHTML = '<div class="text-red-500 text-sm p-4">좌표 파싱 오류</div>';
+    return;
+  }
+
+  // 먼저 로딩 오버레이 제거
+  const loadingEl = document.getElementById('mapLoading');
+  if (loadingEl) loadingEl.remove();
+
+  // 지도 생성
+  const facilityLocation = { lat, lng };
+  const map = new google.maps.Map(mapElement, {
+    zoom: 16,
+    center: facilityLocation,
+    streetViewControl: false,
+    fullscreenControl: true,
+    mapTypeControl: false,
+    styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }]
+  });
+
+  const marker = new google.maps.Marker({
+    position: facilityLocation,
+    map,
+    title: '{{ facility.name|escapejs }}'
+  });
+
+  const infoWindow = new google.maps.InfoWindow({
+    content: `
+      <div style="padding:8px 8px 10px;max-width:240px">
+        <h3 style="margin:0 0 6px;font-size:15px;font-weight:600;color:#1e293b">{{ facility.name|escapejs }}</h3>
+        {% if location_items and location_items.0.content %}<p style="margin:0 0 8px;font-size:13px;line-height:1.4;color:#475569">{{ location_items.0.content|escapejs }}</p>{% endif %}
+        <button onclick="openDirections()" style="background:#4F46E5;color:#fff;border:0;padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer">길찾기</button>
+      </div>`
+  });
+  marker.addListener('click', () => infoWindow.open(map, marker));
+}
+
+function openDirections() {
+  const mapElement = document.getElementById('facilityMap');
+  if (!mapElement) return;
+  const lat = mapElement.dataset.lat;
+  const lng = mapElement.dataset.lng;
+  window.open(`https://maps.google.com/maps?daddr=${lat},${lng}`, '_blank');
+}
+
+window.gm_authFailure = function() {
+  const mapElement = document.getElementById('facilityMap');
+  if (mapElement) {
+    mapElement.innerHTML = '<div class="text-red-500 text-center p-4 text-sm">지도 API 인증 실패 (API 키 확인)</div>';
+  }
+};
+{% endif %}
 </script>
 </body>
 </html>
