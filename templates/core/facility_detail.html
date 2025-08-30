@@ -59,7 +59,10 @@
               <img src="{{ image.image.url }}"
                    srcset="{{ image.image.url }} 480w, {{ image.image.url }} 960w, {{ image.image.url }} 1440w"
                    sizes="(max-width:640px) 100vw, 100vw"
-                   alt="{{ facility.name }} 이미지 {{ forloop.counter }}" loading="lazy" class="w-full h-full object-cover rounded-xl" />
+                   alt="{{ facility.name }} 이미지 {{ forloop.counter }}"
+                   loading="lazy"
+                   class="w-full h-full object-cover rounded-xl cursor-pointer"
+                   data-gallery-image="{{ forloop.counter0 }}" />
             </div>
           {% endfor %}
         </div>
@@ -72,14 +75,14 @@
     <div class="hidden lg:grid lg:grid-cols-4 lg:grid-rows-2 lg:gap-2 relative">
       {% for image in images|slice:':5' %}
         {% if forloop.first %}
-          <div class="col-span-2 row-span-2 rounded-xl overflow-hidden relative group">
+          <div class="col-span-2 row-span-2 rounded-xl overflow-hidden relative group cursor-pointer" data-gallery-image="{{ forloop.counter0 }}">
             <img src="{{ image.image.url }}"
                  srcset="{{ image.image.url }} 480w, {{ image.image.url }} 960w, {{ image.image.url }} 1440w"
                  sizes="(min-width:1024px) 60vw, 100vw"
                  alt="{{ facility.name }} 대표 이미지" loading="lazy" class="w-full h-full object-cover aspect-[16/11] transition duration-300 group-hover:scale-[1.02]" />
           </div>
         {% else %}
-          <div class="rounded-xl overflow-hidden relative group">
+          <div class="rounded-xl overflow-hidden relative group cursor-pointer" data-gallery-image="{{ forloop.counter0 }}">
             <img src="{{ image.image.url }}"
                  srcset="{{ image.image.url }} 480w, {{ image.image.url }} 960w, {{ image.image.url }} 1440w"
                  sizes="(min-width:1024px) 20vw, 100vw"
@@ -266,7 +269,7 @@
 
 {% include 'core/_footer.html' %}
 
-<!-- Lightbox Modal 컨테이너 (동적 생성) -->
+<!-- Lightbox Modal 컨테이너 (동적 생략) -->
 <div id="galleryModalRoot"></div>
 
 <script>
@@ -359,8 +362,8 @@
       return;
     }
 
-    function openModal(){
-      console.log('갤러리 모달 열기 시도');
+    function openModal(startIndex = 0){
+      console.log('갤러리 모달 열기 시도, 시작 인덱스:', startIndex);
 
       // 이미 열린 모달이 있으면 무시
       if(modalRoot.querySelector('[data-lightbox-root]')) {
@@ -406,12 +409,21 @@
       const root = modalRoot.querySelector('[data-lightbox-root]');
       const main = root.querySelector('[data-main]');
       const thumbs = root.querySelector('[data-thumbs]');
-      let idx = 0;
+      let idx = Math.max(0, Math.min(startIndex, imgs.length - 1)); // 시작 인덱스 설정
 
       function render(){
         if(!imgs.length) return;
         main.src = imgs[idx];
         console.log('이미지 로드:', imgs[idx]);
+
+        // 현재 선택된 썸네일 하이라이트
+        thumbs.querySelectorAll('button').forEach((btn, i) => {
+          if(i === idx) {
+            btn.classList.add('ring-2', 'ring-indigo-400');
+          } else {
+            btn.classList.remove('ring-2', 'ring-indigo-400');
+          }
+        });
       }
 
       // 썸네일 생성
@@ -456,12 +468,12 @@
       }
       document.addEventListener('keydown', keyHandler);
 
-      // 첫 번째 이미지 로드
+      // 선택된 인덱스의 이미지로 시작
       render();
       console.log('모달이 성공적으로 열렸습니다');
     }
 
-    // 갤러리 모달 버튼에 이벤트 리스너 등록
+    // 갤러리 모달 버튼에 이벤트 리스너 등록 ("사진 모두 보기" 버튼)
     const galleryButtons = document.querySelectorAll('[data-gallery-modal]');
     console.log('찾은 갤러리 버튼 수:', galleryButtons.length);
 
@@ -471,7 +483,22 @@
         e.preventDefault();
         e.stopPropagation();
         console.log('갤러리 버튼 클릭됨');
-        openModal();
+        openModal(0); // 첫 번째 이미지부터 시작
+      });
+    });
+
+    // 개별 이미지 클릭 이벤트 리스너 등록
+    const galleryImages = document.querySelectorAll('[data-gallery-image]');
+    console.log('찾은 갤러리 이미지 수:', galleryImages.length);
+
+    galleryImages.forEach((element, index) => {
+      console.log(`갤러리 이미지 ${index + 1} 찾음:`, element);
+      element.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const imageIndex = parseInt(element.getAttribute('data-gallery-image')) || 0;
+        console.log('개별 이미지 클릭됨, 인덱스:', imageIndex);
+        openModal(imageIndex); // 클릭한 이미지부터 시작
       });
     });
 
