@@ -13,10 +13,6 @@
             <a href="{% url 'blog:list' %}" class="text-slate-600 hover:text-slate-900 transition font-medium {% if request.path|slice:':6' == '/blog/' %}text-slate-900 underline underline-offset-4{% endif %}">블로그</a>
             <a href="{% url 'core:chat' %}" class="text-slate-600 hover:text-slate-900 transition font-medium {% if current == 'chat' %}text-slate-900 underline underline-offset-4{% endif %}">AI 상담</a>
             {% endwith %}
-            <button id="themeToggleBtn" type="button" aria-label="테마 전환" class="w-9 h-9 rounded-lg border border-slate-300 bg-white text-slate-600 hover:border-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center justify-center">
-                <span id="icon-light" class="hidden">🌞</span>
-                <span id="icon-dark" class="hidden">🌜</span>
-            </button>
             <div class="flex items-center gap-2 ml-2">
                 {% if request.user.is_authenticated %}
                 <span class="hidden lg:inline-block px-2 text-slate-600 text-[13px]">안녕하세요, <strong>{{ request.user.username }}</strong></span>
@@ -114,17 +110,5 @@
       if(overlay && overlay.parentElement !== document.body){
         document.body.appendChild(overlay);
       }
-    })();
-    (function themeToggle(){
-        const btn=document.getElementById('themeToggleBtn');
-        if(!btn) return; const light=document.getElementById('icon-light'); const dark=document.getElementById('icon-dark');
-        function apply(theme){
-            const html=document.documentElement; if(theme==='dark'){html.classList.add('dark');} else {html.classList.remove('dark');}
-            localStorage.setItem('theme', theme);
-            if(light&&dark){ if(theme==='dark'){dark.classList.remove('hidden'); light.classList.add('hidden');} else {light.classList.remove('hidden'); dark.classList.add('hidden');} }
-        }
-        const pref=localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches? 'dark':'light');
-        apply(pref);
-        btn.addEventListener('click', ()=>{apply(document.documentElement.classList.contains('dark')? 'light':'dark');});
     })();
 </script>

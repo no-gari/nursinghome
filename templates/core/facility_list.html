@@ -12,8 +12,8 @@
     <style>
         body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;background:linear-gradient(160deg,#ffffff 0%,#f5f8fb 55%,#eef3f9 100%);color:#1e293b;}
         .hdr{transition:height .2s ease, box-shadow .2s ease, background .2s ease;}
-        .hdr:not(.shrink){height:62px;} /* 기존 70px -> 62px */
-        .hdr.shrink{height:52px;} /* 기존 56px -> 52px */
+        .hdr:not(.shrink){height:70px;}
+        .hdr.shrink{height:56px;}
         .segment-btn{position:relative;flex:1 1 0;display:flex;flex-direction:column;justify-content:center;padding:0 .65rem;min-width:0;cursor:pointer;}
         .segment-btn:hover{background:#f1f5f9;}
         .segment-label{font-size:10px;letter-spacing:.05em;color:#64748b;font-weight:600;text-transform:uppercase;}
@@ -68,10 +68,8 @@
         /* Narrower spacing in region popover for stacked selects */
         #popover-region .fancy-select + .fancy-select{margin-top:.85rem;}
         @media (max-width:639px){
-            .hdr:not(.shrink){height:54px;} /* 모바일 비축소 높이 추가 감축 */
-            .hdr.shrink{height:46px;}        /* 모바일 스크롤 후 높이 감축 */
-            #active-filters{padding-top:0.15rem;padding-bottom:0.15rem;} /* 더 얇게 */
-            main{padding-top:0.55rem !important; padding-bottom:3rem !important;} /* 상단 더 붙이고 하단 살짝 축소 */
+            #active-filters{padding-top:0.15rem;padding-bottom:0.15rem;}
+            main{padding-top:0.55rem !important; padding-bottom:3rem !important;}
         }
         /* Segmented sort control (restored) */
         .sort-segment{display:inline-flex;align-items:center;background:#fff;border:1px solid #e2e8f0;border-radius:9999px;padding:4px;gap:4px;box-shadow:0 2px 4px rgba(15,23,42,.05);}
