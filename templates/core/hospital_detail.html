@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ hospital.name }} - 요양병원 상세정보</title>
+  <meta property="og:title" content="{{ hospital.name }} | CareBridge" />
+  <meta property="og:description" content="{{ hospital.summary|default:'요양병원 상세정보'|truncatechars:120 }}" />
+  <meta property="og:type" content="article" />
+  <meta property="og:image" content="{% if images %}{{ images.0.image.url }}{% endif %}" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+  {% if hospital.latitude and hospital.longitude and google_maps_api_key %}
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap&language=ko&region=KR"></script>
+  {% endif %}
+  <style>
+    body{font-family:'Pretendard',sans-serif;background:linear-gradient(160deg,#ffffff 0%,#f5f8fb 55%,#eef3f9 100%);color:#1e293b;}
+    .hdr{transition:height .2s ease, box-shadow .2s ease, background .2s ease;}
+    .hdr:not(.shrink){height:70px;} .hdr.shrink{height:56px;}
+  </style>
+</head>
+<body class="min-h-screen">
+<header id="siteHeader" class="hdr sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 flex flex-col justify-center">
+  {% include 'core/_navbar.html' %}
+</header>
+<div class="max-w-6xl mx-auto">
+  <nav aria-label="Breadcrumb" class="px-4 sm:px-6 lg:px-8 pt-4">
+    <ol class="flex items-center text-xs sm:text-sm text-slate-500 gap-2">
+      <li><a href="{% url 'core:main' %}" class="hover:text-slate-700">홈</a></li>
+      <li><i class="fas fa-chevron-right text-slate-400 text-[10px]"></i></li>
+      <li><a href="{% url 'core:hospital_list' %}" class="hover:text-slate-700">병원검색</a></li>
+      <li><i class="fas fa-chevron-right text-slate-400 text-[10px]"></i></li>
+      <li class="text-slate-700 font-medium truncate max-w-[40ch]" aria-current="page">{{ hospital.name }}</li>
+    </ol>
+  </nav>
+  <section class="mt-4 px-4 sm:px-6 lg:px-8">
+    {% if images and images|length > 0 %}
+      <div class="lg:hidden relative">
+        <div class="swiper h-60 sm:h-72" id="mobileGallery">
+          <div class="swiper-wrapper">
+            {% for image in images %}
+              <div class="swiper-slide">
+                <img src="{{ image.image.url }}" alt="{{ hospital.name }} 이미지 {{ forloop.counter }}" loading="lazy" class="w-full h-full object-cover rounded-xl" data-gallery-image="{{ forloop.counter0 }}" />
+              </div>
+            {% endfor %}
+          </div>
+          <div class="swiper-pagination"></div>
+        </div>
+        <button type="button" data-gallery-modal class="absolute bottom-3 right-3 bg-white/90 backdrop-blur px-3 h-9 rounded-full text-xs font-medium shadow">사진 모두 보기</button>
+      </div>
+      <div class="hidden lg:grid lg:grid-cols-4 lg:grid-rows-2 lg:gap-2 relative">
+        {% for image in images|slice:':5' %}
+          {% if forloop.first %}
+            <div class="col-span-2 row-span-2 rounded-xl overflow-hidden relative group cursor-pointer" data-gallery-image="{{ forloop.counter0 }}">
+              <img src="{{ image.image.url }}" alt="{{ hospital.name }} 대표 이미지" loading="lazy" class="w-full h-full object-cover aspect-[16/11] transition group-hover:scale-[1.02]" />
+            </div>
+          {% else %}
+            <div class="rounded-xl overflow-hidden relative group cursor-pointer" data-gallery-image="{{ forloop.counter0 }}">
+              <img src="{{ image.image.url }}" alt="{{ hospital.name }} 추가 이미지 {{ forloop.counter }}" loading="lazy" class="w-full h-full object-cover aspect-[16/11] transition group-hover:scale-[1.05]" />
+            </div>
+          {% endif %}
+        {% endfor %}
+        <button type="button" data-gallery-modal class="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-4 h-10 rounded-full text-sm font-medium shadow">사진 모두 보기</button>
+      </div>
+    {% else %}
+      <div class="aspect-[16/11] rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 grid place-items-center text-gray-400"><div class="flex flex-col items-center gap-2 text-sm font-medium"><i class="fa fa-camera text-xl"></i><span>이미지가 없습니다</span></div></div>
+    {% endif %}
+    <div class="mt-6 space-y-2">
+      <div class="flex flex-wrap items-center gap-3">
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">{{ hospital.name }}</h1>
+        {% if tags %}<div class="flex flex-wrap gap-2">{% for tag in tags %}<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs border bg-gray-100 text-gray-700 border-gray-200">{{ tag.name }}</span>{% endfor %}</div>{% endif %}
+      </div>
+      <div class="text-sm text-slate-600 space-y-1">
+        {% if hospital.location %}<div class="flex items-start gap-1"><i class="fa fa-location-dot text-slate-400 mt-0.5"></i><span class="truncate max-w-[60ch]" title="{{ hospital.location }}">{{ hospital.location }}</span></div>{% endif %}
+        {% if hospital.homepage_url %}<div class="flex items-start gap-1"><i class="fa fa-globe text-slate-400 mt-0.5"></i><a href="{{ hospital.homepage_url }}" target="_blank" class="truncate max-w-[50ch] hover:text-indigo-600 hover:underline">{{ hospital.homepage_url }}</a></div>{% endif %}
+        {% if hospital.phone %}<div class="flex items-start gap-1"><i class="fa fa-phone text-slate-400 mt-0.5"></i><span>{{ hospital.phone }}</span></div>{% endif %}
+      </div>
+    </div>
+  </section>
+  <main class="mt-10 px-4 sm:px-6 lg:px-8 lg:grid lg:grid-cols-3 lg:gap-10 mb-24">
+    <div class="lg:col-span-2 space-y-8">
+      {% if hospital.summary %}
+      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
+        <h2 class="text-xl font-bold mb-4">요약</h2>
+        <p class="text-sm leading-relaxed whitespace-pre-line text-slate-700">{{ hospital.summary }}</p>
+      </section>
+      {% endif %}
+      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
+        <h2 class="text-xl font-bold mb-5">기본 정보</h2>
+        <div class="space-y-4 text-sm">
+          <div class="flex gap-4"><span class="w-28 text-slate-500">코드</span><span class="font-medium break-all">{{ hospital.code }}</span></div>
+          <div class="flex gap-4"><span class="w-28 text-slate-500">등급</span><span class="font-medium">{{ hospital.grade|default:'-' }}</span></div>
+          <div class="flex gap-4"><span class="w-28 text-slate-500">설립구분</span><span class="font-medium">{{ hospital.establishment_type|default:'-' }}</span></div>
+          <div class="flex gap-4"><span class="w-28 text-slate-500">설립일자</span><span class="font-medium">{{ hospital.establishment_date|date:'Y-m-d'|default:'-' }}</span></div>
+        </div>
+      </section>
+      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
+        <h2 class="text-xl font-bold mb-5">병상 현황</h2>
+        {% if bed_count_items %}
+        <div class="grid sm:grid-cols-2 gap-3">
+          {% for k,v in bed_count_items %}
+          <div class="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 flex items-center justify-between text-sm">
+            <span class="font-medium text-slate-700">{{ k }}</span><span class="font-semibold text-indigo-700">{{ v }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
+      </section>
+      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
+        <h2 class="text-xl font-bold mb-5">운영/시설</h2>
+        {% if operation_facility_items %}
+        <div class="space-y-4 text-sm">
+          {% for k,v in operation_facility_items %}
+          <div class="flex gap-4"><span class="w-40 text-slate-500">{{ k }}</span><span class="flex-1 font-medium whitespace-pre-line">{{ v }}</span></div>
+          {% endfor %}
+        </div>
+        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
+      </section>
+      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
+        <h2 class="text-xl font-bold mb-5">의사 수</h2>
+        {% if doctor_count_items %}
+        <div class="grid sm:grid-cols-2 gap-3">
+          {% for k,v in doctor_count_items %}
+          <div class="p-3 rounded-xl bg-slate-50 border flex items-center justify-between text-sm"><span class="font-medium text-slate-700">{{ k }}</span><span class="font-semibold text-slate-700">{{ v }}</span></div>
+          {% endfor %}
+        </div>
+        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
+      </section>
+      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
+        <h2 class="text-xl font-bold mb-5">전문과목별(전문의)</h2>
+        {% if specialist_by_department_items %}
+        <div class="grid sm:grid-cols-2 gap-3">
+          {% for k,v in specialist_by_department_items %}
+          <div class="p-3 rounded-xl bg-slate-50 border flex items-center justify-between text-sm"><span class="font-medium text-slate-700 truncate">{{ k }}</span><span class="font-semibold text-slate-700">{{ v }}</span></div>
+          {% endfor %}
+        </div>
+        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
+      </section>
+      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
+        <h2 class="text-xl font-bold mb-5">진료과목별(전문의)</h2>
+        {% if department_specialists_items %}
+        <div class="grid sm:grid-cols-2 gap-3">
+          {% for k,v in department_specialists_items %}
+          <div class="p-3 rounded-xl bg-slate-50 border flex items-center justify-between text-sm"><span class="font-medium text-slate-700 truncate">{{ k }}</span><span class="font-semibold text-slate-700">{{ v }}</span></div>
+          {% endfor %}
+        </div>
+        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
+      </section>
+      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
+        <h2 class="text-xl font-bold mb-5">기타 인력</h2>
+        {% if other_staff_items %}
+        <div class="grid sm:grid-cols-2 gap-3">
+          {% for k,v in other_staff_items %}
+          <div class="p-3 rounded-xl bg-slate-50 border flex items-center justify-between text-sm"><span class="font-medium text-slate-700 truncate">{{ k }}</span><span class="font-semibold text-slate-700">{{ v }}</span></div>
+          {% endfor %}
+        </div>
+        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
+      </section>
+      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
+        <h2 class="text-xl font-bold mb-5">진료시간</h2>
+        {% if consultation_hours_items %}
+        <div class="space-y-2 text-sm">
+          {% for k,v in consultation_hours_items %}
+          <div class="flex gap-4"><span class="w-32 text-slate-500">{{ k }}</span><span class="flex-1 font-medium whitespace-pre-line">{{ v }}</span></div>
+          {% endfor %}
+        </div>
+        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
+      </section>
+      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
+        <h2 class="text-xl font-bold mb-5">진료비 정보</h2>
+        {% if medical_fee_info_items %}
+        <div class="space-y-2 text-sm">
+          {% for k,v in medical_fee_info_items %}
+          <div class="flex gap-4"><span class="w-40 text-slate-500">{{ k }}</span><span class="flex-1 font-medium whitespace-pre-line">{{ v }}</span></div>
+          {% endfor %}
+        </div>
+        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
+      </section>
+      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
+        <h2 class="text-xl font-bold mb-5">위치 정보</h2>
+        {% if hospital.location %}<p class="text-sm text-slate-700">{{ hospital.location }}</p>{% endif %}
+        {% if hospital.latitude and hospital.longitude and google_maps_api_key %}
+          <div class="mt-6">
+            <h3 class="font-medium text-slate-700 mb-3">지도</h3>
+            <div id="hospitalMap" data-lat="{{ hospital.latitude }}" data-lng="{{ hospital.longitude }}" class="w-full h-64 rounded-lg border bg-gray-100"></div>
+          </div>
+        {% elif hospital.location %}
+          <div class="mt-6">
+            <div class="w-full h-32 rounded-lg border bg-gray-50 flex items-center justify-center text-gray-500 text-sm">좌표 정보가 없습니다.</div>
+          </div>
+        {% endif %}
+      </section>
+      <div class="flex flex-wrap gap-3 pt-2">
+        <button onclick="window.print()" type="button" class="inline-flex items-center gap-2 px-5 h-11 rounded-xl border border-slate-300 bg-white hover:border-slate-500 text-sm font-medium text-slate-700"><i class="fa fa-print"></i>인쇄</button>
+        <button id="shareBtn" type="button" class="inline-flex items-center gap-2 px-5 h-11 rounded-xl border border-slate-300 bg-white hover:border-slate-500 text-sm font-medium text-slate-700"><i class="fa fa-share"></i>공유</button>
+      </div>
+    </div>
+    <aside class="mt-10 lg:mt-0 space-y-6">
+      <div class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm sticky top-24">
+        <h2 class="text-lg font-bold mb-4">요약 메타</h2>
+        <ul class="text-sm space-y-2 text-slate-600">
+          <li><span class="w-20 inline-block text-slate-500">등급</span> {{ hospital.grade|default:'-' }}</li>
+          <li><span class="w-20 inline-block text-slate-500">설립</span> {{ hospital.establishment_date|date:'Y-m-d'|default:'-' }}</li>
+          <li><span class="w-20 inline-block text-slate-500">전화</span> {{ hospital.phone|default:'-' }}</li>
+          <li><span class="w-20 inline-block text-slate-500">위치</span> {{ hospital.sido }} {{ hospital.sigungu }}</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+</div>
+{% include 'core/_footer.html' %}
+<div id="galleryModalRoot"></div>
+<script>
+(function(){
+  function initSwiper(){ const el=document.getElementById('mobileGallery'); if(el && typeof Swiper!=='undefined'){ new Swiper('#mobileGallery',{loop:true,pagination:{el:'.swiper-pagination',clickable:true}}); } }
+  if(typeof Swiper!=='undefined') initSwiper(); else { let c=0; const it=setInterval(()=>{ if(typeof Swiper!=='undefined'){ initSwiper(); clearInterval(it);} if(++c>10) clearInterval(it);},120); }
+  const header=document.getElementById('siteHeader'); function onScroll(){ if(window.scrollY>120) header.classList.add('shrink'); else header.classList.remove('shrink'); } window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
+  const shareBtn=document.getElementById('shareBtn'); if(shareBtn){ shareBtn.addEventListener('click',()=>{ const data={title:'{{ hospital.name|escapejs }}',text:'{{ hospital.name|escapejs }}',url:window.location.href}; if(navigator.share){ navigator.share(data).catch(()=>copy()); } else copy(); function copy(){ if(navigator.clipboard) navigator.clipboard.writeText(window.location.href).then(()=>alert('링크 복사됨')); } }); }
+  if(window.initMap===undefined){ window.initMap=function(){ const el=document.getElementById('hospitalMap'); if(!el) return; const lat=parseFloat(el.dataset.lat); const lng=parseFloat(el.dataset.lng); if(!isNaN(lat)&&!isNaN(lng)){ const map=new google.maps.Map(el,{center:{lat:lat,lng:lng},zoom:15,mapTypeControl:false,streetViewControl:false}); new google.maps.Marker({position:{lat:lat,lng:lng},map:map,title:'{{ hospital.name|escapejs }}'}); } }; }
+
+  // ==== 갤러리 모달 ====
+  function initGallery(){
+    const modalRoot=document.getElementById('galleryModalRoot');
+    const nodeList=document.querySelectorAll('[data-gallery-image]');
+    if(!modalRoot || !nodeList.length) return;
+    const imgSources=[]; const seen=new Set();
+    nodeList.forEach(node=>{ const src=node.getAttribute('src'); if(!src) return; let index;
+      if(seen.has(src)){ index = imgSources.indexOf(src); } else { seen.add(src); imgSources.push(src); index = imgSources.length-1; }
+      node.dataset.galleryIndex = index; // 노드별 실제 고유 인덱스 저장
+    });
+    if(!imgSources.length) return;
+
+    function openModal(startIndex){
+      if(modalRoot.querySelector('[data-lightbox-root]')) return; // 이미 열림
+      let idx = Math.max(0, Math.min(startIndex||0, imgSources.length-1));
+      const html=`<div data-lightbox-root class="fixed inset-0 z-[70]" role="dialog" aria-modal="true">\n <div data-backdrop class=\"absolute inset-0 bg-black/70 backdrop-blur-sm\"></div>\n <div class=\"absolute inset-0 flex flex-col\">\n  <div class=\"flex items-center justify-between px-4 h-14 text-white\">\n   <span class=\"font-medium truncate pr-4 text-sm\">사진 (${imgSources.length})</span>\n   <button aria-label=\"닫기\" data-close class=\"h-8 px-3 rounded-md hover:bg-white/10 text-sm\">닫기</button>\n  </div>\n  <div class=\"flex-1 overflow-hidden flex items-center justify-center relative\">\n    <button data-prev aria-label=\"이전\" class=\"hidden md:inline-flex absolute left-3 top-1/2 -translate-y-1/2 h-10 px-3 items-center justify-center text-white rounded-md bg-black/30 hover:bg-black/50 text-sm\">이전</button>\n    <img data-main alt='{{ hospital.name|escapejs }} 확대 이미지' class=\"max-h-full max-w-full object-contain transition\" />\n    <button data-next aria-label=\"다음\" class=\"hidden md:inline-flex absolute right-3 top-1/2 -translate-y-1/2 h-10 px-3 items-center justify-center text-white rounded-md bg-black/30 hover:bg-black/50 text-sm\">다음</button>\n  </div>\n  <div class=\"p-4 overflow-x-auto bg-black/40\"><div class=\"flex gap-2\" data-thumbs></div></div>\n </div>\n</div>`;
+      modalRoot.insertAdjacentHTML('beforeend', html);
+      const root=modalRoot.querySelector('[data-lightbox-root]');
+      const main=root.querySelector('[data-main]');
+      const thumbs=root.querySelector('[data-thumbs]');
+      function render(){ main.src = imgSources[idx]; thumbs.querySelectorAll('button').forEach((b,i)=>{ b.classList.toggle('ring-2', i===idx); b.classList.toggle('ring-indigo-400', i===idx); }); }
+      imgSources.forEach((src,i)=>{ const b=document.createElement('button'); b.type='button'; b.className='relative flex-shrink-0 h-16 w-24 rounded-md overflow-hidden border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-400'; b.innerHTML=`<img src="${src}" alt="썸네일 ${i+1}" class="w-full h-full object-cover" loading="lazy" />`; b.addEventListener('click',()=>{ idx=i; render(); }); thumbs.appendChild(b); });
+      function close(){ root.remove(); document.removeEventListener('keydown', keyHandler); }
+      const prevBtn=root.querySelector('[data-prev]'); const nextBtn=root.querySelector('[data-next]');
+      function prev(){ idx=(idx-1+imgSources.length)%imgSources.length; render(); }
+      function next(){ idx=(idx+1)%imgSources.length; render(); }
+      prevBtn&&prevBtn.addEventListener('click', prev); nextBtn&&nextBtn.addEventListener('click', next);
+      root.querySelector('[data-close]').addEventListener('click', close);
+      root.addEventListener('click', e=>{ if(e.target.hasAttribute('data-backdrop')) close(); });
+      function keyHandler(e){ if(!root.isConnected){ document.removeEventListener('keydown', keyHandler); return; } if(e.key==='Escape') close(); else if(e.key==='ArrowLeft') prev(); else if(e.key==='ArrowRight') next(); }
+      document.addEventListener('keydown', keyHandler);
+      render();
+    }
+    document.querySelectorAll('[data-gallery-modal]').forEach(btn=>{ btn.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); openModal(0); }); });
+    nodeList.forEach(node=>{ node.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); const i=parseInt(node.dataset.galleryIndex)||0; openModal(i); }); });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initGallery); else initGallery();
+})();
+</script>
+</body>
+</html>

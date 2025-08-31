@@ -1,0 +1,61 @@
+{# 병원 AJAX 결과 부분 #}
+<div id="results-meta" data-total="{{ total_count }}" class="hidden" aria-hidden="true"></div>
+<div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    {% for hospital in hospitals %}
+        <a href="{% url 'core:hospital_detail' hospital.code %}" class="group relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300/70 transition-all duration-300 flex flex-col">
+            <div class="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden">
+                {% with img=hospital.images.last %}
+                    {% if img %}
+                        <img src="{{ img.image.url }}" alt="{{ hospital.name }}" class="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-[1.02] transition duration-500" loading="lazy" />
+                    {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-[11px] tracking-wide text-slate-400">NO IMAGE</div>
+                    {% endif %}
+                {% endwith %}
+                <div class="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
+                {% if hospital.grade %}
+                    <span class="absolute top-2 left-2 text-[10px] font-semibold px-2 py-1 rounded-md bg-indigo-500 text-white shadow-sm">{{ hospital.grade }}</span>
+                {% endif %}
+            </div>
+            <div class="p-4 flex flex-col gap-3 flex-1">
+                <h3 class="text-sm font-semibold leading-snug line-clamp-2 text-slate-800 group-hover:text-indigo-700 tracking-tight">{{ hospital.name }}</h3>
+                {% if hospital.tags.all %}
+                    <div class="flex flex-wrap gap-1.5">
+                        {% for tag in hospital.tags.all|slice:':6' %}
+                            <span class="px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-medium text-slate-600 group-hover:border-indigo-300 group-hover:bg-indigo-50 group-hover:text-indigo-700 transition">{{ tag.name }}</span>
+                        {% empty %}
+                            <span class="px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-[10px] text-slate-400">태그없음</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <div class="mt-auto flex items-center justify-between pt-2">
+                    <span class="text-[10px] uppercase tracking-wider text-slate-400">자세히</span>
+                    <span class="w-8 h-8 rounded-full bg-indigo-50 group-hover:bg-indigo-100 flex items-center justify-center text-indigo-500 group-hover:text-indigo-700 transition">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </span>
+                </div>
+            </div>
+        </a>
+    {% empty %}
+        <div class="col-span-full py-24 flex flex-col items-center justify-center text-center rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="w-16 h-16 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mb-6">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            </div>
+            <h3 class="text-base font-semibold text-slate-700 mb-2">검색 결과 없음</h3>
+            <p class="text-xs text-slate-500 mb-6">다른 조건으로 다시 시도해 주세요.</p>
+            <a href="{% url 'core:hospital_list' %}" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium text-white shadow">전체 보기</a>
+        </div>
+    {% endfor %}
+</div>
+{% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination mt-10 flex items-center justify-center gap-2">
+        {% if page_obj.has_previous %}
+            <a href="?page=1" class="px-3 py-2 rounded-lg text-[11px] font-medium bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 shadow-sm transition">처음</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 rounded-lg text-[11px] font-medium bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 shadow-sm transition">이전</a>
+        {% endif %}
+        <span class="px-3 py-2 rounded-lg text-[11px] font-semibold bg-indigo-600 text-white border border-indigo-600 shadow-sm">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 rounded-lg text-[11px] font-medium bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 shadow-sm transition">다음</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-2 rounded-lg text-[11px] font-medium bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 shadow-sm transition">마지막</a>
+        {% endif %}
+    </div>
+{% endif %}

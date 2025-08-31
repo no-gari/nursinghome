@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.conf import settings
-from .models import Facility, ChatHistory, Tag
+from .models import Facility, ChatHistory, Tag, Hospital
 from .serializers import FacilityListSerializer, FacilityDetailSerializer, ChatRequestSerializer, ChatResponseSerializer
 from .rag_service import RAGService
 from django.utils.decorators import method_decorator
@@ -136,7 +136,7 @@ class FacilityListView(ListView):
                 output_field=IntegerField()
             )
             queryset = queryset.annotate(_grade_order=grade_order).order_by('_grade_order', 'name')
-        else:  # 이름 오름차순
+        else:  # 이름 ���름차순
             queryset = queryset.order_by('name')
 
         return queryset.distinct()
@@ -173,6 +173,80 @@ class FacilityListView(ListView):
         # AJAX(partial) 요청이면 결과 부분만 반환
         if self.request.GET.get('ajax') == '1' or self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return render(self.request, 'core/_facility_list_results.html', context)
+        return super().render_to_response(context, **response_kwargs)
+
+
+class HospitalListView(ListView):
+    model = Hospital
+    template_name = 'core/hospital_list.html'
+    context_object_name = 'hospitals'
+    paginate_by = 20
+
+    def get_queryset(self):
+        queryset = Hospital.objects.all().prefetch_related('tags', 'images')
+        sido = self.request.GET.get('sido', '전체')
+        sigungu = self.request.GET.get('sigungu', '')
+        grade = self.request.GET.get('grade', '')
+        establishment = self.request.GET.get('establishment', '')
+        size = self.request.GET.get('size', '')
+        search = self.request.GET.get('search', '').strip()
+        sort = self.request.GET.get('sort', 'grade')
+        if sido and sido != '전체':
+            queryset = queryset.filter(sido=sido)
+            if sigungu:
+                queryset = queryset.filter(sigungu=sigungu)
+        if grade:
+            queryset = queryset.filter(grade=grade)
+        for tag_name in [establishment, size]:
+            if tag_name:
+                queryset = queryset.filter(tags__name__icontains=tag_name)
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+        if sort == 'grade':
+            grade_order = Case(
+                When(grade='1등급', then=Value(1)),
+                When(grade='2등급', then=Value(2)),
+                When(grade='3등급', then=Value(3)),
+                When(grade='4등급', then=Value(4)),
+                When(grade='5등급', then=Value(5)),
+                When(grade='등급외', then=Value(6)),
+                default=Value(7),
+                output_field=IntegerField()
+            )
+            queryset = queryset.annotate(_grade_order=grade_order).order_by('_grade_order', 'name')
+        else:
+            queryset = queryset.order_by('name')
+        return queryset.distinct()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        sido = self.request.GET.get('sido', '')
+        sigungu = self.request.GET.get('sigungu', '')
+        grade = self.request.GET.get('grade', '')
+        establishment = self.request.GET.get('establishment', '')
+        size = self.request.GET.get('size', '')
+        search = self.request.GET.get('search', '')
+        sort = self.request.GET.get('sort', 'grade')
+        current_filters = {
+            'sido': sido,
+            'sigungu': sigungu,
+            'grade': grade,
+            'establishment': establishment,
+            'size': size,
+            'search': search,
+            'sort': sort,
+        }
+        context.update({
+            'regions': regions,
+            'current_filters': current_filters,
+            'current_filters_json': json.dumps(current_filters, ensure_ascii=False),
+            'total_count': self.get_queryset().count(),
+        })
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        if self.request.GET.get('ajax') == '1' or self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return render(self.request, 'core/_hospital_list_results.html', context)
         return super().render_to_response(context, **response_kwargs)
 
 
@@ -242,3 +316,33 @@ def initialize_rag(request):
         return Response({
             'error': f'RAG 초기화 중 오류가 발생했습니다: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def hospital_detail(request, code: str):
+    hospital = get_object_or_404(Hospital, code=code)
+    images = list(hospital.images.all().reverse())
+    tags = list(hospital.tags.all())
+
+    # JSON 필드들을 (키, 값) 리스트로 변환 (표시용)
+    def json_items(obj):
+        if not obj:
+            return []
+        if isinstance(obj, dict):
+            return [(k, v) for k, v in obj.items()]
+        return []
+
+    context = {
+        'hospital': hospital,
+        'images': images,
+        'tags': tags,
+        'bed_count_items': json_items(hospital.bed_count),
+        'operation_facility_items': json_items(hospital.operation_facility),
+        'doctor_count_items': json_items(hospital.doctor_count),
+        'specialist_by_department_items': json_items(hospital.specialist_by_department),
+        'department_specialists_items': json_items(hospital.department_specialists),
+        'other_staff_items': json_items(hospital.other_staff),
+        'consultation_hours_items': json_items(hospital.consultation_hours),
+        'medical_fee_info_items': json_items(hospital.medical_fee_info),
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+    }
+    return render(request, 'core/hospital_detail.html', context)

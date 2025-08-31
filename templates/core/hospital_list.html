@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>요양병원 검색 - CareBridge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;background:linear-gradient(160deg,#ffffff 0%,#f5f8fb 55%,#eef3f9 100%);color:#1e293b;}
+        .hdr{transition:height .2s ease, box-shadow .2s ease, background .2s ease;}
+        .hdr:not(.shrink){height:70px;}
+        .hdr.shrink{height:56px;}
+        .segment-btn{position:relative;flex:1 1 0;display:flex;flex-direction:column;justify-content:center;padding:0 .65rem;min-width:0;cursor:pointer;}
+        .segment-btn:hover{background:#f1f5f9;}
+        .segment-label{font-size:10px;letter-spacing:.05em;color:#64748b;font-weight:600;text-transform:uppercase;}
+        .segment-value{font-size:13px;font-weight:500;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0f172a;}
+        .capsule{height:48px;border-radius:9999px;background:#ffffff;display:flex;align-items:center;border:1px solid #e2e8f0;box-shadow:0 2px 4px rgba(15,23,42,.04);width:100%;max-width:800px;overflow:hidden;}
+        .capsule.divide > * + *{border-left:1px solid #e2e8f0;}
+        .capsule:focus-within{box-shadow:0 0 0 3px rgba(99,102,241,.25);}
+        .pop{position:absolute; top:100%; left:0; margin-top:8px; z-index:40; min-width:320px; background:#fff; border:1px solid #e2e8f0; border-radius:1rem; box-shadow:0 12px 32px -8px rgba(15,23,42,.18),0 4px 12px -2px rgba(15,23,42,.08); padding:1rem; display:none; opacity:0; transform:translateY(6px); transition:.18s ease;}
+        .pop.open{display:block; opacity:1; transform:translateY(0);}
+        .filter-chip input{position:absolute;opacity:0;pointer-events:none;}
+        .filter-chip span{display:inline-flex;align-items:center;justify-content:center;padding:0 .9rem;height:34px;border-radius:9999px;border:1px solid #cbd5e1;background:#fff;font-size:12px;font-weight:500;color:#334155;cursor:pointer;transition:.18s;}
+        .filter-chip span:hover{border-color:#94a3b8;background:#f1f5f9;}
+        .filter-chip input:checked + span{border-color:#6366f1;background:#eef2ff;color:#4338ca;box-shadow:0 0 0 1px #6366f1 inset;}
+        .popover-section-title{font-size:12px;font-weight:600;letter-spacing:.05em;color:#64748b;margin-bottom:.5rem;text-transform:uppercase;}
+        .loader{width:56px;height:56px;position:relative;}
+        .loader:after{content:"";position:absolute;inset:0;border-radius:50%;border:6px solid #6366f1;border-color:#6366f1 transparent #6366f1 transparent;animation:spin 1s linear infinite;}
+        @keyframes spin{to{transform:rotate(360deg);}}
+        .scroll-top-btn{position:fixed;bottom:2rem;right:2rem;width:3rem;height:3rem;background:#6366f1;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(99,102,241,.25);cursor:pointer;transition:all .3s ease;z-index:30;opacity:0;visibility:hidden;transform:translateY(1rem);} .scroll-top-btn.visible{opacity:1;visibility:visible;transform:translateY(0);} .scroll-top-btn:hover{background:#5855eb;box-shadow:0 6px 16px rgba(99,102,241,.35);transform:translateY(-2px);}
+        #mobileFilterPanel{background:#ffffff;} #mobileFilterPanel .section-title{font-size:11px;font-weight:600;letter-spacing:.05em;color:#64748b;margin-bottom:.5rem;text-transform:uppercase;} #mobileFilterPanel .panel-inner{padding:1.25rem 1.25rem 6rem;} #mobileFilterPanel .panel-footer{position:fixed;left:0;right:0;bottom:0;background:#ffffff;border-top:1px solid #e2e8f0;padding:.75rem 1rem;display:flex;gap:.75rem;} @media (min-width:640px){#mobileFilterPanel{display:none !important;}}
+        .sort-segment{display:inline-flex;align-items:center;background:#fff;border:1px solid #e2e8f0;border-radius:9999px;padding:4px;gap:4px;box-shadow:0 2px 4px rgba(15,23,42,.05);} .sort-segment .seg-btn{position:relative;font-size:12px;font-weight:600;letter-spacing:.02em;padding:0 14px;height:34px;border-radius:9999px;color:#475569;display:inline-flex;align-items:center;gap:4px;transition:.28s;} .sort-segment .seg-btn:hover{background:#f1f5f9;} .sort-segment .seg-btn.active{background:#6366f1;color:#fff;box-shadow:0 4px 10px -3px rgba(99,102,241,.4);} .sort-segment .seg-btn .dot{width:6px;height:6px;border-radius:50%;background:#cbd5e1;transition:.28s;} .sort-segment .seg-btn.active .dot{background:#fff;} @media (max-width:639px){ .sort-segment{padding:3px;} .sort-segment .seg-btn{height:32px;font-size:11px;padding:0 11px;} }
+        /* fancy-select (facility_list 동일) */
+        .fancy-select{position:relative;}
+        .fancy-select select{appearance:none;-webkit-appearance:none;-moz-appearance:none;background:#ffffff;border:1.5px solid #dbe2ea;border-radius:0.85rem;padding:0 2.6rem 0 2.4rem;height:46px;line-height:44px;font-size:13px;font-weight:500;color:#1e293b;width:100%;box-shadow:0 2px 4px rgba(15,23,42,.04);}
+        .fancy-select select:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.25);}
+        .fancy-select.fs-enhanced select.fs-hidden{display:none;}
+        .fancy-select.fs-enhanced .fs-display{background:#ffffff;border:1.5px solid #dbe2ea;border-radius:0.85rem;padding:0 2.6rem 0 2.4rem;height:46px;line-height:44px;font-size:13px;font-weight:500;color:#1e293b;width:100%;text-align:left;cursor:pointer;box-shadow:0 2px 4px rgba(15,23,42,.04);position:relative;transition:.2s;border-color:#dbe2ea;}
+        .fancy-select.fs-enhanced .fs-display:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.25);}
+        .fancy-select .icon{position:absolute;left:0.9rem;top:50%;transform:translateY(-50%);color:#64748b;font-size:14px;pointer-events:none;}
+        .fancy-select .chevron{position:absolute;right:0.95rem;top:50%;width:0.65rem;height:0.65rem;border-right:2px solid #64748b;border-bottom:2px solid #64748b;transform:translateY(-60%) rotate(45deg);pointer-events:none;transition:.25s;}
+        .fancy-select.open .chevron{transform:translateY(-60%) rotate(225deg);border-color:#6366f1;}
+        .fancy-select.select-focus .chevron{border-color:#6366f1;}
+        .fancy-select.fs-enhanced .fs-options{position:absolute;left:0;right:0;top:calc(100% + 6px);background:#ffffff;border:1px solid #e2e8f0;border-radius:0.85rem;padding:6px 4px;box-shadow:0 12px 32px -8px rgba(15,23,42,.18),0 4px 12px -2px rgba(15,23,42,.08);max-height:260px;overflow-y:auto;display:none;z-index:60;font-size:13px;scrollbar-width:thin;}
+        .fancy-select.fs-enhanced .fs-options.above{top:auto;bottom:calc(100% + 6px);}
+        .fancy-select.open.fs-enhanced .fs-options{display:block;animation:fadeIn .16s ease;}
+        .fancy-select.fs-enhanced .fs-option{padding:8px 14px;border-radius:0.6rem;color:#334155;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;position:relative;}
+        .fancy-select.fs-enhanced .fs-option:hover{background:#f1f5f9;}
+        .fancy-select.fs-enhanced .fs-option.selected{background:linear-gradient(90deg,#eef2ff,#e0e7ff);color:#4338ca;font-weight:600;}
+        .fancy-select.fs-enhanced .fs-option.selected:after{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;font-size:12px;color:#4f46e5;}
+        .fancy-select.fs-enhanced .fs-empty{padding:10px 14px;font-size:12px;color:#64748b;}
+        .fancy-select.fs-enhanced .fs-display:disabled{opacity:.55;cursor:not-allowed;}
+        #popover-region .fancy-select + .fancy-select{margin-top:.85rem;}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+    </style>
+</head>
+<body class="min-h-screen">
+<header id="siteHeader" class="hdr sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 flex flex-col justify-center">
+    {% include 'core/_navbar.html' %}
+</header>
+<form id="filter-form" class="hidden"></form>
+<div id="active-filters" class="max-w-7xl mx-auto px-5 pt-1 pb-1 flex flex-wrap gap-2 text-xs"></div>
+<main class="max-w-7xl mx-auto px-5 pt-3 pb-14">
+    <div class="mb-6 grid gap-6 md:grid-cols-5 items-start">
+        <div class="min-w-[200px] flex flex-col justify-start">
+            <div class="flex items-center justify-between md:justify-start md:flex-col md:items-start">
+                <div class="flex flex-col md:text-left">
+                    <h1 class="text-lg md:text-xl font-semibold tracking-tight">요양병원 <span class="text-indigo-600">검색결과</span></h1>
+                    <p class="text-xs text-slate-500 mt-1">총 <strong id="hospital-count" class="text-indigo-600">{{ total_count }}</strong>개 병원</p>
+                </div>
+                <div class="md:hidden">
+                    <div id="sortSegmentMobile" class="sort-segment" role="group" aria-label="정렬 선택(모바일)">
+                        <button type="button" class="seg-btn" data-sort="grade"><span class="dot"></span><span>등급 순</span></button>
+                        <button type="button" class="seg-btn" data-sort="name"><span class="dot"></span><span>가나다 순</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-center order-last md:order-none md:justify-center md:col-span-3">
+            <div class="relative w-full" style="max-width:800px;">
+                <div id="searchCapsule" class="capsule divide px-2" role="group" aria-label="검색 세그먼트">
+                    <button type="button" class="segment-btn" data-popover="region" aria-haspopup="dialog" aria-expanded="false">
+                        <span class="segment-label">지역</span>
+                        <span id="label-region" class="segment-value">{% if current_filters.sido or current_filters.sigungu %}{{ current_filters.sido }}{% if current_filters.sigungu %} · {{ current_filters.sigungu }}{% endif %}{% else %}��역 선택{% endif %}</span>
+                    </button>
+                    <button type="button" class="segment-btn" data-popover="grade" aria-haspopup="dialog" aria-expanded="false">
+                        <span class="segment-label">등급</span>
+                        <span id="label-grade" class="segment-value">{% if current_filters.grade %}{{ current_filters.grade|slice:':3' }}{% else %}전체 등급{% endif %}</span>
+                    </button>
+                    <button type="button" class="segment-btn" data-popover="establishment" aria-haspopup="dialog" aria-expanded="false">
+                        <span class="segment-label">연차</span>
+                        <span id="label-est" class="segment-value">{% if current_filters.establishment %}{{ current_filters.establishment }}{% else %}전체{% endif %}</span>
+                    </button>
+                    <button type="button" class="segment-btn" data-popover="size" aria-haspopup="dialog" aria-expanded="false">
+                        <span class="segment-label">규모</span>
+                        <span id="label-size" class="segment-value">{% if current_filters.size %}{{ current_filters.size }}{% else %}전체{% endif %}</span>
+                    </button>
+                    <button type="button" class="segment-btn" data-popover="q" aria-haspopup="dialog" aria-expanded="false">
+                        <span class="segment-label">검색</span>
+                        <span id="label-search" class="segment-value">{% if current_filters.search %}{{ current_filters.search|truncatechars:10 }}{% else %}검색어{% endif %}</span>
+                    </button>
+                    <div class="flex items-center pl-2 pr-2">
+                        <button id="resetFilters" type="button" class="w-10 h-10 rounded-full bg-slate-500 text-white flex items-center justify-center hover:bg-slate-600 focus:ring-4 focus:ring-slate-200" title="필터 초기화">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="popover-region" class="pop" role="dialog" aria-modal="true" aria-label="지역 선택">
+                    <div class="popover-section-title">시/군/구 선택</div>
+                    <div class="space-y-3">
+                        <div class="fancy-select">
+                            <i class="fa fa-map-marker-alt icon" aria-hidden="true"></i>
+                            <select id="field-sido" aria-label="시/도 선택">
+                                <option value="">전체 (시/도)</option>
+                                {% for sido_name in regions.keys %}
+                                    <option value="{{ sido_name }}" {% if current_filters.sido == sido_name %}selected{% endif %}>{{ sido_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="chevron" aria-hidden="true"></span>
+                        </div>
+                        <div class="fancy-select">
+                            <i class="fa fa-location-dot icon" aria-hidden="true"></i>
+                            <select id="field-sigungu" aria-label="시/군/구 선택">
+                                <option value="">전체 (시/군/구)</option>
+                            </select>
+                            <span class="chevron" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                    <div class="flex justify-end mt-5"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
+                </div>
+                <div id="popover-grade" class="pop" role="dialog" aria-modal="true" aria-label="등급 선택">
+                    <div class="popover-section-title">등급</div>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="" {% if not current_filters.grade %}checked{% endif %}><span>전체</span></label>
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="1등급" {% if current_filters.grade == '1등급' %}checked{% endif %}><span>1등급</span></label>
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="2등급" {% if current_filters.grade == '2등급' %}checked{% endif %}><span>2등급</span></label>
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="3등급" {% if current_filters.grade == '3등급' %}checked{% endif %}><span>3등급</span></label>
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="4등급" {% if current_filters.grade == '4등급' %}checked{% endif %}><span>4등급</span></label>
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="5등급" {% if current_filters.grade == '5등급' %}checked{% endif %}><span>5등급</span></label>
+                        <label class="filter-chip"><input type="radio" name="grade-radio" value="등급외" {% if current_filters.grade == '등급외' %}checked{% endif %}><span>그 외</span></label>
+                    </div>
+                    <div class="flex justify-end"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
+                </div>
+                <div id="popover-establishment" class="pop" role="dialog" aria-modal="true" aria-label="설립 연차">
+                    <div class="popover-section-title">설립 연차</div>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <label class="filter-chip"><input type="radio" name="establishment-radio" value="" {% if not current_filters.establishment %}checked{% endif %}><span>전체</span></label>
+                        <label class="filter-chip"><input type="radio" name="establishment-radio" value="신규시설" {% if current_filters.establishment == '신규시설' %}checked{% endif %}><span>신규</span></label>
+                        <label class="filter-chip"><input type="radio" name="establishment-radio" value="5년이내" {% if current_filters.establishment == '5년이내' %}checked{% endif %}><span>5년</span></label>
+                        <label class="filter-chip"><input type="radio" name="establishment-radio" value="10년이내" {% if current_filters.establishment == '10년이내' %}checked{% endif %}><span>10년</span></label>
+                        <label class="filter-chip"><input type="radio" name="establishment-radio" value="10년이상" {% if current_filters.establishment == '10년이상' %}checked{% endif %}><span>10년+</span></label>
+                    </div>
+                    <div class="flex justify-end"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
+                </div>
+                <div id="popover-size" class="pop" role="dialog" aria-modal="true" aria-label="병원 규모">
+                    <div class="popover-section-title">규모</div>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <label class="filter-chip"><input type="radio" name="size-radio" value="" {% if not current_filters.size %}checked{% endif %}><span>전체</span></label>
+                        <label class="filter-chip"><input type="radio" name="size-radio" value="대형" {% if current_filters.size == '대형' %}checked{% endif %}><span>대형</span></label>
+                        <label class="filter-chip"><input type="radio" name="size-radio" value="중형" {% if current_filters.size == '중형' %}checked{% endif %}><span>중형</span></label>
+                        <label class="filter-chip"><input type="radio" name="size-radio" value="소형" {% if current_filters.size == '소형' %}checked{% endif %}><span>소형</span></label>
+                    </div>
+                    <div class="flex justify-end"><button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button></div>
+                </div>
+                <div id="popover-q" class="pop" role="dialog" aria-modal="true" aria-label="검색어 입력">
+                    <label class="block text-[11px] font-semibold tracking-wide text-slate-500 mb-2">검색어</label>
+                    <input id="field-search" type="text" class="w-full h-11 rounded-lg border border-slate-300 px-4 mb-4 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-sm" value="{{ current_filters.search }}" placeholder="예: 서울 1등급" />
+                    <div class="flex justify-between gap-2">
+                        <button type="button" class="px-4 h-10 rounded-lg border text-sm bg-white hover:bg-slate-50 close-btn">닫기</button>
+                        <button type="button" id="applySearch" class="px-5 h-10 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">검색</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hidden md:flex justify-center md:justify-end w-full md:w-auto">
+            <div class="flex flex-col gap-2 items-center md:items-end">
+                <div id="sortSegment" class="sort-segment" role="group" aria-label="정렬 선택">
+                    <button type="button" class="seg-btn" data-sort="grade"><span class="dot"></span><span>등급 순</span></button>
+                    <button type="button" class="seg-btn" data-sort="name"><span class="dot"></span><span>가나다 순</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="hospital-results">{% include 'core/_hospital_list_results.html' %}</div>
+</main>
+{% include 'core/_footer.html' %}
+<div id="mobileFilterPanel" class="sm:hidden hidden fixed inset-0 z-[70] flex flex-col">
+    <div class="flex items-center justify-between px-4 h-14 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div class="flex items-center gap-2 font-semibold text-slate-800 text-sm"><i class="fa fa-sliders-h text-slate-500"></i> <span>필터 설정</span></div>
+        <button type="button" id="mobileFilterClose" class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-700" aria-label="닫기"><i class="fa fa-times text-lg"></i></button>
+    </div>
+    <div class="panel-inner overflow-y-auto grow">
+        <div class="mb-6">
+            <div class="section-title">지역</div>
+            <div class="space-y-3">
+                <div class="fancy-select">
+                    <i class="fa fa-map-marker-alt icon" aria-hidden="true"></i>
+                    <select id="field-sido-mobile" aria-label="시/도 선택 (모바일)">
+                        <option value="">전체 (시/도)</option>
+                        {% for sido_name in regions.keys %}
+                            <option value="{{ sido_name }}">{{ sido_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="chevron" aria-hidden="true"></span>
+                </div>
+                <div class="fancy-select">
+                    <i class="fa fa-location-dot icon" aria-hidden="true"></i>
+                    <select id="field-sigungu-mobile" aria-label="시/군/구 선택 (모바일)">
+                        <option value="">전체 (시/군/구)</option>
+                    </select>
+                    <span class="chevron" aria-hidden="true"></span>
+                </div>
+            </div>
+        </div>
+        <div class="mb-6">
+            <div class="section-title">등급</div>
+            <div id="mobile-grade-group" class="flex flex-wrap gap-2"></div>
+        </div>
+        <div class="mb-6">
+            <div class="section-title">설립 연차</div>
+            <div id="mobile-est-group" class="flex flex-wrap gap-2"></div>
+        </div>
+        <div class="mb-6">
+            <div class="section-title">규모</div>
+            <div id="mobile-size-group" class="flex flex-wrap gap-2"></div>
+        </div>
+        <div class="mb-2">
+            <div class="section-title">검색어</div>
+            <input id="field-search-mobile" type="text" class="w-full h-11 rounded-lg border border-slate-300 px-4 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-sm" placeholder="예: 서울 1등급" />
+        </div>
+    </div>
+    <div class="panel-footer">
+        <button type="button" id="mobileFilterReset" class="flex-1 h-11 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50">초기화</button>
+        <button type="button" id="mobileFilterApply" class="flex-[2] h-11 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">적용하기</button>
+    </div>
+</div>
+<button class="scroll-top-btn" aria-label="위로 스크롤" title="위로 스크롤"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg></button>
+<script>
+const CURRENT_FILTERS = {{ current_filters_json|safe }};
+const REGIONS = {{ regions|safe }};
+const form = document.getElementById('filter-form');
+const hiddenFields = ['search','sido','sigungu','grade','establishment','size','sort'];
+hiddenFields.forEach(n=>{ if(!form.querySelector(`[name=${n}]`)){ const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value = CURRENT_FILTERS[n] || (n==='sort'?'grade':''); form.appendChild(i);} else { form.querySelector(`[name=${n}]`).value = CURRENT_FILTERS[n] || (n==='sort'?'grade':''); }});
+const sortHiddenInput = form.querySelector('[name=sort]');
+const sortSegment = document.getElementById('sortSegment');
+const sortSegmentMobile = document.getElementById('sortSegmentMobile');
+function currentSort(){ return sortHiddenInput.value || 'grade'; }
+function updateSortSegments(active){ [sortSegment, sortSegmentMobile].forEach(seg=>{ if(!seg) return; seg.querySelectorAll('.seg-btn').forEach(btn=>{ const val=btn.getAttribute('data-sort'); btn.classList.toggle('active', val===active); }); }); }
+function setSort(value,{silent=false}={}){ if(sortHiddenInput.value===value) return; sortHiddenInput.value=value; updateSortSegments(value); if(!silent) triggerFetch(); }
+[sortSegment, sortSegmentMobile].forEach(seg=>{ if(!seg) return; seg.querySelectorAll('.seg-btn').forEach(btn=> btn.addEventListener('click',()=> setSort(btn.getAttribute('data-sort')))); });
+updateSortSegments(currentSort());
+const labelRegion=document.getElementById('label-region');
+const labelGrade=document.getElementById('label-grade');
+const labelEst=document.getElementById('label-est');
+const labelSize=document.getElementById('label-size');
+const labelSearch=document.getElementById('label-search');
+const fieldSido=document.getElementById('field-sido');
+const fieldSigungu=document.getElementById('field-sigungu');
+const fieldSearch=document.getElementById('field-search');
+const popovers={region:document.getElementById('popover-region'),grade:document.getElementById('popover-grade'),establishment:document.getElementById('popover-establishment'),size:document.getElementById('popover-size'),q:document.getElementById('popover-q')};
+function populateSigungu(){ const cur=fieldSido.value; fieldSigungu.innerHTML='<option value="">전체 (시/군/구)</option>'; if(cur&&REGIONS[cur]) REGIONS[cur].forEach(sg=>{ const opt=document.createElement('option'); opt.value=sg; opt.textContent=sg; if(CURRENT_FILTERS.sigungu===sg) opt.selected=true; fieldSigungu.appendChild(opt); }); refreshFancySelect('field-sigungu'); }
+(function(){ const enhancedWrappers=[]; function enhance(wrapper){ if(wrapper.dataset.enhanced) return; const select=wrapper.querySelector('select'); if(!select) return; wrapper.dataset.enhanced='1'; wrapper.classList.add('fs-enhanced'); select.classList.add('fs-hidden'); const display=document.createElement('button'); display.type='button'; display.className='fs-display'; display.setAttribute('aria-haspopup','listbox'); display.setAttribute('aria-expanded','false'); display.innerHTML='<span class="fs-value"></span>'; const chevron=wrapper.querySelector('.chevron'); wrapper.insertBefore(display, chevron?chevron:select.nextSibling); const list=document.createElement('div'); list.className='fs-options'; list.setAttribute('role','listbox'); wrapper.appendChild(list); function build(){ list.innerHTML=''; if(!select.options.length){ const empty=document.createElement('div'); empty.className='fs-empty'; empty.textContent='옵션이 없습니다'; list.appendChild(empty); update(); return; } Array.from(select.options).forEach(opt=>{ const optDiv=document.createElement('div'); optDiv.className='fs-option'; optDiv.dataset.value=opt.value; optDiv.setAttribute('role','option'); optDiv.textContent=opt.textContent; if(opt.selected) optDiv.classList.add('selected'); optDiv.addEventListener('click',()=>{ if(opt.disabled) return; select.value=opt.value; select.dispatchEvent(new Event('change',{bubbles:true})); Array.from(list.querySelectorAll('.fs-option')).forEach(o=>o.classList.toggle('selected',o===optDiv)); close(); }); list.appendChild(optDiv); }); update(); } function update(){ const sel=select.options[select.selectedIndex]; const valEl=display.querySelector('.fs-value'); valEl.textContent = sel? sel.textContent : '선택'; list.querySelectorAll('.fs-option').forEach(o=> o.setAttribute('aria-selected', o.classList.contains('selected'))); } function open(){ closeAll(); wrapper.classList.add('open'); display.setAttribute('aria-expanded','true'); adjustDirection(); focusSelected(); } function close(){ wrapper.classList.remove('open'); display.setAttribute('aria-expanded','false'); } function toggle(){ wrapper.classList.contains('open')? close():open(); } function focusSelected(){ const cur=list.querySelector('.fs-option.selected'); (cur||list.querySelector('.fs-option'))?.scrollIntoView({block:'nearest'}); } function adjustDirection(){ requestAnimationFrame(()=>{ list.classList.remove('above'); const rect=list.getBoundingClientRect(); const spaceBelow=window.innerHeight-rect.top; if(spaceBelow<180){ list.classList.add('above'); } }); } display.addEventListener('click',toggle); display.addEventListener('keydown',e=>{ if(['ArrowDown','Enter',' '].includes(e.key)){ e.preventDefault(); open(); } }); list.addEventListener('keydown',e=>{ const items=Array.from(list.querySelectorAll('.fs-option')); const idx=items.findIndex(i=>i.classList.contains('focused')); function setFocus(i){ items.forEach(x=>x.classList.remove('focused')); if(items[i]){ items[i].classList.add('focused'); items[i].scrollIntoView({block:'nearest'}); } } if(e.key==='ArrowDown'){ e.preventDefault(); setFocus(idx<items.length-1?idx+1:0); } else if(e.key==='ArrowUp'){ e.preventDefault(); setFocus(idx>0?idx-1:items.length-1); } else if(e.key==='Home'){ e.preventDefault(); setFocus(0); } else if(e.key==='End'){ e.preventDefault(); setFocus(items.length-1); } else if(e.key==='Enter'){ e.preventDefault(); const f=items[idx]; if(f){ f.click(); } } else if(e.key==='Escape'){ e.preventDefault(); close(); display.focus(); } else if(e.key==='Tab'){ close(); } }); select.addEventListener('change',update); wrapper.refresh=()=>{ build(); }; build(); enhancedWrappers.push(wrapper); } function closeAll(){ enhancedWrappers.forEach(w=> w.classList.remove('open')); } document.addEventListener('click',e=>{ if(!e.target.closest('.fancy-select')) closeAll(); }); document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeAll(); }); window.addEventListener('resize',()=>{ enhancedWrappers.forEach(w=>{ if(w.classList.contains('open')){ const list=w.querySelector('.fs-options'); if(list){ list.classList.remove('above'); } } }); }); document.querySelectorAll('.fancy-select').forEach(enhance); window.refreshFancySelect = function(selectId){ const sel=document.getElementById(selectId); if(!sel) return; const wrap=sel.closest('.fancy-select'); if(!wrap) return; if(!wrap.dataset.enhanced){ enhance(wrap); } else { wrap.refresh(); } };})();
+fieldSido.addEventListener('change',()=>{ fieldSigungu.value=''; CURRENT_FILTERS.sigungu=''; populateSigungu(); updateRegionLabel(); syncHidden('sido',fieldSido.value); syncHidden('sigungu',''); triggerFetch(); });
+fieldSigungu.addEventListener('change',()=>{ updateRegionLabel(); syncHidden('sigungu',fieldSigungu.value); triggerFetch(); });
+function syncHidden(name,val){ const f=form.querySelector(`[name=${name}]`); if(f) f.value=val; }
+function updateRegionLabel(){ const s=fieldSido.value; const g=fieldSigungu.value; labelRegion.textContent = s ? (g? `${s} · ${g}` : s) : '지역 선택'; }
+function updateGradeLabel(){ const v=form.querySelector('[name=grade]').value; labelGrade.textContent = v ? (v.includes('등급')? v : v) : '전체 등급'; }
+function updateEstLabel(){ const v=form.querySelector('[name=establishment]').value; labelEst.textContent = v || '전체'; }
+function updateSizeLabel(){ const v=form.querySelector('[name=size]').value; labelSize.textContent = v || '전체'; }
+function updateSearchLabel(){ const v=form.querySelector('[name=search]').value; labelSearch.textContent = v ? (v.length>10? v.slice(0,10)+'…':v) : '검색어'; }
+popovers.grade.querySelectorAll('input[name=grade-radio]').forEach(r=>r.addEventListener('change',()=>{ syncHidden('grade',r.value); updateGradeLabel(); triggerFetch(); }));
+popovers.establishment.querySelectorAll('input[name=establishment-radio]').forEach(r=>r.addEventListener('change',()=>{ syncHidden('establishment',r.value); updateEstLabel(); triggerFetch(); }));
+popovers.size.querySelectorAll('input[name=size-radio]').forEach(r=>r.addEventListener('change',()=>{ syncHidden('size',r.value); updateSizeLabel(); triggerFetch(); }));
+const applySearchBtn=document.getElementById('applySearch');
+applySearchBtn.addEventListener('click',()=>{ syncHidden('search',fieldSearch.value.trim()); updateSearchLabel(); triggerFetch(); closeAllPopovers(); });
+fieldSearch.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); syncHidden('search',fieldSearch.value.trim()); updateSearchLabel(); triggerFetch(); closeAllPopovers(); }});
+let openName = null; function openPopover(name, btn){ if(openName === name){ closeAllPopovers(); return; } closeAllPopovers(); const pv = popovers[name]; if(!pv) return; pv.classList.add('open'); btn.setAttribute('aria-expanded','true'); requestAnimationFrame(()=> positionPopover(btn, pv)); openName = name; }
+function closeAllPopovers(){ Object.entries(popovers).forEach(([k,p])=>{ if(p){ p.classList.remove('open'); const b=document.querySelector(`[data-popover="${k}"]`); if(b) b.setAttribute('aria-expanded','false'); }}); openName = null; }
+Array.from(document.querySelectorAll('#searchCapsule [data-popover]')).forEach(btn=>{ btn.onclick = ()=> openPopover(btn.getAttribute('data-popover'), btn); });
+window.addEventListener('mousedown', e=>{ if(!openName) return; const capsule=document.getElementById('searchCapsule'); const pv=popovers[openName]; if(!pv) return; if(!pv.contains(e.target) && !capsule.contains(e.target)) closeAllPopovers(); });
+window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAllPopovers(); });
+window.addEventListener('resize', ()=>{ if(openName){ const btn=document.querySelector(`[data-popover="${openName}"]`); if(btn){ positionPopover(btn, popovers[openName]); } }});
+document.querySelectorAll('.close-btn').forEach(btn => { btn.addEventListener('click', closeAllPopovers); });
+const resetFiltersBtn = document.getElementById('resetFilters');
+if(resetFiltersBtn){ resetFiltersBtn.addEventListener('click',()=>{ hiddenFields.forEach(field=>{ const input=form.querySelector(`[name=${field}]`); if(input) input.value = (field==='sort'?'grade':''); }); document.getElementById('field-sido').value=''; document.getElementById('field-sigungu').value=''; const fieldSearch=document.getElementById('field-search'); if(fieldSearch) fieldSearch.value=''; populateSigungu(); ['grade','establishment','size'].forEach(name=>{ document.querySelectorAll(`#popover-${name} input[type=radio]`).forEach(r=>{ r.checked = r.value===""; }); }); updateRegionLabel(); updateGradeLabel(); updateEstLabel(); updateSizeLabel(); updateSearchLabel(); setSort('grade',{silent:true}); closeAllPopovers(); triggerFetch(); }); }
+const resultsContainer=document.getElementById('hospital-results');
+function setLoading(){ resultsContainer.innerHTML = `\n  <div class="w-full flex flex-col items-center justify-center py-24 gap-4" role="status" aria-live="polite">\n    <div class="loader" aria-hidden="true"></div>\n    <div class="text-sm text-slate-500 font-medium">병원 목록 불러오는 중...</div>\n  </div>`; }
+function buildQuery(){ const p=new URLSearchParams(); hiddenFields.forEach(k=>{ const v=form.querySelector(`[name=${k}]`).value; if(v) p.set(k,v); }); p.set('ajax','1'); return p; }
+function applyPaginationLinks(){ resultsContainer.querySelectorAll('.pagination a').forEach(a=>a.addEventListener('click',e=>{ e.preventDefault(); const m=a.getAttribute('href').match(/page=(\d+)/); triggerFetch({page:m?m[1]:'1'}); })); }
+async function triggerFetch(extra={}){ setLoading(); const params=buildQuery(); if(extra.page) params.set('page',extra.page); const url=location.pathname+'?'+params.toString(); fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}}).then(r=>r.text()).then(html=>{ resultsContainer.innerHTML=html; applyPaginationLinks(); const meta = resultsContainer.querySelector('#results-meta'); if(meta){ const total = meta.getAttribute('data-total'); const cntEl=document.getElementById('hospital-count'); if(cntEl && total!==null){ cntEl.textContent=total; } } params.delete('ajax'); history.replaceState({},'',location.pathname+'?'+params.toString()); if(typeof renderActiveFilters==='function') renderActiveFilters(); window.scrollTo({top:0,behavior:'smooth'}); }).catch(e=>{ resultsContainer.innerHTML='<div class="py-16 text-center text-red-500">오류가 발생했습니다.</div>'; console.error(e); }); }
+updateRegionLabel(); updateGradeLabel(); updateEstLabel(); updateSizeLabel(); updateSearchLabel(); applyPaginationLinks();
+const header=document.getElementById('siteHeader'); function onScroll(){ if(window.scrollY>16) header.classList.add('shrink'); else header.classList.remove('shrink'); } window.addEventListener('scroll',onScroll); onScroll();
+const scrollTopBtn = document.querySelector('.scroll-top-btn'); function toggleScrollTopBtn(){ if (window.scrollY > 300) { scrollTopBtn.classList.add('visible'); } else { scrollTopBtn.classList.remove('visible'); } } scrollTopBtn.addEventListener('click', () => { window.scrollTo({top: 0,behavior: 'smooth'}); }); window.addEventListener('scroll', toggleScrollTopBtn); toggleScrollTopBtn();
+function positionPopover(btn, pv){ if(window.innerWidth < 640){ const header=document.getElementById('siteHeader'); const hRect=header.getBoundingClientRect(); pv.style.top = (hRect.bottom)+'px'; return; } const capsule = document.getElementById('searchCapsule'); const wrapper = capsule.parentElement; wrapper.style.position = wrapper.style.position || 'relative'; const btnRect = btn.getBoundingClientRect(); const wrapRect = wrapper.getBoundingClientRect(); pv.style.left = '0px'; pv.style.top = '0px'; const pvWidth = pv.offsetWidth || 320; const centerLeft = btnRect.left - wrapRect.left + (btnRect.width/2) - (pvWidth/2); const maxLeft = wrapRect.width - pvWidth; const clampedLeft = Math.max(0, Math.min(centerLeft, maxLeft)); pv.style.left = clampedLeft + 'px'; pv.style.top = (capsule.offsetHeight + 8) + 'px'; }
+const mobilePanel = document.getElementById('mobileFilterPanel');
+const mobileFilterClose = document.getElementById('mobileFilterClose');
+const mobileFilterApply = document.getElementById('mobileFilterApply');
+const mobileFilterReset = document.getElementById('mobileFilterReset');
+const mobileSido = document.getElementById('field-sido-mobile');
+const mobileSigungu = document.getElementById('field-sigungu-mobile');
+const mobileSearch = document.getElementById('field-search-mobile');
+const mobileGradeGroup = document.getElementById('mobile-grade-group');
+const mobileEstGroup = document.getElementById('mobile-est-group');
+const mobileSizeGroup = document.getElementById('mobile-size-group');
+function cloneFilterRadios(srcSelector, nameAttr, container){ container.innerHTML=''; document.querySelectorAll(srcSelector).forEach(lbl=>{ const clone = lbl.cloneNode(true); const input = clone.querySelector('input'); if(input){ input.name = 'mobile-' + nameAttr; } container.appendChild(clone); }); }
+cloneFilterRadios('#popover-grade .filter-chip','grade',mobileGradeGroup);
+cloneFilterRadios('#popover-establishment .filter-chip','establishment',mobileEstGroup);
+cloneFilterRadios('#popover-size .filter-chip','size',mobileSizeGroup);
+function openMobilePanel(){ if(!mobilePanel) return; syncMobileFromHidden(); mobilePanel.classList.remove('hidden'); mobilePanel.classList.add('fade-in'); document.body.classList.add('overflow-hidden'); }
+function closeMobilePanel(){ if(!mobilePanel) return; mobilePanel.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); }
+mobileFilterClose && mobileFilterClose.addEventListener('click', closeMobilePanel);
+const searchCapsule = document.getElementById('searchCapsule');
+searchCapsule.addEventListener('click', (e)=>{ if(window.innerWidth < 640){ e.preventDefault(); openMobilePanel(); } });
+const originalOpenPopover = openPopover; openPopover = function(name, btn){ if(window.innerWidth < 640){ openMobilePanel(); return; } originalOpenPopover(name, btn); };
+function populateSigunguMobile(){ const cur = mobileSido.value; mobileSigungu.innerHTML='<option value="">전체 (시/군/구)</option>'; if(cur && REGIONS[cur]) REGIONS[cur].forEach(sg=>{ const opt=document.createElement('option'); opt.value=sg; opt.textContent=sg; mobileSigungu.appendChild(opt); }); refreshFancySelect('field-sigungu-mobile'); }
+mobileSido.addEventListener('change', ()=>{ if(mobileSido.value !== form.querySelector('[name=sido]').value){ mobileSigungu.value=''; } populateSigunguMobile(); });
+function syncMobileFromHidden(){ const get=(n)=>form.querySelector(`[name=${n}]`).value||''; mobileSido.value=get('sido'); populateSigunguMobile(); mobileSigungu.value=get('sigungu'); const gradeVal=get('grade'); mobileGradeGroup.querySelectorAll('input').forEach(i=>{ i.checked = (i.value === gradeVal); }); const estVal=get('establishment'); mobileEstGroup.querySelectorAll('input').forEach(i=>{ i.checked = (i.value === estVal); }); const sizeVal=get('size'); mobileSizeGroup.querySelectorAll('input').forEach(i=>{ i.checked = (i.value === sizeVal); }); mobileSearch.value=get('search'); }
+function applyMobileToHidden(){ syncHidden('sido', mobileSido.value); syncHidden('sigungu', mobileSigungu.value); const gradeSel = mobileGradeGroup.querySelector('input:checked'); syncHidden('grade', gradeSel?gradeSel.value:''); const estSel = mobileEstGroup.querySelector('input:checked'); syncHidden('establishment', estSel?estSel.value:''); const sizeSel = mobileSizeGroup.querySelector('input:checked'); syncHidden('size', sizeSel?sizeSel.value:''); syncHidden('search', mobileSearch.value.trim()); updateRegionLabel(); updateGradeLabel(); updateEstLabel(); updateSizeLabel(); updateSearchLabel(); }
+mobileFilterApply.addEventListener('click', ()=>{ applyMobileToHidden(); triggerFetch(); closeMobilePanel(); });
+mobileFilterReset.addEventListener('click', ()=>{ mobileSido.value=''; mobileSigungu.value=''; populateSigunguMobile(); mobileGradeGroup.querySelectorAll('input').forEach(i=>{ i.checked = i.value===""; }); mobileEstGroup.querySelectorAll('input').forEach(i=>{ i.checked = i.value===""; }); mobileSizeGroup.querySelectorAll('input').forEach(i=>{ i.checked = i.value===""; }); mobileSearch.value=''; setSort('grade',{silent:true}); applyMobileToHidden(); triggerFetch(); });
+window.addEventListener('resize', ()=>{ if(window.innerWidth >= 640 && mobilePanel && !mobilePanel.classList.contains('hidden')){ closeMobilePanel(); } });
+</script>
+</body>
+</html>
+
