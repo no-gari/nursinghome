@@ -21,5 +21,5 @@ urlpatterns = [
     path('api/chat/', views.ChatbotAPI.as_view(), name='chatbot_api'),
     path('api/initialize-rag/', views.initialize_rag, name='initialize_rag'),
     path('hospitals/', views.HospitalListView.as_view(), name='hospital_list'),  # 병원 리스트
-    path('hospital/<str:code>/', views.hospital_detail, name='hospital_detail'),
+    path('hospital/id/<int:pk>/', views.hospital_detail_by_id, name='hospital_detail_by_id'),  # 신규: id 기반
 ]

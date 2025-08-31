@@ -346,3 +346,32 @@ def hospital_detail(request, code: str):
         'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
     }
     return render(request, 'core/hospital_detail.html', context)
+
+
+def hospital_detail_by_id(request, pk: int):
+    hospital = get_object_or_404(Hospital, pk=pk)
+    images = list(hospital.images.all().reverse())
+    tags = list(hospital.tags.all())
+
+    def json_items(obj):
+        if not obj:
+            return []
+        if isinstance(obj, dict):
+            return [(k, v) for k, v in obj.items()]
+        return []
+
+    context = {
+        'hospital': hospital,
+        'images': images,
+        'tags': tags,
+        'bed_count_items': json_items(hospital.bed_count),
+        'operation_facility_items': json_items(hospital.operation_facility),
+        'doctor_count_items': json_items(hospital.doctor_count),
+        'specialist_by_department_items': json_items(hospital.specialist_by_department),
+        'department_specialists_items': json_items(hospital.department_specialists),
+        'other_staff_items': json_items(hospital.other_staff),
+        'consultation_hours_items': json_items(hospital.consultation_hours),
+        'medical_fee_info_items': json_items(hospital.medical_fee_info),
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+    }
+    return render(request, 'core/hospital_detail.html', context)

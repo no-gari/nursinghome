@@ -2,7 +2,7 @@
 <div id="results-meta" data-total="{{ total_count }}" class="hidden" aria-hidden="true"></div>
 <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
     {% for hospital in hospitals %}
-        <a href="{% url 'core:hospital_detail' hospital.code %}" class="group relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300/70 transition-all duration-300 flex flex-col">
+        <a href="{% url 'core:hospital_detail_by_id' hospital.id %}" class="group relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300/70 transition-all duration-300 flex flex-col">
             <div class="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden">
                 {% with img=hospital.images.last %}
                     {% if img %}

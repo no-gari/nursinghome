@@ -78,7 +78,7 @@
       <div class="text-sm text-slate-600 space-y-1">
         {% if hospital.location %}<div class="flex items-start gap-1"><i class="fa fa-location-dot text-slate-400 mt-0.5"></i><span class="truncate max-w-[60ch]" title="{{ hospital.location }}">{{ hospital.location }}</span></div>{% endif %}
         {% if hospital.homepage_url %}<div class="flex items-start gap-1"><i class="fa fa-globe text-slate-400 mt-0.5"></i><a href="{{ hospital.homepage_url }}" target="_blank" class="truncate max-w-[50ch] hover:text-indigo-600 hover:underline">{{ hospital.homepage_url }}</a></div>{% endif %}
-        {% if hospital.phone %}<div class="flex items-start gap-1"><i class="fa fa-phone text-slate-400 mt-0.5"></i><span>{{ hospital.phone }}</span></div>{% endif %}
+        {% if hospital.phone %}<div class="flex items-start gap-1"><i class="fa fa-phone text-slate-400 mt-0.5"></i><a href="tel:{{ hospital.phone|cut:'-'|cut:' ' }}" class="underline underline-offset-2 hover:text-indigo-600">{{ hospital.phone }}</a></div>{% endif %}
       </div>
     </div>
   </section>
@@ -202,11 +202,11 @@
     </div>
     <aside class="mt-10 lg:mt-0 space-y-6">
       <div class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm sticky top-24">
-        <h2 class="text-lg font-bold mb-4">요약 메타</h2>
+        <h2 class="text-lg font-bold mb-4">요약 메��</h2>
         <ul class="text-sm space-y-2 text-slate-600">
           <li><span class="w-20 inline-block text-slate-500">등급</span> {{ hospital.grade|default:'-' }}</li>
           <li><span class="w-20 inline-block text-slate-500">설립</span> {{ hospital.establishment_date|date:'Y-m-d'|default:'-' }}</li>
-          <li><span class="w-20 inline-block text-slate-500">전화</span> {{ hospital.phone|default:'-' }}</li>
+          <li><span class="w-20 inline-block text-slate-500">전화</span> {% if hospital.phone %}<a href="tel:{{ hospital.phone|cut:'-'|cut:' ' }}" class="underline underline-offset-2 hover:text-indigo-600">{{ hospital.phone }}</a>{% else %}-{% endif %}</li>
           <li><span class="w-20 inline-block text-slate-500">위치</span> {{ hospital.sido }} {{ hospital.sigungu }}</li>
         </ul>
       </div>
@@ -226,24 +226,36 @@
   // ==== 갤러리 모달 ====
   function initGallery(){
     const modalRoot=document.getElementById('galleryModalRoot');
-    const nodeList=document.querySelectorAll('[data-gallery-image]');
-    if(!modalRoot || !nodeList.length) return;
-    const imgSources=[]; const seen=new Set();
-    nodeList.forEach(node=>{ const src=node.getAttribute('src'); if(!src) return; let index;
-      if(seen.has(src)){ index = imgSources.indexOf(src); } else { seen.add(src); imgSources.push(src); index = imgSources.length-1; }
-      node.dataset.galleryIndex = index; // 노드별 실제 고유 인덱스 저장
+    if(!modalRoot) return;
+    const DEBUG_GALLERY=false;
+    // 원본(모바일 swiper 원본 슬라이드 + 데스크톱 그리드)에서 중복(slide clone) 제외하여 고유 순서 추출
+    const sourceNodes=document.querySelectorAll('#mobileGallery .swiper-slide:not(.swiper-slide-duplicate) [data-gallery-image], .lg\\:grid [data-gallery-image]');
+    if(!sourceNodes.length) return;
+    const imgSources=[]; const srcIndexMap={};
+    sourceNodes.forEach(node=>{
+      // node 자체에 src 없으면 자식 img 탐색 (데스크톱 그리드 케이스)
+      let imgEl = node.getAttribute('src') ? node : node.querySelector('img');
+      const src = imgEl ? imgEl.getAttribute('src') : null;
+      if(!src) return; // 유효한 이미지 없으면 패스
+      if(srcIndexMap[src]===undefined){
+        srcIndexMap[src]=imgSources.length;
+        imgSources.push(src);
+      }
+      // 클릭 시 사용할 표준화된 인덱스 저장
+      node.dataset.galleryIndex = srcIndexMap[src];
     });
-    if(!imgSources.length) return;
+    if(DEBUG_GALLERY){ console.log('[Gallery] unique images:', imgSources); }
 
     function openModal(startIndex){
-      if(modalRoot.querySelector('[data-lightbox-root]')) return; // 이미 열림
-      let idx = Math.max(0, Math.min(startIndex||0, imgSources.length-1));
+      if(imgSources.length===0) return;
+      if(modalRoot.querySelector('[data-lightbox-root]')) return;
+      let idx = Math.max(0, Math.min(parseInt(startIndex)||0, imgSources.length-1));
       const html=`<div data-lightbox-root class="fixed inset-0 z-[70]" role="dialog" aria-modal="true">\n <div data-backdrop class=\"absolute inset-0 bg-black/70 backdrop-blur-sm\"></div>\n <div class=\"absolute inset-0 flex flex-col\">\n  <div class=\"flex items-center justify-between px-4 h-14 text-white\">\n   <span class=\"font-medium truncate pr-4 text-sm\">사진 (${imgSources.length})</span>\n   <button aria-label=\"닫기\" data-close class=\"h-8 px-3 rounded-md hover:bg-white/10 text-sm\">닫기</button>\n  </div>\n  <div class=\"flex-1 overflow-hidden flex items-center justify-center relative\">\n    <button data-prev aria-label=\"이전\" class=\"hidden md:inline-flex absolute left-3 top-1/2 -translate-y-1/2 h-10 px-3 items-center justify-center text-white rounded-md bg-black/30 hover:bg-black/50 text-sm\">이전</button>\n    <img data-main alt='{{ hospital.name|escapejs }} 확대 이미지' class=\"max-h-full max-w-full object-contain transition\" />\n    <button data-next aria-label=\"다음\" class=\"hidden md:inline-flex absolute right-3 top-1/2 -translate-y-1/2 h-10 px-3 items-center justify-center text-white rounded-md bg-black/30 hover:bg-black/50 text-sm\">다음</button>\n  </div>\n  <div class=\"p-4 overflow-x-auto bg-black/40\"><div class=\"flex gap-2\" data-thumbs></div></div>\n </div>\n</div>`;
       modalRoot.insertAdjacentHTML('beforeend', html);
       const root=modalRoot.querySelector('[data-lightbox-root]');
       const main=root.querySelector('[data-main]');
       const thumbs=root.querySelector('[data-thumbs]');
-      function render(){ main.src = imgSources[idx]; thumbs.querySelectorAll('button').forEach((b,i)=>{ b.classList.toggle('ring-2', i===idx); b.classList.toggle('ring-indigo-400', i===idx); }); }
+      function render(){ main.src = imgSources[idx]; thumbs.querySelectorAll('button').forEach((b,i)=>{ b.classList.toggle('ring-2', i===idx); b.classList.toggle('ring-indigo-400', i===idx); }); if(DEBUG_GALLERY){ console.log('[Gallery] show index', idx, imgSources[idx]); } }
       imgSources.forEach((src,i)=>{ const b=document.createElement('button'); b.type='button'; b.className='relative flex-shrink-0 h-16 w-24 rounded-md overflow-hidden border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-400'; b.innerHTML=`<img src="${src}" alt="썸네일 ${i+1}" class="w-full h-full object-cover" loading="lazy" />`; b.addEventListener('click',()=>{ idx=i; render(); }); thumbs.appendChild(b); });
       function close(){ root.remove(); document.removeEventListener('keydown', keyHandler); }
       const prevBtn=root.querySelector('[data-prev]'); const nextBtn=root.querySelector('[data-next]');
@@ -256,8 +268,19 @@
       document.addEventListener('keydown', keyHandler);
       render();
     }
+    // 사진 모두 보기 버튼 -> 첫 이미지
     document.querySelectorAll('[data-gallery-modal]').forEach(btn=>{ btn.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); openModal(0); }); });
-    nodeList.forEach(node=>{ node.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); const i=parseInt(node.dataset.galleryIndex)||0; openModal(i); }); });
+    // 클릭 이벤트 위임 (모바일/데스크톱 원본 + Swiper 클론 포함)
+    document.addEventListener('click', e=>{
+      const target=e.target.closest('[data-gallery-image]');
+      if(!target) return;
+      e.preventDefault(); e.stopPropagation();
+      const directIdx=target.dataset.galleryIndex;
+      const src=target.getAttribute('src');
+      let idx = (directIdx!==undefined)? parseInt(directIdx): (srcIndexMap[src]||0);
+      if(Number.isNaN(idx)) idx=0;
+      openModal(idx);
+    }, true);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initGallery); else initGallery();
 })();
