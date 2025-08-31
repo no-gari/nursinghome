@@ -323,7 +323,6 @@ def hospital_detail(request, code: str):
     images = list(hospital.images.all().reverse())
     tags = list(hospital.tags.all())
 
-    # JSON 필드들을 (키, 값) 리스트로 변환 (표시용)
     def json_items(obj):
         if not obj:
             return []
@@ -331,11 +330,42 @@ def hospital_detail(request, code: str):
             return [(k, v) for k, v in obj.items()]
         return []
 
+    bed_count_items = json_items(hospital.bed_count)
+
+    # 병상 현황 가공 (물리치료실 / 상급 / 일반)
+    import re
+    def parse_int(text):
+        if text is None:
+            return None
+        m = re.search(r"(\d+)", str(text))
+        return int(m.group(1)) if m else None
+
+    bed_counts = {}
+    for k, v in bed_count_items:
+        key = str(k)
+        val = str(v)
+        if '물리치료실' in key:
+            bed_counts['therapy'] = parse_int(val)
+        # 일반입원실에 상급/일반 혼합
+        if ('일반입원실' in key) or ('입원실' in key and ('상급' in val or '일반' in val)):
+            m_p = re.search(r"상급\s*[:：]?\s*(\d+)", val)
+            m_g = re.search(r"일반\s*[:：]?\s*(\d+)", val)
+            if m_p:
+                bed_counts['premium'] = int(m_p.group(1))
+            if m_g:
+                bed_counts['general'] = int(m_g.group(1))
+        else:
+            if '상급' in key and 'premium' not in bed_counts:
+                bed_counts['premium'] = parse_int(val)
+            if '일반' in key and 'general' not in bed_counts and '상급' not in key:
+                bed_counts['general'] = parse_int(val)
+
     context = {
         'hospital': hospital,
         'images': images,
         'tags': tags,
-        'bed_count_items': json_items(hospital.bed_count),
+        'bed_count_items': bed_count_items,
+        'bed_counts': bed_counts,
         'operation_facility_items': json_items(hospital.operation_facility),
         'doctor_count_items': json_items(hospital.doctor_count),
         'specialist_by_department_items': json_items(hospital.specialist_by_department),
@@ -360,11 +390,40 @@ def hospital_detail_by_id(request, pk: int):
             return [(k, v) for k, v in obj.items()]
         return []
 
+    bed_count_items = json_items(hospital.bed_count)
+
+    import re
+    def parse_int(text):
+        if text is None:
+            return None
+        m = re.search(r"(\d+)", str(text))
+        return int(m.group(1)) if m else None
+
+    bed_counts = {}
+    for k, v in bed_count_items:
+        key = str(k)
+        val = str(v)
+        if '물리치료실' in key:
+            bed_counts['therapy'] = parse_int(val)
+        if ('일반입원실' in key) or ('입원실' in key and ('상급' in val or '일반' in val)):
+            m_p = re.search(r"상급\s*[:：]?\s*(\d+)", val)
+            m_g = re.search(r"일반\s*[:：]?\s*(\d+)", val)
+            if m_p:
+                bed_counts['premium'] = int(m_p.group(1))
+            if m_g:
+                bed_counts['general'] = int(m_g.group(1))
+        else:
+            if '상급' in key and 'premium' not in bed_counts:
+                bed_counts['premium'] = parse_int(val)
+            if '일반' in key and 'general' not in bed_counts and '상급' not in key:
+                bed_counts['general'] = parse_int(val)
+
     context = {
         'hospital': hospital,
         'images': images,
         'tags': tags,
-        'bed_count_items': json_items(hospital.bed_count),
+        'bed_count_items': bed_count_items,
+        'bed_counts': bed_counts,
         'operation_facility_items': json_items(hospital.operation_facility),
         'doctor_count_items': json_items(hospital.doctor_count),
         'specialist_by_department_items': json_items(hospital.specialist_by_department),

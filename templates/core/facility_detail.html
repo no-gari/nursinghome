@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ facility.name }} - 요양시설 상세정보</title>
+    <title>{{ facility.name }} - 요양원 상세정보</title>
     <!-- Open Graph / SEO -->
     <meta property="og:title" content="{{ facility.name }} | CareBridge" />
-    <meta property="og:description" content="{% if summary_info and summary_info.is_generated %}{{ summary_info.content|truncatechars:120 }}{% else %}요양시설 상세정보{% endif %}" />
+    <meta property="og:description" content="{% if summary_info and summary_info.is_generated %}{{ summary_info.content|truncatechars:120 }}{% else %}요양원 상세정보{% endif %}" />
     <meta property="og:type" content="article" />
     <meta property="og:image" content="{% if images %}{{ images.0.image.url }}{% endif %}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="{{ facility.name }}" />
-    <meta name="twitter:description" content="{% if summary_info and summary_info.is_generated %}{{ summary_info.content|truncatechars:120 }}{% else %}요양시설 상세정보{% endif %}" />
+    <meta name="twitter:description" content="{% if summary_info and summary_info.is_generated %}{{ summary_info.content|truncatechars:120 }}{% else %}요양원 상세정보{% endif %}" />
     <meta name="twitter:image" content="{% if images %}{{ images.0.image.url }}{% endif %}" />
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -46,7 +46,7 @@
   <ol class="flex items-center text-xs sm:text-sm text-slate-500 gap-2">
     <li><a href="{% url 'core:main' %}" class="hover:text-slate-700">홈</a></li>
     <li><i class="fas fa-chevron-right text-slate-400 text-[10px]"></i></li>
-    <li><a href="{% url 'core:facility_list' %}" class="hover:text-slate-700">시설검색</a></li>
+    <li><a href="{% url 'core:facility_list' %}" class="hover:text-slate-700">요양원 검색</a></li>
     <li><i class="fas fa-chevron-right text-slate-400 text-[10px]"></i></li>
     <li class="text-slate-700 font-medium truncate max-w-[40ch]" aria-current="page">{{ facility.name }}</li>
   </ol>
@@ -153,7 +153,7 @@
     <!-- 공통 섹션 렌더 헬퍼 패턴 반복 -->
     {% if basic_items and basic_items|length > 0 %}
     <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
-      <h2 class="text-xl font-bold mb-5">기본 정보</h2>
+      <h2 class="text-lg font-bold mb-5">기본 정보</h2>
         <div class="space-y-5">
           {% for item in basic_items %}
             <div class="flex flex-col sm:flex-row gap-2 sm:gap-6">
@@ -166,7 +166,7 @@
     {% endif %}
 <!-- 기존 인력현황 섹션을 이것으로 교체하세요 -->
 <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
-  <h2 class="text-xl font-bold mb-5">인력현황</h2>
+  <h2 class="text-lg font-bold mb-5">인력현황</h2>
   {% if staff_items and staff_items|length > 0 %}
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
       {% for item in staff_items %}
@@ -237,7 +237,7 @@
   {% endif %}
 </section>
 <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
-  <h2 class="text-xl font-bold mb-5">프로그램 운영</h2>
+  <h2 class="text-lg font-bold mb-5">프로그램 운영</h2>
   {% if program_items_tokens and program_items_tokens|length > 0 %}
     <div class="space-y-6">
       {% for item in program_items_tokens %}
@@ -260,7 +260,7 @@
   {% else %}<p class="text-gray-500">등록된 항목이 없습니다.</p>{% endif %}
 </section>
 <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
-      <h2 class="text-xl font-bold mb-5">위치 정보</h2>
+      <h2 class="text-lg font-bold mb-5">위치 정보</h2>
       {% if location_items and location_items|length > 0 %}
         <div class="space-y-5">
           {% for item in location_items %}
@@ -299,7 +299,7 @@
       {% endif %}
     </section>
     <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
-      <h2 class="text-xl font-bold mb-5">비급여 항목</h2>
+      <h2 class="text-lg font-bold mb-5">비급여 항목</h2>
       {% if noncovered_items and noncovered_items|length > 0 %}
         <div class="space-y-5">
           {% for item in noncovered_items %}
@@ -712,7 +712,7 @@ function initMap() {
     });
     marker.addListener('click', () => infoWindow.open(map, marker));
 
-    console.log('시설 지도가 성공적으로 로드되었습니다.');
+    console.log('요양원 지도가 성공적으로 로드되었습니다.');
   } catch(error) {
     console.error('Google Maps 로드 오류:', error);
     mapElement.innerHTML = '<div class="text-red-500 text-center p-4 text-sm">지도 로드 실패</div>';

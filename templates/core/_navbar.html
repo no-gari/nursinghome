@@ -9,8 +9,8 @@
         <!-- Right: Utilities (Desktop) -->
         <div class="shrink-0 hidden md:flex items-center gap-6 text-sm">
             {% with current=request.resolver_match.url_name %}
-            <a href="{% url 'core:facility_list' %}" class="text-slate-600 hover:text-slate-900 transition font-medium {% if current == 'facility_list' %}text-slate-900 underline underline-offset-4{% endif %}">시설 찾기</a>
-            <a href="{% url 'core:hospital_list' %}" class="text-slate-600 hover:text-slate-900 transition font-medium {% if current == 'hospital_list' %}text-slate-900 underline underline-offset-4{% endif %}">병원 찾기</a>
+            <a href="{% url 'core:facility_list' %}" class="text-slate-600 hover:text-slate-900 transition font-medium {% if current == 'facility_list' %}text-slate-900 underline underline-offset-4{% endif %}">요양원 찾기</a>
+            <a href="{% url 'core:hospital_list' %}" class="text-slate-600 hover:text-slate-900 transition font-medium {% if current == 'hospital_list' %}text-slate-900 underline underline-offset-4{% endif %}">요양병원 찾기</a>
             <a href="{% url 'blog:list' %}" class="text-slate-600 hover:text-slate-900 transition font-medium {% if request.path|slice:':6' == '/blog/' %}text-slate-900 underline underline-offset-4{% endif %}">블로그</a>
             <a href="{% url 'core:chat' %}" class="text-slate-600 hover:text-slate-900 transition font-medium {% if current == 'chat' %}text-slate-900 underline underline-offset-4{% endif %}">AI 상담</a>
             {% endwith %}
@@ -48,10 +48,10 @@
                     <a href="{% url 'core:main' %}" class="block px-3 py-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition {% if current == 'main' %}bg-slate-100 border-slate-300 underline underline-offset-4 decoration-2{% endif %}">홈</a>
                 </li>
                 <li>
-                    <a href="{% url 'core:facility_list' %}" class="block px-3 py-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition {% if current == 'facility_list' %}bg-slate-100 border-slate-300 underline underline-offset-4 decoration-2{% endif %}">시설 찾기</a>
+                    <a href="{% url 'core:facility_list' %}" class="block px-3 py-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition {% if current == 'facility_list' %}bg-slate-100 border-slate-300 underline underline-offset-4 decoration-2{% endif %}">요양원 찾기</a>
                 </li>
                 <li>
-                    <a href="{% url 'core:hospital_list' %}" class="block px-3 py-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition {% if current == 'hospital_list' %}bg-slate-100 border-slate-300 underline underline-offset-4 decoration-2{% endif %}">병원 찾기</a>
+                    <a href="{% url 'core:hospital_list' %}" class="block px-3 py-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition {% if current == 'hospital_list' %}bg-slate-100 border-slate-300 underline underline-offset-4 decoration-2{% endif %}">요양병원 찾기</a>
                 </li>
                 <li>
                     <a href="{% url 'blog:list' %}" class="block px-3 py-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition {% if request.path|slice:':6' == '/blog/' %}bg-slate-100 border-slate-300 underline underline-offset-4 decoration-2{% endif %}">블로그</a>

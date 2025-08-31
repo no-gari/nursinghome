@@ -84,105 +84,257 @@
   </section>
   <main class="mt-10 px-4 sm:px-6 lg:px-8 lg:grid lg:grid-cols-3 lg:gap-10 mb-24">
     <div class="lg:col-span-2 space-y-8">
-      {% if hospital.summary %}
       <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
-        <h2 class="text-xl font-bold mb-4">요약</h2>
-        <p class="text-sm leading-relaxed whitespace-pre-line text-slate-700">{{ hospital.summary }}</p>
-      </section>
-      {% endif %}
-      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
-        <h2 class="text-xl font-bold mb-5">기본 정보</h2>
-        <div class="space-y-4 text-sm">
-          <div class="flex gap-4"><span class="w-28 text-slate-500">코드</span><span class="font-medium break-all">{{ hospital.code }}</span></div>
-          <div class="flex gap-4"><span class="w-28 text-slate-500">등급</span><span class="font-medium">{{ hospital.grade|default:'-' }}</span></div>
-          <div class="flex gap-4"><span class="w-28 text-slate-500">설립구분</span><span class="font-medium">{{ hospital.establishment_type|default:'-' }}</span></div>
-          <div class="flex gap-4"><span class="w-28 text-slate-500">설립일자</span><span class="font-medium">{{ hospital.establishment_date|date:'Y-m-d'|default:'-' }}</span></div>
-        </div>
-      </section>
-      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
-        <h2 class="text-xl font-bold mb-5">병상 현황</h2>
-        {% if bed_count_items %}
-        <div class="grid sm:grid-cols-2 gap-3">
-          {% for k,v in bed_count_items %}
-          <div class="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 flex items-center justify-between text-sm">
-            <span class="font-medium text-slate-700">{{ k }}</span><span class="font-semibold text-indigo-700">{{ v }}</span>
+        <h2 class="text-lg font-bold mb-6">병상 · 인력 현황</h2>
+        <div class="space-y-8">
+          <!-- 병상 현황 (항상 표시) -->
+          <div>
+            <h3 class="text-sm font-semibold tracking-wide text-slate-500 uppercase mb-3">병상 현황</h3>
+            {% if bed_counts %}
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {% if bed_counts.therapy %}
+              <div class="flex items-center gap-3 p-4 rounded-xl bg-indigo-50/60 border border-indigo-100">
+                <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600"><i class="fas fa-dumbbell"></i></div>
+                <div class="min-w-0">
+                  <p class="text-xs font-medium text-slate-600">물리치료실</p>
+                  <p class="text-base font-semibold text-indigo-700 leading-tight">{{ bed_counts.therapy }}명</p>
+                </div>
+              </div>
+              {% endif %}
+              {% if bed_counts.premium %}
+              <div class="flex items-center gap-3 p-4 rounded-xl bg-emerald-50/60 border border-emerald-100">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><i class="fas fa-star"></i></div>
+                <div class="min-w-0">
+                  <p class="text-xs font-medium text-slate-600">상급 병실</p>
+                  <p class="text-base font-semibold text-emerald-700 leading-tight">{{ bed_counts.premium }}명</p>
+                </div>
+              </div>
+              {% endif %}
+              {% if bed_counts.general %}
+              <div class="flex items-center gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <div class="w-10 h-10 rounded-full bg-slate-200/70 flex items-center justify-center text-slate-700"><i class="fas fa-bed"></i></div>
+                <div class="min-w-0">
+                  <p class="text-xs font-medium text-slate-600">일반 병실</p>
+                  <p class="text-base font-semibold text-slate-800 leading-tight">{{ bed_counts.general }}명</p>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
           </div>
-          {% endfor %}
+
+          <!-- 축약 요약 (펼치기 전) -->
+          {% if doctor_count_items or specialist_by_department_items or department_specialists_items or other_staff_items %}
+          <div id="staffSummary" class="space-y-4">
+            <div class="text-xs text-slate-500 flex flex-wrap gap-4">
+              {% if doctor_count_items %}<span>의사 수: {{ doctor_count_items|length }} 항목</span>{% endif %}
+              {% if specialist_by_department_items %}<span>전문과목: {{ specialist_by_department_items|length }}개</span>{% endif %}
+              {% if department_specialists_items %}<span>진료과목: {{ department_specialists_items|length }}개</span>{% endif %}
+              {% if other_staff_items %}<span>기타 인력: {{ other_staff_items|length }} 항목</span>{% endif %}
+            </div>
+            <!-- 대표 1~2개 미리보기 -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {% for k,v in doctor_count_items|slice:':2' %}
+              <div class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border">
+                <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-user-md"></i></div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-[11px] font-medium text-slate-600 truncate" title="{{ k }}">{{ k }}</p>
+                  <p class="text-sm font-semibold text-slate-800 leading-tight">{{ v }}</p>
+                </div>
+              </div>
+              {% endfor %}
+              {% if specialist_by_department_items %}
+                {% for k,v in specialist_by_department_items|slice:':1' %}
+                <div class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border">
+                  <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-stethoscope"></i></div>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-medium text-slate-600 truncate" title="{{ k }}">{{ k }}</p>
+                    <p class="text-sm font-semibold text-slate-800 leading-tight">{{ v }}</p>
+                  </div>
+                </div>
+                {% endfor %}
+              {% endif %}
+              {% if other_staff_items %}
+                {% for k,v in other_staff_items|slice:':1' %}
+                <div class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border">
+                  <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-user"></i></div>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-medium text-slate-600 truncate" title="{{ k }}">{{ k }}</p>
+                    <p class="text-sm font-semibold text-slate-800 leading-tight">{{ v }}</p>
+                  </div>
+                </div>
+                {% endfor %}
+              {% endif %}
+            </div>
+            <button type="button" id="toggleStaffBtn" class="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700">
+              전체 보기 <i class="fa fa-chevron-down text-[10px]"></i>
+            </button>
+          </div>
+          {% endif %}
+
+          <!-- 전체 펼침 영역 -->
+          <div id="staffExpanded" class="space-y-10 hidden">
+            <!-- 의사 수 -->
+            <div>
+              <h3 class="text-sm font-semibold tracking-wide text-slate-500 uppercase mb-3">의사 수</h3>
+              {% if doctor_count_items %}
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {% for k,v in doctor_count_items %}
+                <div class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border">
+                  {% with key=k value=v %}
+                    {% if '의사' in key %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-user-md"></i></div>
+                    {% elif '간호' in key %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-user-nurse"></i></div>
+                    {% elif '재활' in key or '물리' in key %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-dumbbell"></i></div>
+                    {% else %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-user"></i></div>
+                    {% endif %}
+                  {% endwith %}
+                  <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-medium text-slate-600 truncate" title="{{ k }}">{{ k }}</p>
+                    <p class="text-sm font-semibold text-slate-800 leading-tight">{{ v }}</p>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
+            </div>
+            <!-- 전문과목별(전문의) -->
+            <div>
+              <h3 class="text-sm font-semibold tracking-wide text-slate-500 uppercase mb-3">전문과목별 (전문의)</h3>
+              {% if specialist_by_department_items %}
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {% for k,v in specialist_by_department_items %}
+                <div class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border">
+                  {% if '정신' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-brain"></i></div>
+                  {% elif '내과' in k or '심장' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-stethoscope"></i></div>
+                  {% elif '치과' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-tooth"></i></div>
+                  {% elif '안과' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-eye"></i></div>
+                  {% elif '피부' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-sun"></i></div>
+                  {% elif '정형' in k or '신경' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-bone"></i></div>
+                  {% else %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-user-md"></i></div>
+                  {% endif %}
+                  <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-medium text-slate-600 truncate" title="{{ k }}">{{ k }}</p>
+                    <p class="text-sm font-semibold text-slate-800 leading-tight">{{ v }}</p>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
+            </div>
+            <!-- 진료과목별(전문의) -->
+            <div>
+              <h3 class="text-sm font-semibold tracking-wide text-slate-500 uppercase mb-3">진료과목별 (전문의)</h3>
+              {% if department_specialists_items %}
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {% for k,v in department_specialists_items %}
+                <div class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border">
+                  {% if '정신' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-brain"></i></div>
+                  {% elif '재활' in k or '물리' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-dumbbell"></i></div>
+                  {% elif '치과' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-tooth"></i></div>
+                  {% elif '안과' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-eye"></i></div>
+                  {% elif '피부' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-sun"></i></div>
+                  {% else %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-stethoscope"></i></div>
+                  {% endif %}
+                  <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-medium text-slate-600 truncate" title="{{ k }}">{{ k }}</p>
+                    <p class="text-sm font-semibold text-slate-800 leading-tight">{{ v }}</p>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
+            </div>
+            <!-- 기타 인력 -->
+            <div>
+              <h3 class="text-sm font-semibold tracking-wide text-slate-500 uppercase mb-3">기타 인력</h3>
+              {% if other_staff_items %}
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {% for k,v in other_staff_items %}
+                <div class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border">
+                  {% if '간호' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-user-nurse"></i></div>
+                  {% elif '물리' in k or '재활' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-dumbbell"></i></div>
+                  {% elif '사회' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-hands-helping"></i></div>
+                  {% elif '영양' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-apple-alt"></i></div>
+                  {% elif '조리' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-utensils"></i></div>
+                  {% elif '위생' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-broom"></i></div>
+                  {% elif '관리' in k %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-wrench"></i></div>
+                  {% else %}
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fas fa-user"></i></div>
+                  {% endif %}
+                  <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-medium text-slate-600 truncate" title="{{ k }}">{{ k }}</p>
+                    <p class="text-sm font-semibold text-slate-800 leading-tight">{{ v }}</p>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
+            </div>
+            <button type="button" id="toggleStaffCloseBtn" class="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-700">
+              접기 <i class="fa fa-chevron-up text-[10px]"></i>
+            </button>
+          </div>
         </div>
-        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
       </section>
       <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
-        <h2 class="text-xl font-bold mb-5">운영/시설</h2>
-        {% if operation_facility_items %}
-        <div class="space-y-4 text-sm">
-          {% for k,v in operation_facility_items %}
-          <div class="flex gap-4"><span class="w-40 text-slate-500">{{ k }}</span><span class="flex-1 font-medium whitespace-pre-line">{{ v }}</span></div>
-          {% endfor %}
-        </div>
-        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
-      </section>
-      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
-        <h2 class="text-xl font-bold mb-5">의사 수</h2>
-        {% if doctor_count_items %}
-        <div class="grid sm:grid-cols-2 gap-3">
-          {% for k,v in doctor_count_items %}
-          <div class="p-3 rounded-xl bg-slate-50 border flex items-center justify-between text-sm"><span class="font-medium text-slate-700">{{ k }}</span><span class="font-semibold text-slate-700">{{ v }}</span></div>
-          {% endfor %}
-        </div>
-        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
-      </section>
-      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
-        <h2 class="text-xl font-bold mb-5">전문과목별(전문의)</h2>
-        {% if specialist_by_department_items %}
-        <div class="grid sm:grid-cols-2 gap-3">
-          {% for k,v in specialist_by_department_items %}
-          <div class="p-3 rounded-xl bg-slate-50 border flex items-center justify-between text-sm"><span class="font-medium text-slate-700 truncate">{{ k }}</span><span class="font-semibold text-slate-700">{{ v }}</span></div>
-          {% endfor %}
-        </div>
-        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
-      </section>
-      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
-        <h2 class="text-xl font-bold mb-5">진료과목별(전문의)</h2>
-        {% if department_specialists_items %}
-        <div class="grid sm:grid-cols-2 gap-3">
-          {% for k,v in department_specialists_items %}
-          <div class="p-3 rounded-xl bg-slate-50 border flex items-center justify-between text-sm"><span class="font-medium text-slate-700 truncate">{{ k }}</span><span class="font-semibold text-slate-700">{{ v }}</span></div>
-          {% endfor %}
-        </div>
-        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
-      </section>
-      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
-        <h2 class="text-xl font-bold mb-5">기타 인력</h2>
-        {% if other_staff_items %}
-        <div class="grid sm:grid-cols-2 gap-3">
-          {% for k,v in other_staff_items %}
-          <div class="p-3 rounded-xl bg-slate-50 border flex items-center justify-between text-sm"><span class="font-medium text-slate-700 truncate">{{ k }}</span><span class="font-semibold text-slate-700">{{ v }}</span></div>
-          {% endfor %}
-        </div>
-        {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
-      </section>
-      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
-        <h2 class="text-xl font-bold mb-5">진료시간</h2>
+        <h2 class="text-lg font-bold mb-5">진료시간</h2>
         {% if consultation_hours_items %}
-        <div class="space-y-2 text-sm">
+        <ul class="grid grid-cols-2 gap-x-10 gap-y-1 text-sm">
           {% for k,v in consultation_hours_items %}
-          <div class="flex gap-4"><span class="w-32 text-slate-500">{{ k }}</span><span class="flex-1 font-medium whitespace-pre-line">{{ v }}</span></div>
+          <li class="flex gap-2 items-start"><span class="w-20 shrink-0 text-slate-500">{{ k }}</span><span class="flex-1 text-slate-700 whitespace-pre-line">{{ v }}</span></li>
           {% endfor %}
-        </div>
+        </ul>
         {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
       </section>
       <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
-        <h2 class="text-xl font-bold mb-5">진료비 정보</h2>
+        <h2 class="text-lg font-bold mb-5">진료비 정보</h2>
         {% if medical_fee_info_items %}
-        <div class="space-y-2 text-sm">
-          {% for k,v in medical_fee_info_items %}
-          <div class="flex gap-4"><span class="w-40 text-slate-500">{{ k }}</span><span class="flex-1 font-medium whitespace-pre-line">{{ v }}</span></div>
-          {% endfor %}
-        </div>
+        {% with total=medical_fee_info_items|length %}
+          <div id="feePreview" class="space-y-2 text-sm">
+            <ul class="grid grid-cols-2 gap-x-10 gap-y-1">
+              {% for k,v in medical_fee_info_items|slice:':4' %}
+              <li class="flex gap-2 items-start"><span class="w-36 shrink-0 text-slate-500 truncate" title="{{ k }}">{{ k }}</span><span class="flex-1 text-slate-700 whitespace-pre-line">{{ v }}</span></li>
+              {% endfor %}
+            </ul>
+            {% if total > 4 %}<button type="button" id="toggleFeeBtn" class="mt-1 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700">전체 보기 <i class="fa fa-chevron-down text-[10px]"></i></button>{% endif %}
+          </div>
+          <div id="feeExpanded" class="hidden space-y-2 text-sm">
+            <ul class="grid grid-cols-2 gap-x-10 gap-y-1">
+              {% for k,v in medical_fee_info_items %}
+              <li class="flex gap-2 items-start"><span class="w-36 shrink-0 text-slate-500 truncate" title="{{ k }}">{{ k }}</span><span class="flex-1 text-slate-700 whitespace-pre-line">{{ v }}</span></li>
+              {% endfor %}
+            </ul>
+            {% if total > 4 %}<button type="button" id="toggleFeeCloseBtn" class="mt-1 inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700">접기 <i class="fa fa-chevron-up text-[10px]"></i></button>{% endif %}
+          </div>
+        {% endwith %}
         {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
       </section>
       <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
-        <h2 class="text-xl font-bold mb-5">위치 정보</h2>
+        <h2 class="text-lg font-bold mb-5">위치 정보</h2>
         {% if hospital.location %}<p class="text-sm text-slate-700">{{ hospital.location }}</p>{% endif %}
         {% if hospital.latitude and hospital.longitude and google_maps_api_key %}
           <div class="mt-6">
@@ -195,14 +347,10 @@
           </div>
         {% endif %}
       </section>
-      <div class="flex flex-wrap gap-3 pt-2">
-        <button onclick="window.print()" type="button" class="inline-flex items-center gap-2 px-5 h-11 rounded-xl border border-slate-300 bg-white hover:border-slate-500 text-sm font-medium text-slate-700"><i class="fa fa-print"></i>인쇄</button>
-        <button id="shareBtn" type="button" class="inline-flex items-center gap-2 px-5 h-11 rounded-xl border border-slate-300 bg-white hover:border-slate-500 text-sm font-medium text-slate-700"><i class="fa fa-share"></i>공유</button>
-      </div>
     </div>
     <aside class="mt-10 lg:mt-0 space-y-6">
       <div class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm sticky top-24">
-        <h2 class="text-lg font-bold mb-4">요약 메���</h2>
+        <h2 class="text-lg font-bold mb-4">요약 메모</h2>
         <ul class="text-sm space-y-2 text-slate-600">
           <li><span class="w-20 inline-block text-slate-500">등급</span> {{ hospital.grade|default:'-' }}</li>
           <li><span class="w-20 inline-block text-slate-500">설립</span> {{ hospital.establishment_date|date:'Y-m-d'|default:'-' }}</li>
@@ -267,7 +415,7 @@
 
         marker.addListener('click', () => infoWindow.open(map, marker));
 
-        console.log('병원 지도가 성공적으로 로드되었습니���.');
+        console.log('병원 지도가 성공적으로 로드되었습니다.');
       } catch(error) {
         console.error('Google Maps 로드 오류:', error);
         el.innerHTML = '<div class="flex items-center justify-center h-full text-red-500 text-sm">지도 로드 실패</div>';
@@ -293,7 +441,7 @@
     const modalRoot=document.getElementById('galleryModalRoot');
     if(!modalRoot) return;
     const DEBUG_GALLERY=false;
-    // 원본(모바일 swiper 원본 슬라이드 + 데스크톱 그리드)에서 중복(slide clone) 제외하여 고유 순서 추출
+    // 원본(모바�� swiper 원본 슬라이드 + 데스���톱 그리드)에서 중복(slide clone) 제외하여 고유 순서 추출
     const sourceNodes=document.querySelectorAll('#mobileGallery .swiper-slide:not(.swiper-slide-duplicate) [data-gallery-image], .lg\\:grid [data-gallery-image]');
     if(!sourceNodes.length) return;
     const imgSources=[]; const srcIndexMap={};
@@ -306,7 +454,7 @@
         srcIndexMap[src]=imgSources.length;
         imgSources.push(src);
       }
-      // 클릭 시 사용할 표준화된 인덱스 저장
+      // 클릭 �� 사용할 표준화된 인덱스 저장
       node.dataset.galleryIndex = srcIndexMap[src];
     });
     if(DEBUG_GALLERY){ console.log('[Gallery] unique images:', imgSources); }
@@ -348,6 +496,46 @@
     }, true);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initGallery); else initGallery();
+})();
+</script>
+<script>
+(function(){
+  // 토글: 병상·인력
+  const staffSummary = document.getElementById('staffSummary');
+  const staffExpanded = document.getElementById('staffExpanded');
+  const staffOpenBtn = document.getElementById('toggleStaffBtn');
+  const staffCloseBtn = document.getElementById('toggleStaffCloseBtn');
+  if(staffOpenBtn && staffExpanded){
+    staffOpenBtn.addEventListener('click', ()=>{
+      staffSummary.classList.add('hidden');
+      staffExpanded.classList.remove('hidden');
+    });
+  }
+  if(staffCloseBtn && staffSummary){
+    staffCloseBtn.addEventListener('click', ()=>{
+      staffExpanded.classList.add('hidden');
+      staffSummary.classList.remove('hidden');
+      staffSummary.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  }
+  // 토글: 진료비 정보
+  const feePreview = document.getElementById('feePreview');
+  const feeExpanded = document.getElementById('feeExpanded');
+  const feeOpenBtn = document.getElementById('toggleFeeBtn');
+  const feeCloseBtn = document.getElementById('toggleFeeCloseBtn');
+  if(feeOpenBtn && feeExpanded){
+    feeOpenBtn.addEventListener('click', ()=>{
+      feePreview.classList.add('hidden');
+      feeExpanded.classList.remove('hidden');
+    });
+  }
+  if(feeCloseBtn && feePreview){
+    feeCloseBtn.addEventListener('click', ()=>{
+      feeExpanded.classList.add('hidden');
+      feePreview.classList.remove('hidden');
+      feePreview.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  }
 })();
 </script>
 </body>
