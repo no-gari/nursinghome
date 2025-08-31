@@ -11,7 +11,7 @@
     <meta property="og:image" content="{% if images %}{{ images.0.image.url }}{% endif %}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="{{ facility.name }}" />
-    <meta name="twitter:description" content="{% if summary_info and summary_info.is_generated %}{{ summary_info.content|truncatechars:120 }}{% else %}요양원 상세정보{% endif %}" />
+    <meta name="twitter:description" content="{% if summary_info and summary_info.is_generated %}{{ summary_info.content|truncatechars:120 }}{% else %}요양원 상세�����보{% endif %}" />
     <meta name="twitter:image" content="{% if images %}{{ images.0.image.url }}{% endif %}" />
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -171,58 +171,58 @@
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
       {% for item in staff_items %}
         <div class="flex items-center gap-2.5 p-3 rounded-xl bg-gray-50 border">
-          {# 아이콘 색상/배경 통일: bg-indigo-50 + text-indigo-600 #}
+          {# 아이콘 색상/배경 중립 톤으로 통일: bg-slate-200/70 + text-slate-700 #}
           {% if '의사' in item.title %}
-            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
-              <i class="fas fa-user-md text-indigo-600 text-base"></i>
+            <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 text-slate-700">
+              <i class="fas fa-user-md text-base"></i>
             </div>
           {% elif '시설장' in item.title %}
-            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
-              <i class="fas fa-crown text-indigo-600 text-base"></i>
+            <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 text-slate-700">
+              <i class="fas fa-crown text-base"></i>
             </div>
           {% elif '사무국장' in item.title or '사무원' in item.title %}
-            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
-              <i class="fas fa-briefcase text-indigo-600 text-base"></i>
+            <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 text-slate-700">
+              <i class="fas fa-briefcase text-base"></i>
             </div>
           {% elif '간호' in item.title %}
-            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
-              <i class="fas fa-user-nurse text-indigo-600 text-base"></i>
+            <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 text-slate-700">
+              <i class="fas fa-user-nurse text-base"></i>
             </div>
           {% elif '요양보호사' in item.title %}
-            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
-              <i class="fas fa-hands-helping text-indigo-600 text-base"></i>
+            <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 text-slate-700">
+              <i class="fas fa-hands-helping text-base"></i>
             </div>
           {% elif '사회복지사' in item.title %}
-            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
-              <i class="fas fa-heart text-indigo-600 text-base"></i>
+            <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 text-slate-700">
+              <i class="fas fa-heart text-base"></i>
             </div>
           {% elif '물리치료사' in item.title %}
-            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
-              <i class="fas fa-dumbbell text-indigo-600 text-base"></i>
+            <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 text-slate-700">
+              <i class="fas fa-dumbbell text-base"></i>
             </div>
           {% elif '작업치료사' in item.title %}
-            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
-              <i class="fas fa-tools text-indigo-600 text-base"></i>
+            <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 text-slate-700">
+              <i class="fas fa-tools text-base"></i>
             </div>
           {% elif '영양사' in item.title %}
-            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
-              <i class="fas fa-apple-alt text-indigo-600 text-base"></i>
+            <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 text-slate-700">
+              <i class="fas fa-apple-alt text-base"></i>
             </div>
           {% elif '조리원' in item.title %}
-            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
-              <i class="fas fa-utensils text-indigo-600 text-base"></i>
+            <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 text-slate-700">
+              <i class="fas fa-utensils text-base"></i>
             </div>
           {% elif '위생원' in item.title %}
-            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
-              <i class="fas fa-broom text-indigo-600 text-base"></i>
+            <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 text-slate-700">
+              <i class="fas fa-broom text-base"></i>
             </div>
           {% elif '관리인' in item.title %}
-            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
-              <i class="fas fa-wrench text-indigo-600 text-base"></i>
+            <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 text-slate-700">
+              <i class="fas fa-wrench text-base"></i>
             </div>
           {% else %}
-            <div class="flex-shrink-0 w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center">
-              <i class="fas fa-user text-indigo-600 text-base"></i>
+            <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 text-slate-700">
+              <i class="fas fa-user text-base"></i>
             </div>
           {% endif %}
           <div class="flex-1 min-w-0">
@@ -312,7 +312,7 @@
       {% else %}<p class="text-gray-500">등록된 항목이 없습니다.</p>{% endif %}
     </section>
 
-    <!-- 하단 액션 -->
+    <!-- 하단 액�� -->
     <div class="flex flex-wrap gap-3 pt-4">
       <button type="button" onclick="window.print()" class="inline-flex items-center gap-2 px-5 h-11 rounded-xl border border-slate-300 bg-white hover:border-slate-500 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="인쇄하기"><i class="fa fa-print"></i>인쇄하기</button>
       <button type="button" class="inline-flex items-center gap-2 px-5 h-11 rounded-xl border border-slate-300 bg-white hover:border-slate-500 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" id="shareBottomBtn" aria-label="공유하기"><i class="fa fa-share"></i>공유하기</button>
@@ -339,7 +339,7 @@
           </div>
         </div>
         <div>
-          <label class="block text-slate-600 mb-1" for="fc_extra">비급��·추가비용(월)</label>
+          <label class="block text-slate-600 mb-1" for="fc_extra">비급여·추가비용(월)</label>
           <input id="fc_extra" type="number" inputmode="numeric" min="0" value="0" class="w-full rounded-md border px-3 h-9 text-sm" />
         </div>
         <div>
@@ -393,7 +393,7 @@
       }
     }
 
-    // Swiper 스크립트 로드 확인 후 초기화
+    // Swiper 스���립트 로드 확인 후 초기화
     if(typeof Swiper !== 'undefined') {
       initSwiper();
     } else {
@@ -571,7 +571,7 @@
       console.log('모달이 성공적으로 열���습니다');
     }
 
-    // 갤러리 모달 버튼에 이벤트 리스너 등록 ("사진 모두 보기" 버튼)
+    // 갤러리 ���달 버튼에 이벤트 리스너 등록 ("사진 모두 보기" 버튼)
     const galleryButtons = document.querySelectorAll('[data-gallery-modal]');
     console.log('찾은 갤러리 버튼 수:', galleryButtons.length);
 
@@ -585,7 +585,7 @@
       });
     });
 
-    // 개별 이미지 클릭 이벤�� 리스너 등록
+    // 개별 이미지 클릭 이벤���� 리스너 등록
     const galleryImages = document.querySelectorAll('[data-gallery-image]');
     console.log('찾은 갤러리 이��지 수:', galleryImages.length);
 
@@ -625,7 +625,7 @@
   if(!resultEl) return;
 
   function fmt(n){
-    if(isNaN(n)||!isFinite(n)||n<=0) return '- 원';
+    if(isNaN(n)||!isFinite(n)||n<=0) return '- ���';
     return n.toLocaleString('ko-KR') + ' 원';
   }
   function calc(){
@@ -633,13 +633,13 @@
     const ds = parseFloat(days.value)||0;
     const r = (parseFloat(rate.value)||0)/100;
     const ex = parseFloat(extra.value)||0;
-    // 단순 계산: (수가 * 일수 * 본인부담율) + 비급여
+    // 단순 계산: (수가 * 일�� * 본인부담율) + 비급여
     const own = d * ds * r + ex;
     resultEl.textContent = fmt(Math.round(own));
   }
   [daily, days, rate, extra, grade].forEach(el=> el && el.addEventListener('input', calc));
   grade && grade.addEventListener('change', ()=>{
-    // 등급 선택에 따른 기본 본인부담율(예시) - 실제 정책과 다를 수 있음
+    // 등급 선택에 따른 기본 본인부��율(예시) - 실제 정책과 다를 수 있음
     if(!rate) return;
     switch(grade.value){
       case '1등급':
