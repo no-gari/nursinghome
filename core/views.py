@@ -360,6 +360,17 @@ def hospital_detail(request, code: str):
             if '일반' in key and 'general' not in bed_counts and '상급' not in key:
                 bed_counts['general'] = parse_int(val)
 
+    # 요일 정렬 (월~일) - label이 '월요일', '월', 등으로 시작한다고 가정
+    def weekday_order(label: str) -> int:
+        order_prefix = ['월', '화', '수', '목', '금', '토', '일']
+        for idx, p in enumerate(order_prefix):
+            if str(label).startswith(p):
+                return idx
+        return 99  # 비요일 항목은 뒤로
+
+    consultation_hours_items = json_items(hospital.consultation_hours)
+    consultation_hours_items = sorted(consultation_hours_items, key=lambda kv: (weekday_order(kv[0]), kv[0]))
+
     context = {
         'hospital': hospital,
         'images': images,
@@ -371,7 +382,7 @@ def hospital_detail(request, code: str):
         'specialist_by_department_items': json_items(hospital.specialist_by_department),
         'department_specialists_items': json_items(hospital.department_specialists),
         'other_staff_items': json_items(hospital.other_staff),
-        'consultation_hours_items': json_items(hospital.consultation_hours),
+        'consultation_hours_items': consultation_hours_items,
         'medical_fee_info_items': json_items(hospital.medical_fee_info),
         'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
     }
@@ -418,6 +429,16 @@ def hospital_detail_by_id(request, pk: int):
             if '일반' in key and 'general' not in bed_counts and '상급' not in key:
                 bed_counts['general'] = parse_int(val)
 
+    def weekday_order(label: str) -> int:
+        order_prefix = ['월', '화', '수', '목', '금', '토', '일']
+        for idx, p in enumerate(order_prefix):
+            if str(label).startswith(p):
+                return idx
+        return 99
+
+    consultation_hours_items = json_items(hospital.consultation_hours)
+    consultation_hours_items = sorted(consultation_hours_items, key=lambda kv: (weekday_order(kv[0]), kv[0]))
+
     context = {
         'hospital': hospital,
         'images': images,
@@ -429,7 +450,7 @@ def hospital_detail_by_id(request, pk: int):
         'specialist_by_department_items': json_items(hospital.specialist_by_department),
         'department_specialists_items': json_items(hospital.department_specialists),
         'other_staff_items': json_items(hospital.other_staff),
-        'consultation_hours_items': json_items(hospital.consultation_hours),
+        'consultation_hours_items': consultation_hours_items,
         'medical_fee_info_items': json_items(hospital.medical_fee_info),
         'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
     }
