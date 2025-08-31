@@ -1,0 +1,61 @@
+<!-- 로그인 필요 알림 모달 (개선 UI / 중앙 정렬 고정) -->
+<div id="loginRequiredModal" class="fixed inset-0 z-[1000] hidden flex items-center justify-center p-5" aria-hidden="true">
+  <!-- Overlay -->
+  <div id="loginRequiredOverlay" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm opacity-0 transition-opacity duration-300"></div>
+  <!-- Panel -->
+  <div id="loginRequiredPanel" role="dialog" aria-modal="true" aria-labelledby="loginRequiredTitle" class="relative w-full max-w-md origin-center rounded-3xl shadow-[0_10px_40px_-5px_rgba(15,23,42,0.3)] bg-white/80 backdrop-blur-xl border border-white/40 ring-1 ring-indigo-200/40 px-8 pt-9 pb-8 opacity-0 scale-95 transition-all duration-300">
+      <div class="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-indigo-400/0 via-indigo-400/70 to-indigo-400/0"></div>
+      <div class="mx-auto mb-6 w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-indigo-600/30">
+        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+      </div>
+      <h3 id="loginRequiredTitle" class="text-2xl font-semibold tracking-tight text-slate-800 text-center mb-3">로그인이 필요합니다</h3>
+      <p class="text-slate-600 text-sm leading-relaxed text-center mb-8">AI 상담 기능은 개인 맞춤 추천을 위해<br class="hidden sm:inline"> 로그인 후 이용할 수 있습니다.</p>
+      <div class="flex gap-4">
+        <button type="button" onclick="closeLoginRequiredModal()" class="flex-1 h-12 rounded-xl border border-slate-300/80 bg-white/60 hover:bg-white text-slate-700 text-sm font-medium transition shadow-sm hover:shadow">닫기</button>
+        <button type="button" onclick="goToLogin()" class="flex-1 h-12 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-500 text-white text-sm font-semibold shadow hover:shadow-md transition">로그인하기</button>
+      </div>
+      <div class="absolute -z-10 inset-0 rounded-3xl overflow-hidden"><div class="absolute -inset-20 bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.18),transparent_60%),radial-gradient(circle_at_70%_70%,rgba(79,70,229,0.20),transparent_65%)]"></div></div>
+  </div>
+</div>
+
+<script>
+let _loginPrevFocus = null;
+(function relocateLoginModal(){
+  const modal = document.getElementById('loginRequiredModal');
+  if(modal && modal.parentElement !== document.body){
+    document.body.appendChild(modal);
+  }
+})();
+function showLoginRequiredModal(){
+  const modal = document.getElementById('loginRequiredModal');
+  const overlay = document.getElementById('loginRequiredOverlay');
+  const panel = document.getElementById('loginRequiredPanel');
+  if(!modal) return;
+  _loginPrevFocus = document.activeElement;
+  modal.classList.remove('hidden');
+  requestAnimationFrame(()=>{
+    overlay.classList.add('opacity-100');
+    panel.classList.remove('opacity-0','scale-95');
+    panel.classList.add('opacity-100','scale-100');
+  });
+  document.documentElement.style.overflow = 'hidden';
+  setTimeout(()=>{ (panel.querySelector('button[onclick*="goToLogin"]')||panel.querySelector('button'))?.focus(); },60);
+}
+function closeLoginRequiredModal(){
+  const modal = document.getElementById('loginRequiredModal');
+  const overlay = document.getElementById('loginRequiredOverlay');
+  const panel = document.getElementById('loginRequiredPanel');
+  if(!modal) return;
+  overlay.classList.remove('opacity-100');
+  panel.classList.remove('opacity-100','scale-100');
+  panel.classList.add('opacity-0','scale-95');
+  document.documentElement.style.overflow = '';
+  setTimeout(()=>{ modal.classList.add('hidden'); _loginPrevFocus && _loginPrevFocus.focus(); },260);
+}
+function goToLogin(){
+  const currentPath = window.location.pathname + window.location.search;
+  window.location.href = `/account/auth/login/?next=${encodeURIComponent(currentPath)}`;
+}
+window.addEventListener('keydown', e=>{ if(e.key==='Escape'){ const m=document.getElementById('loginRequiredModal'); if(m && !m.classList.contains('hidden')) closeLoginRequiredModal(); }});
+document.addEventListener('click', e=>{ const m=document.getElementById('loginRequiredModal'); if(!m||m.classList.contains('hidden')) return; if(e.target.id==='loginRequiredModal' || e.target.id==='loginRequiredOverlay') closeLoginRequiredModal(); });
+</script>

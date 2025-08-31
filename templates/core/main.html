@@ -66,7 +66,18 @@ createApp({
     mounted(){this.isRagInitialized=localStorage.getItem('rag_initialized')==='true';},
     methods:{
         setExamplePrompt(p){this.currentMessage=p;},
-        startChat(){if(!this.currentMessage.trim()||this.isLoading)return;const encoded=encodeURIComponent(this.currentMessage);window.location.href=`/chat/?message=${encoded}`;},
+        startChat(){
+            if(!this.currentMessage.trim()||this.isLoading) return;
+
+            // 로그인 체크
+            {% if not request.user.is_authenticated %}
+            showLoginRequiredModal();
+            return;
+            {% endif %}
+
+            const encoded=encodeURIComponent(this.currentMessage);
+            window.location.href=`/chat/?message=${encoded}`;
+        },
         showSuccessNotice(msg){const n=document.createElement('div');n.className='success-notice';n.textContent=msg;document.body.appendChild(n);setTimeout(()=>n.remove(),3000);}
     }
 }).mount('#app');
