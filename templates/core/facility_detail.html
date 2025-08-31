@@ -772,4 +772,94 @@
   // 기본 rate 선택 상태 반영
   rateSelect.dispatchEvent(new Event('change',{bubbles:true}));
 })();
+
+// Google Maps 초기화 함수
+function initMap() {
+  console.log('Google Maps 초기화 시작');
+
+  const mapElement = document.getElementById('facilityMap');
+  if (!mapElement) {
+    console.log('지도 요소를 찾을 수 없습니다');
+    return;
+  }
+
+  const lat = parseFloat(mapElement.dataset.lat);
+  const lng = parseFloat(mapElement.dataset.lng);
+
+  if (isNaN(lat) || isNaN(lng)) {
+    console.error('잘못된 좌표 정보');
+    mapElement.innerHTML = '<div class="text-gray-500 text-center"><i class="fas fa-exclamation-triangle mb-2"></i><p class="text-sm">지도를 로드할 수 없습니다.</p></div>';
+    return;
+  }
+
+  try {
+    // 로딩 메시지 숨기기
+    const loadingEl = document.getElementById('mapLoading');
+    if (loadingEl) {
+      loadingEl.style.display = 'none';
+    }
+
+    // 지도 생성
+    const map = new google.maps.Map(mapElement, {
+      center: { lat: lat, lng: lng },
+      zoom: 16,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: true,
+      zoomControl: true,
+      styles: [
+        {
+          featureType: 'poi',
+          elementType: 'labels',
+          stylers: [{ visibility: 'off' }]
+        }
+      ]
+    });
+
+    // 마커 생성
+    const marker = new google.maps.Marker({
+      position: { lat: lat, lng: lng },
+      map: map,
+      title: '{{ facility.name|escapejs }}',
+      icon: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#dc2626">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+        `),
+        scaledSize: new google.maps.Size(32, 32),
+        anchor: new google.maps.Point(16, 32)
+      }
+    });
+
+    // 정보창 생성
+    const infoWindow = new google.maps.InfoWindow({
+      content: `
+        <div class="p-2">
+          <h3 class="font-medium text-sm mb-1">{{ facility.name|escapejs }}</h3>
+          <p class="text-xs text-gray-600">{{ facility.location|escapejs }}</p>
+        </div>
+      `
+    });
+
+    // 마커 클릭 시 정보창 표시
+    marker.addListener('click', () => {
+      infoWindow.open(map, marker);
+    });
+
+    console.log('Google Maps 초기화 완료');
+  } catch (error) {
+    console.error('지도 초기화 중 오류:', error);
+    mapElement.innerHTML = '<div class="text-gray-500 text-center"><i class="fas fa-exclamation-triangle mb-2"></i><p class="text-sm">지도를 로드할 수 없습니다.</p></div>';
+  }
+}
+
+// Google Maps API 로드 오류 처리
+window.gm_authFailure = function() {
+  console.error('Google Maps API 인증 실패');
+  const mapElement = document.getElementById('facilityMap');
+  if (mapElement) {
+    mapElement.innerHTML = '<div class="text-gray-500 text-center"><i class="fas fa-exclamation-triangle mb-2"></i><p class="text-sm">지도 API 인증에 실패했습니다.</p></div>';
+  }
+};
 </script>
