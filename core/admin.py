@@ -205,14 +205,18 @@ class FacilityNonCoveredAdmin(admin.ModelAdmin):
 
 @admin.register(models.Tag)
 class TagAdmin(admin.ModelAdmin):
-    list_display = ('name', 'facility_count', 'created_at')
+    list_display = ('name', 'facility_count', 'hospital_count', 'created_at')
     list_filter = ('created_at',)
     search_fields = ('name',)
-    filter_horizontal = ('facilities',)
+    filter_horizontal = ('facilities', 'hospitals')
 
     def facility_count(self, obj):
         return obj.facilities.count()
     facility_count.short_description = '시설 수'
+
+    def hospital_count(self, obj):
+        return obj.hospitals.count()
+    hospital_count.short_description = '병원 수'
 
 
 @admin.register(models.FacilityImage)
