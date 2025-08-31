@@ -202,7 +202,7 @@
     </div>
     <aside class="mt-10 lg:mt-0 space-y-6">
       <div class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm sticky top-24">
-        <h2 class="text-lg font-bold mb-4">요약 메��</h2>
+        <h2 class="text-lg font-bold mb-4">요약 메���</h2>
         <ul class="text-sm space-y-2 text-slate-600">
           <li><span class="w-20 inline-block text-slate-500">등급</span> {{ hospital.grade|default:'-' }}</li>
           <li><span class="w-20 inline-block text-slate-500">설립</span> {{ hospital.establishment_date|date:'Y-m-d'|default:'-' }}</li>
@@ -221,7 +221,72 @@
   if(typeof Swiper!=='undefined') initSwiper(); else { let c=0; const it=setInterval(()=>{ if(typeof Swiper!=='undefined'){ initSwiper(); clearInterval(it);} if(++c>10) clearInterval(it);},120); }
   const header=document.getElementById('siteHeader'); function onScroll(){ if(window.scrollY>120) header.classList.add('shrink'); else header.classList.remove('shrink'); } window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
   const shareBtn=document.getElementById('shareBtn'); if(shareBtn){ shareBtn.addEventListener('click',()=>{ const data={title:'{{ hospital.name|escapejs }}',text:'{{ hospital.name|escapejs }}',url:window.location.href}; if(navigator.share){ navigator.share(data).catch(()=>copy()); } else copy(); function copy(){ if(navigator.clipboard) navigator.clipboard.writeText(window.location.href).then(()=>alert('링크 복사됨')); } }); }
-  if(window.initMap===undefined){ window.initMap=function(){ const el=document.getElementById('hospitalMap'); if(!el) return; const lat=parseFloat(el.dataset.lat); const lng=parseFloat(el.dataset.lng); if(!isNaN(lat)&&!isNaN(lng)){ const map=new google.maps.Map(el,{center:{lat:lat,lng:lng},zoom:15,mapTypeControl:false,streetViewControl:false}); new google.maps.Marker({position:{lat:lat,lng:lng},map:map,title:'{{ hospital.name|escapejs }}'}); } }; }
+
+  // Google Maps 초기화 함수
+  if(window.initMap===undefined){
+    window.initMap=function(){
+      const el=document.getElementById('hospitalMap');
+      if(!el) {
+        console.warn('hospitalMap 요소를 찾을 수 없습니다.');
+        return;
+      }
+
+      const lat=parseFloat(el.dataset.lat);
+      const lng=parseFloat(el.dataset.lng);
+
+      if(isNaN(lat)||isNaN(lng)) {
+        console.error('잘못된 좌표 데이터:', el.dataset.lat, el.dataset.lng);
+        el.innerHTML = '<div class="flex items-center justify-center h-full text-red-500 text-sm">좌표 데이터 오류</div>';
+        return;
+      }
+
+      try {
+        const map=new google.maps.Map(el,{
+          center:{lat:lat,lng:lng},
+          zoom:16,
+          mapTypeControl:false,
+          streetViewControl:false,
+          fullscreenControl: true
+        });
+
+        const marker = new google.maps.Marker({
+          position:{lat:lat,lng:lng},
+          map:map,
+          title:'{{ hospital.name|escapejs }}'
+        });
+
+        // 정보창 추가
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div style="padding:8px;max-width:240px">
+              <h3 style="margin:0 0 6px;font-size:15px;font-weight:600;color:#1e293b">{{ hospital.name|escapejs }}</h3>
+              {% if hospital.location %}<p style="margin:0 0 8px;font-size:13px;line-height:1.4;color:#475569">{{ hospital.location|escapejs }}</p>{% endif %}
+              <button onclick="openHospitalDirections(${lat}, ${lng})" style="background:#4F46E5;color:#fff;border:0;padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer">길찾기</button>
+            </div>`
+        });
+
+        marker.addListener('click', () => infoWindow.open(map, marker));
+
+        console.log('병원 지도가 성공적으로 로드되었습니���.');
+      } catch(error) {
+        console.error('Google Maps 로드 오류:', error);
+        el.innerHTML = '<div class="flex items-center justify-center h-full text-red-500 text-sm">지도 로드 실패</div>';
+      }
+    };
+
+    // 길찾기 함수
+    window.openHospitalDirections = function(lat, lng) {
+      window.open(`https://maps.google.com/maps?daddr=${lat},${lng}`, '_blank');
+    };
+
+    // Google Maps API 오류 처리
+    window.gm_authFailure = function() {
+      const mapElement = document.getElementById('hospitalMap');
+      if (mapElement) {
+        mapElement.innerHTML = '<div class="text-red-500 text-center p-4 text-sm">지도 API 인증 실패 (API 키 확인 필요)</div>';
+      }
+    };
+  }
 
   // ==== 갤러리 모달 ====
   function initGallery(){

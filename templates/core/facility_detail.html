@@ -339,7 +339,7 @@
           </div>
         </div>
         <div>
-          <label class="block text-slate-600 mb-1" for="fc_extra">비급여·추가비용(월)</label>
+          <label class="block text-slate-600 mb-1" for="fc_extra">비급��·추가비용(월)</label>
           <input id="fc_extra" type="number" inputmode="numeric" min="0" value="0" class="w-full rounded-md border px-3 h-9 text-sm" />
         </div>
         <div>
@@ -662,17 +662,21 @@
   calc();
 })();
 
-// Google Maps 초기화 함수 (전역 ��수로 선언)
+// Google Maps 초기화 함수 (전역 ���수로 선언)
 {% if facility.latitude and facility.longitude and google_maps_api_key %}
 function initMap() {
   const mapElement = document.getElementById('facilityMap');
-  if (!mapElement) return;
+  if (!mapElement) {
+    console.warn('facilityMap 요소를 찾을 수 없습니다.');
+    return;
+  }
 
   // dataset에서 안전하게 숫자 파싱
   const lat = parseFloat(mapElement.dataset.lat);
   const lng = parseFloat(mapElement.dataset.lng);
   if (isNaN(lat) || isNaN(lng)) {
-    mapElement.innerHTML = '<div class="text-red-500 text-sm p-4">좌표 파싱 오류</div>';
+    console.error('잘못된 좌표 데이터:', mapElement.dataset.lat, mapElement.dataset.lng);
+    mapElement.innerHTML = '<div class="text-red-500 text-sm p-4 text-center">좌표 데이터 오류</div>';
     return;
   }
 
@@ -680,32 +684,39 @@ function initMap() {
   const loadingEl = document.getElementById('mapLoading');
   if (loadingEl) loadingEl.remove();
 
-  // 지도 ��성
-  const facilityLocation = { lat, lng };
-  const map = new google.maps.Map(mapElement, {
-    zoom: 16,
-    center: facilityLocation,
-    streetViewControl: false,
-    fullscreenControl: true,
-    mapTypeControl: false,
-    styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }]
-  });
+  try {
+    // 지도 ��성
+    const facilityLocation = { lat, lng };
+    const map = new google.maps.Map(mapElement, {
+      zoom: 16,
+      center: facilityLocation,
+      streetViewControl: false,
+      fullscreenControl: true,
+      mapTypeControl: false,
+      styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }]
+    });
 
-  const marker = new google.maps.Marker({
-    position: facilityLocation,
-    map,
-    title: '{{ facility.name|escapejs }}'
-  });
+    const marker = new google.maps.Marker({
+      position: facilityLocation,
+      map,
+      title: '{{ facility.name|escapejs }}'
+    });
 
-  const infoWindow = new google.maps.InfoWindow({
-    content: `
-      <div style="padding:8px 8px 10px;max-width:240px">
-        <h3 style="margin:0 0 6px;font-size:15px;font-weight:600;color:#1e293b">{{ facility.name|escapejs }}</h3>
-        {% if location_items and location_items.0.content %}<p style="margin:0 0 8px;font-size:13px;line-height:1.4;color:#475569">{{ location_items.0.content|escapejs }}</p>{% endif %}
-        <button onclick="openDirections()" style="background:#4F46E5;color:#fff;border:0;padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer">길찾기</button>
-      </div>`
-  });
-  marker.addListener('click', () => infoWindow.open(map, marker));
+    const infoWindow = new google.maps.InfoWindow({
+      content: `
+        <div style="padding:8px 8px 10px;max-width:240px">
+          <h3 style="margin:0 0 6px;font-size:15px;font-weight:600;color:#1e293b">{{ facility.name|escapejs }}</h3>
+          {% if location_items and location_items.0.content %}<p style="margin:0 0 8px;font-size:13px;line-height:1.4;color:#475569">{{ location_items.0.content|escapejs }}</p>{% endif %}
+          <button onclick="openDirections()" style="background:#4F46E5;color:#fff;border:0;padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer">길찾기</button>
+        </div>`
+    });
+    marker.addListener('click', () => infoWindow.open(map, marker));
+
+    console.log('시설 지도가 성공적으로 로드되었습니다.');
+  } catch(error) {
+    console.error('Google Maps 로드 오류:', error);
+    mapElement.innerHTML = '<div class="text-red-500 text-center p-4 text-sm">지도 로드 실패</div>';
+  }
 }
 
 function openDirections() {
@@ -719,7 +730,7 @@ function openDirections() {
 window.gm_authFailure = function() {
   const mapElement = document.getElementById('facilityMap');
   if (mapElement) {
-    mapElement.innerHTML = '<div class="text-red-500 text-center p-4 text-sm">지도 API 인증 실패 (API 키 확인)</div>';
+    mapElement.innerHTML = '<div class="text-red-500 text-center p-4 text-sm">지도 API 인증 실패 (API 키 확인 필요)</div>';
   }
 };
 {% endif %}

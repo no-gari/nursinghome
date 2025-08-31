@@ -1,0 +1,44 @@
+{# 블로그 리스트 결과 partial (포스트 카드 + 페이지네이션) #}
+<section aria-label="포스트 목록" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-6" data-post-list>
+  {% for p in posts %}
+  <article class="group rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden flex flex-col transition hover:shadow-md focus-within:shadow-md">
+      <a href="{{ p.get_absolute_url }}" class="block relative aspect-video overflow-hidden">
+          {% if p.cover_image %}<img src="{{ p.cover_image.url }}" alt="{{ p.title }}" class="w-full h-full object-cover img-hover" loading="lazy">{% else %}<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 text-xs">NO IMAGE</div>{% endif %}
+          <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent"></div>
+          <div class="absolute left-2 bottom-2 flex flex-wrap gap-1 tag-overlay">
+              {% if p.is_featured %}<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-600 text-white shadow">FEATURED</span>{% endif %}
+              {% for t in p.tags.all|slice:':2' %}<span class="px-2 py-0.5 rounded-full text-[10px] font-medium">{{ t.name }}</span>{% endfor %}
+              {% if p.category %}<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/90 text-slate-800 backdrop-blur">{{ p.category.name }}</span>{% endif %}
+          </div>
+      </a>
+      <div class="flex-1 flex flex-col p-5 gap-3">
+          <h3 class="font-semibold leading-snug text-slate-800 line-clamp-2"><a href="{{ p.get_absolute_url }}" class="hover:underline decoration-2 underline-offset-4">{{ p.title }}</a></h3>
+          <p class="text-[13px] leading-relaxed text-slate-600 line-clamp-2">{{ p.excerpt }}</p>
+          <div class="mt-auto flex items-center justify-between text-[11px] text-slate-500">
+              <span>{{ p.published_at|date:'Y.m.d' }}</span>
+          </div>
+      </div>
+  </article>
+  {% empty %}
+  <div class="col-span-full py-20 text-center text-slate-500">포스트가 없습니다.</div>
+  {% endfor %}
+</section>
+{% if page_obj.has_other_pages %}
+<nav class="flex justify-center pt-4" aria-label="페이지네이션" data-pagination>
+  <ul class="flex items-center gap-1 text-sm">
+    {% if page_obj.has_previous %}
+      <li><a class="page-link px-3 h-9 inline-flex items-center justify-center rounded-lg border border-slate-300 hover:border-slate-500" href="#" data-page="{{ page_obj.previous_page_number }}" aria-label="이전 페이지">«</a></li>
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+      {% if num == page_obj.number %}
+        <li><span class="px-3 h-9 inline-flex items-center justify-center rounded-lg bg-indigo-600 text-white font-medium">{{ num }}</span></li>
+      {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+        <li><a class="page-link px-3 h-9 inline-flex items-center justify-center rounded-lg border border-slate-300 hover:border-slate-500" href="#" data-page="{{ num }}">{{ num }}</a></li>
+      {% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}
+      <li><a class="page-link px-3 h-9 inline-flex items-center justify-center rounded-lg border border-slate-300 hover:border-slate-500" href="#" data-page="{{ page_obj.next_page_number }}" aria-label="다음 페이지">»</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}

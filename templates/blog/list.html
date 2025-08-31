@@ -23,71 +23,153 @@
         .hdr{transition:height .2s ease, box-shadow .2s ease, background .2s ease;}
         .hdr:not(.shrink){height:70px;} .hdr.shrink{height:56px;}
         .tag-overlay span{background:rgba(0,0,0,.55);color:#fff;backdrop-filter:blur(4px);}
+        .loader{width:56px;height:56px;position:relative;}
+        .loader:after{content:"";position:absolute;inset:0;border-radius:50%;border:6px solid #6366f1;border-color:#6366f1 transparent #6366f1 transparent;animation:spin 1s linear infinite;}
+        @keyframes spin{to{transform:rotate(360deg);}}
     </style>
 </head>
 <body class="min-h-full bg-white text-slate-900 antialiased selection:bg-indigo-200/60">
 <header id="siteHeader" class="hdr sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 flex flex-col justify-center">{% include 'core/_navbar.html' %}</header>
+
 <main class="max-w-7xl mx-auto px-5 py-10">
     <div class="flex flex-col gap-10">
-        <!-- 상단: 카테고리 필터 (태그 필터 제거) -->
-        <div class="flex flex-wrap gap-3 items-center">
-            <a href="{% url 'blog:list' %}" class="px-3 py-1.5 rounded-full text-xs font-medium border transition {% if not current_category %}bg-slate-800 text-white border-slate-800{% else %}border-slate-300 bg-slate-100 text-slate-600 hover:border-slate-500{% endif %}">전체</a>
+        <!-- 상단: 카테고리 필터 -->
+        <div id="categoryFilter" class="flex flex-wrap gap-3 items-center">
+            <a href="#" data-category="" class="category-link px-3 py-1.5 rounded-full text-xs font-medium border transition {% if not current_category %}bg-slate-800 text-white border-slate-800{% else %}border-slate-300 bg-slate-100 text-slate-600 hover:border-slate-500{% endif %}">전체</a>
             {% for cat in categories %}
-            <a href="?category={{ cat.slug }}" class="px-3 py-1.5 rounded-full text-xs font-medium border transition {% if cat.slug == current_category %}bg-slate-800 text-white border-slate-800{% else %}border-slate-300 bg-slate-100 text-slate-600 hover:border-slate-500{% endif %}">{{ cat.name }}</a>
+            <a href="#" data-category="{{ cat.slug }}" class="category-link px-3 py-1.5 rounded-full text-xs font-medium border transition {% if cat.slug == current_category %}bg-slate-800 text-white border-slate-800{% else %}border-slate-300 bg-slate-100 text-slate-600 hover:border-slate-500{% endif %}">{{ cat.name }}</a>
             {% endfor %}
         </div>
 
-        <!-- 포스트 카드 (3열) -->
-        <section aria-label="포스트 목록" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {% for p in posts %}
-            <article class="group rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden flex flex-col transition hover:shadow-md focus-within:shadow-md">
-                <a href="{{ p.get_absolute_url }}" class="block relative aspect-video overflow-hidden">
-                    {% if p.cover_image %}<img src="{{ p.cover_image.url }}" alt="{{ p.title }}" class="w-full h-full object-cover img-hover" loading="lazy">{% else %}<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 text-xs">NO IMAGE</div>{% endif %}
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent"></div>
-                    <div class="absolute left-2 bottom-2 flex flex-wrap gap-1 tag-overlay">
-                        {% if p.is_featured %}<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-600 text-white shadow">FEATURED</span>{% endif %}
-                        {% for t in p.tags.all|slice:':2' %}<span class="px-2 py-0.5 rounded-full text-[10px] font-medium">{{ t.name }}</span>{% endfor %}
-                        {% if p.category %}<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/90 text-slate-800 backdrop-blur">{{ p.category.name }}</span>{% endif %}
-                    </div>
-                </a>
-                <div class="flex-1 flex flex-col p-5 gap-3">
-                    <h3 class="font-semibold leading-snug text-slate-800 line-clamp-2"><a href="{{ p.get_absolute_url }}" class="hover:underline decoration-2 underline-offset-4">{{ p.title }}</a></h3>
-                    <p class="text-[13px] leading-relaxed text-slate-600 line-clamp-2">{{ p.excerpt }}</p>
-                    <div class="mt-auto flex items-center justify-between text-[11px] text-slate-500">
-                        <span>{{ p.published_at|date:'Y.m.d' }}</span>
-                    </div>
-                </div>
-            </article>
-            {% empty %}
-            <div class="col-span-full py-20 text-center text-slate-500">포스트가 없습니다.</div>
-            {% endfor %}
-        </section>
-
-        {% if page_obj.has_other_pages %}
-        <nav class="flex justify-center pt-4" aria-label="페이지네이션">
-            <ul class="flex items-center gap-1 text-sm">
-                {% if page_obj.has_previous %}
-                <li><a class="px-3 h-9 inline-flex items-center justify-center rounded-lg border border-slate-300 hover:border-slate-500" href="?page={{ page_obj.previous_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}" aria-label="이전 페이지">«</a></li>
-                {% endif %}
-                {% for num in page_obj.paginator.page_range %}
-                    {% if num == page_obj.number %}
-                    <li><span class="px-3 h-9 inline-flex items-center justify-center rounded-lg bg-indigo-600 text-white font-medium">{{ num }}</span></li>
-                    {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
-                    <li><a class="px-3 h-9 inline-flex items-center justify-center rounded-lg border border-slate-300 hover:border-slate-500" href="?page={{ num }}{% if current_category %}&category={{ current_category }}{% endif %}">{{ num }}</a></li>
-                    {% endif %}
-                {% endfor %}
-                {% if page_obj.has_next %}
-                <li><a class="px-3 h-9 inline-flex items-center justify-center rounded-lg border border-slate-300 hover:border-slate-500" href="?page={{ page_obj.next_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}" aria-label="다음 페이지">»</a></li>
-                {% endif %}
-            </ul>
-        </nav>
-        {% endif %}
+        <!-- 결과 영역 -->
+        <div id="blog-results">
+            {% include 'blog/_list_results.html' %}
+        </div>
     </div>
 </main>
+
 {% include 'core/_footer.html' %}
+
 <script>
-// 헤더 shrink & shadow
-const header=document.getElementById('siteHeader');function onScroll(){if(window.scrollY>16){header.classList.add('shrink','shadow-sm');}else{header.classList.remove('shrink','shadow-sm');}}window.addEventListener('scroll',onScroll);onScroll();
+// 헤더 shrink
+const header = document.getElementById('siteHeader');
+function onScroll() {
+    if (window.scrollY > 120) header.classList.add('shrink');
+    else header.classList.remove('shrink');
+}
+window.addEventListener('scroll', onScroll, {passive: true});
+onScroll();
+
+// 블로그 AJAX 기능 (병원/시설 리스트와 동일한 패턴)
+(function(){
+    const resultsContainer = document.getElementById('blog-results');
+    const categoryFilter = document.getElementById('categoryFilter');
+
+    if (!resultsContainer || !categoryFilter) return;
+
+    let currentCategory = '{{ current_category|default:"" }}';
+    let isLoading = false;
+
+    function setLoading() {
+        if (isLoading) return;
+        isLoading = true;
+        resultsContainer.innerHTML = `
+            <div class="w-full flex flex-col items-center justify-center py-24 gap-4" role="status" aria-live="polite">
+                <div class="loader" aria-hidden="true"></div>
+                <div class="text-sm text-slate-500 font-medium">블로그 불러오는 중...</div>
+            </div>`;
+    }
+
+    function clearLoading() {
+        isLoading = false;
+    }
+
+    function buildQuery(cat, page) {
+        const params = new URLSearchParams();
+        if (cat) params.set('category', cat);
+        if (page && page > 1) params.set('page', page);
+        params.set('ajax', '1');
+        return params;
+    }
+
+    function updateCategoryActive(cat) {
+        const activeClasses = ['bg-slate-800', 'text-white', 'border-slate-800'];
+        const inactiveClasses = ['border-slate-300', 'bg-slate-100', 'text-slate-600'];
+
+        categoryFilter.querySelectorAll('a[data-category]').forEach(link => {
+            const category = link.dataset.category || '';
+            const active = (category === (cat || ''));
+
+            link.classList.remove(...(active ? inactiveClasses : activeClasses));
+            link.classList.add(...(active ? activeClasses : inactiveClasses));
+
+            if (!active) {
+                link.classList.add('hover:border-slate-500');
+            } else {
+                link.classList.remove('hover:border-slate-500');
+            }
+        });
+    }
+
+    function applyPaginationLinks() {
+        resultsContainer.querySelectorAll('.page-link').forEach(a => {
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                const pageMatch = a.getAttribute('data-page');
+                triggerFetch({page: pageMatch || '1'});
+            });
+        });
+    }
+
+    async function triggerFetch(extra = {}) {
+        if (isLoading) return;
+        setLoading();
+
+        const params = buildQuery(currentCategory, extra.page);
+        const url = location.pathname + '?' + params.toString();
+
+        try {
+            const resp = await fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+            const html = await resp.text();
+            resultsContainer.innerHTML = html;
+            applyPaginationLinks();
+
+            // URL 업데이트
+            const visibleParams = buildQuery(currentCategory, extra.page);
+            visibleParams.delete('ajax');
+            const newUrl = location.pathname + (visibleParams.toString() ? ('?' + visibleParams.toString()) : '');
+            history.replaceState({}, '', newUrl);
+
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        } catch (e) {
+            resultsContainer.innerHTML = '<div class="py-16 text-center text-red-500">오류가 발생했습니다.</div>';
+            console.error(e);
+        } finally {
+            clearLoading();
+        }
+    }
+
+    // 카테고리 클릭 이벤트
+    categoryFilter.addEventListener('click', e => {
+        const link = e.target.closest('a[data-category]');
+        if (!link) return;
+
+        e.preventDefault();
+        const cat = link.dataset.category || '';
+
+        if (cat === currentCategory) return;
+
+        currentCategory = cat;
+        updateCategoryActive(currentCategory);
+        triggerFetch({page: 1});
+    });
+
+    // 초기화
+    updateCategoryActive(currentCategory);
+    applyPaginationLinks();
+})();
 </script>
 </body>
 </html>

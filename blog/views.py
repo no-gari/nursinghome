@@ -19,13 +19,17 @@ def blog_list(request):
     page_obj = paginator.get_page(page_number)
 
     ctx = {
-        'featured': featured,  # OG 이미지 등에 사용
+        'featured': featured,
         'posts': page_obj.object_list,
         'page_obj': page_obj,
         'paginator': paginator,
         'current_category': category_slug,
         'categories': BlogCategory.objects.order_by('name')[:30],
     }
+
+    # AJAX 요청이면 partial 템플릿 반환 (병원/시설과 동일한 방식)
+    if request.GET.get('ajax') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'blog/_list_results.html', ctx)
     return render(request, 'blog/list.html', ctx)
 
 
