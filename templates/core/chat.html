@@ -6,10 +6,8 @@
     <title>CareBridge - 채팅</title>
     <!-- Tailwind & Fonts (공통 헤더/푸터 스타일 적용 위해 추가) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- axios 제거 가능 (다른 부분서 사용 가능해 유지) -->
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -65,14 +63,19 @@
         <button type="button" class="suggestion-chip" @click="setExample('경기도 10년 이상 운영 A등급 추천')">📊 <span>경기 10년+ A등급</span></button>
       </div>
       <div class="chat-messages" ref="messagesContainer">
-        <!-- ...existing message loop... -->
         <div v-for="message in messages" :key="message.id" :class="['message', message.type]">
           <div class="message-avatar"><span v-if="message.type === 'user'">👤</span><span v-else>🤖</span></div>
-          <div class="message-content" :class="{ 'error-message': message.isError }"><div v-html="formatMessage(message.content)"></div></div>
+          <div class="message-content" :class="{ 'error-message': message.isError }">
+            <div v-html="formatMessage(message.content)"></div>
+            <div v-if="message.sources && message.sources.length" class="mt-3 pt-2 border-t border-slate-200 text-xs text-slate-500 space-y-1">
+              <div class="font-semibold text-slate-600">참고 소스</div>
+              <div v-for="s in message.sources" :key="s.id">{{ s.rank }}. [{{ s.type }}] {{ s.name }}</div>
+            </div>
+          </div>
         </div>
-        <div v-if="isLoading" class="message bot">
+        <div v-if="isLoading && !streamingBot" class="message bot">
           <div class="message-avatar">🤖</div>
-          <div class="message-content loading"><span>답변 생성 중</span><div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div></div>
+          <div class="message-content loading"><span>답변 준비 중</span><div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div></div>
         </div>
       </div>
     </div>
@@ -90,18 +93,35 @@
 <script>
 const { createApp } = Vue;
 createApp({
-  data(){return{messages:[],currentMessage:'',isLoading:false,messageId:1}},
-  mounted(){ const p=new URLSearchParams(window.location.search); const init=p.get('message'); if(init){ this.currentMessage=decodeURIComponent(init); this.sendMessage(); } this.setupCSRF(); },
+  data(){return{messages:[],currentMessage:'',isLoading:false,messageId:1,ws:null,wsConnected:false,reconnectWait:1000,streamingBot:null}},
+  mounted(){ const p=new URLSearchParams(window.location.search); const init=p.get('message'); this.setupWS(); if(init){ this.currentMessage=decodeURIComponent(init); this.sendMessage(); } },
   methods:{
     setExample(txt){ this.currentMessage=txt; this.sendMessage(); },
-    setupCSRF(){ const t=document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')||document.querySelector('[name=csrfmiddlewaretoken]')?.value||this.getCookie('csrftoken'); if(t){ axios.defaults.headers.common['X-CSRFToken']=t; axios.defaults.headers.common['X-Requested-With']='XMLHttpRequest'; } },
-    getCookie(name){ let v=null; if(document.cookie&&document.cookie!==''){ const cs=document.cookie.split(';'); for(let i=0;i<cs.length;i++){ const c=cs[i].trim(); if(c.substring(0,name.length+1)===(name+'=')){ v=decodeURIComponent(c.substring(name.length+1)); break; } } } return v; },
-    async sendMessage(){ if(!this.currentMessage.trim()||this.isLoading) return; const userMsg={id:this.messageId++,type:'user',content:this.currentMessage,timestamp:new Date()}; this.messages.push(userMsg); const toSend=this.currentMessage; this.currentMessage=''; this.isLoading=true; this.scrollToBottom(); try{ const r=await axios.post('/api/chat/',{query:toSend}); const botMsg={id:this.messageId++,type:'bot',content:r.data.response||r.data.answer,sources:r.data.sources||[],timestamp:new Date()}; this.messages.push(botMsg); }catch(e){ console.error(e); let msg='죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.'; if(e.response && e.response.status===403){ try{ const retry=await fetch('/api/chat/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:toSend}),credentials:'include'}); if(retry.ok){ const data=await retry.json(); this.messages.push({id:this.messageId++,type:'bot',content:data.answer||data.response||'',sources:data.sources||[],timestamp:new Date()}); this.isLoading=false; this.scrollToBottom(); return; } }catch(e2){ console.error('retry fail',e2);} msg='403 (권한/CSRF) 문제입니다. 서버 로그 확인 필요.'; } else if(e.response && e.response.data && e.response.data.error){ msg=e.response.data.error; } this.messages.push({id:this.messageId++,type:'bot',content:msg,isError:true,timestamp:new Date()}); } finally { this.isLoading=false; this.scrollToBottom(); } },
+    setupWS(){
+      const protocol = (window.location.protocol === 'https:') ? 'wss://' : 'ws://';
+      const url = protocol + window.location.host + '/ws/chat/';
+      this.ws = new WebSocket(url);
+      this.ws.onopen = ()=>{ this.wsConnected=true; this.reconnectWait=1000; };
+      this.ws.onclose = ()=>{ this.wsConnected=false; if(this.isLoading && this.streamingBot){ this.streamingBot.isError=true; } setTimeout(()=>{ this.setupWS(); }, Math.min(this.reconnectWait,10000)); this.reconnectWait*=2; };
+      this.ws.onerror = ()=>{};
+      this.ws.onmessage = (evt)=>{ try{ const payload=JSON.parse(evt.data); this.handlePayload(payload); }catch(e){ console.error('bad payload',e);} };
+    },
+    handlePayload(p){
+      if(!this.streamingBot && p.type==='token'){ // fallback
+        this.createStreamingBot();
+      }
+      if(p.type==='sources'){ if(!this.streamingBot) this.createStreamingBot(); this.streamingBot.sources=p.sources||[]; return; }
+      if(p.type==='token'){ this.streamingBot.content+=p.text; this.scrollToBottom(); return; }
+      if(p.type==='end'){ this.isLoading=false; this.streamingBot=null; this.scrollToBottom(); return; }
+      if(p.type==='error'){ if(!this.streamingBot) this.createStreamingBot(); this.streamingBot.isError=true; this.streamingBot.content+='\n[오류] '+(p.message||'알 수 없는 오류'); this.isLoading=false; this.streamingBot=null; }
+    },
+    createStreamingBot(){ const botMsg={id:this.messageId++,type:'bot',content:'',sources:[],timestamp:new Date()}; this.messages.push(botMsg); this.streamingBot=botMsg; },
+    sendMessage(){ if(!this.currentMessage.trim()||this.isLoading) return; if(!this.wsConnected){ this.messages.push({id:this.messageId++,type:'bot',content:'연결 대기 중입니다. 잠시 후 다시 시도해주세요.',isError:true}); return; } const userMsg={id:this.messageId++,type:'user',content:this.currentMessage,timestamp:new Date()}; this.messages.push(userMsg); const toSend=this.currentMessage; this.currentMessage=''; this.isLoading=true; this.ws.send(JSON.stringify({action:'chat',query:toSend})); this.scrollToBottom(); },
     formatMessage(c){ return c.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); },
     scrollToBottom(){ this.$nextTick(()=>{ const el=this.$refs.messagesContainer; if(el){ el.scrollTop=el.scrollHeight; } }); }
   }
 }).mount('#app');
-// 헤더 축소 효과 유지
+
 const siteHeader=document.getElementById('siteHeader'); function onScroll(){ if(window.scrollY>16) siteHeader.classList.add('shrink'); else siteHeader.classList.remove('shrink'); } window.addEventListener('scroll',onScroll); onScroll();
 </script>
 </body>

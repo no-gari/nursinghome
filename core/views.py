@@ -304,17 +304,22 @@ class ChatbotAPI(APIView):
 
 @api_view(['POST'])
 def initialize_rag(request):
-    """RAG 시스템 초기화 (벡터 DB 구축)"""
+    """RAG 임베딩 초기화/갱신: Facility & Hospital summary -> summary_embedding 저장.
+    body 또는 query에 force=1 전달 시 기존 임베딩 재생성.
+    """
+    force_flag = str(request.data.get('force') or request.query_params.get('force') or '0') in ('1', 'true', 'True')
     try:
         rag_service = RAGService()
-        count = rag_service.embed_facilities()
+        updated = rag_service.update_all_embeddings(force=force_flag)
         return Response({
-            'message': f'RAG 시스템이 초기���되었습니다. {count}개 시���이 벡터화되었습니다.',
-            'facilities_count': count
+            'message': '임베딩 갱신 완료',
+            'updated_facilities': updated['facility'],
+            'updated_hospitals': updated['hospital'],
+            'force': force_flag,
         })
     except Exception as e:
         return Response({
-            'error': f'RAG 초기화 중 오류가 발생했습니다: {str(e)}'
+            'error': f'RAG 임베딩 갱신 중 오류: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

@@ -32,6 +32,12 @@ KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY", "")
 KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET", "")
 KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI", "http://localhost:8000/account/auth/kakao/callback/")
 
+# Google Geocoding API 키
+GOOGLE_GEOCODING_API_KEY = os.getenv("GOOGLE_GEOCODING_API_KEY", "")
+
+# Google Maps JavaScript API 키 (웹에서 지도 표시용)
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_GEOCODING_API_KEY", "")
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -45,6 +51,9 @@ INSTALLED_APPS = [
     'corsheaders',     # CORS 추가
     'core',  # 기존
     'account',
+    'ckeditor',  # WYSIWYG
+    'blog',      # 블로그
+    'channels',  # ← 실시간(WebSocket)
 ]
 
 MIDDLEWARE = [
@@ -76,29 +85,29 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
 
-# PostgreSQL 설정 (환경변수로 관리)
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.getenv('DB_NAME', ''),
-#         'USER': os.getenv('DB_USER', ''),
-#         'PASSWORD': os.getenv('DB_PASSWORD', ''),
-#         'HOST': os.getenv('DB_HOST', ''),
-#         'PORT': os.getenv('DB_PORT', ''),
-#         'OPTIONS': {
-#             'client_encoding': 'UTF8',
-#         },
-#     }
-# }
+USE_SQLITE = False
 
-# 개발 시 필요할 때 사용
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', ''),
+        'USER': os.getenv('DB_USER', ''),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', ''),
+        'PORT': os.getenv('DB_PORT', '5432'),
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+        },
     }
 }
+# # SQLite 전환 (테스트/로컬 편의)
+# if os.getenv('USE_SQLITE', 'true').lower() == 'true':
+#     DATABASES['default'] = {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -137,6 +146,21 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Media (이미지 업로드)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# CKEditor 설정 (심플 + 코드 하이라이트 지원 가능 기본 구성)
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'full',
+        'height': 400,
+        'width': '100%',
+        'extraPlugins': ','.join([
+            'codesnippet',  # 코드 하이라이트
+        ]),
+        'codeSnippet_theme': 'prism',
+        'removePlugins': 'stylesheetparser',
+        'forcePasteAsPlainText': False,
+    }
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -178,7 +202,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # OpenAI API 키 (환경변수에서 로드)
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+OPENAI_API_KEY = ''
 
 # ChromaDB 설정
 CHROMA_DB_PATH = BASE_DIR / 'chroma_db'
@@ -191,3 +215,16 @@ NAVER_CLIENT_ID = os.environ.get("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "")
 # (선택) requests 타임아웃/재시도 기본값
 NAVER_API_TIMEOUT = 5
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
+
+# CHANNEL_LAYERS = {
+#   'default': {
+#     'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#     'CONFIG': {'hosts': [('127.0.0.1', 6379)]},
+#   }
+# }
