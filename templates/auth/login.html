@@ -35,6 +35,13 @@
         .hdr{transition:height .25s ease, box-shadow .25s ease, background .25s ease;}
         .hdr:not(.shrink){height:70px;}
         .hdr.shrink{height:56px; box-shadow:0 2px 6px rgba(15,23,42,.06);}
+        /* Toast */
+        .toast-wrapper{position:fixed;right:24px;bottom:24px;z-index:3000;display:flex;flex-direction:column;gap:12px;}
+        .toast{min-width:260px;max-width:340px;background:#111827;color:#fff;padding:14px 18px;border-radius:14px;box-shadow:0 8px 28px -4px rgba(0,0,0,.35);font-size:14px;line-height:1.4;display:flex;align-items:flex-start;gap:10px;opacity:0;transform:translateY(10px);animation:toast-in .35s ease forwards;}
+        .toast.info{background:#1e293b;}
+        .toast button.close-btn{background:transparent;border:none;color:#fff;cursor:pointer;font-size:16px;line-height:1;padding:0 4px;margin-left:auto;}
+        @keyframes toast-in{to{opacity:1;transform:translateY(0);}}
+        @keyframes toast-out{to{opacity:0;transform:translateY(6px);}}
     </style>
 </head>
 <body>
@@ -58,8 +65,27 @@
         <div class="alt">현재는 카카오 로그인만 지원합니다</div>
     </div>
 </div>
-
+<div class="toast-wrapper" id="toastWrapper" aria-live="polite" aria-atomic="true"></div>
 {% include 'core/_footer.html' %}
-
+<script>
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const reason=params.get('reason');
+  if(reason==='chat'){
+    showToast('로그인이 필요한 서비스입니다. AI 채팅 이용을 위해 먼저 로그인해주세요.');
+  }
+  function showToast(msg){
+    const wrap=document.getElementById('toastWrapper');
+    const el=document.createElement('div');
+    el.className='toast info';
+    el.innerHTML='<div style="flex:1;">'+msg+'</div><button class="close-btn" aria-label="닫기">×</button>';
+    wrap.appendChild(el);
+    const btn=el.querySelector('.close-btn');
+    const close=()=>{el.style.animation='toast-out .25s ease forwards'; setTimeout(()=>el.remove(),240);} ;
+    btn.addEventListener('click',close);
+    setTimeout(close, 5500);
+  }
+})();
+</script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -12,6 +12,7 @@ from django.utils.decorators import method_decorator
 from .regions import regions
 from django.views.generic import ListView
 from django.db.models import Case, When, Value, IntegerField
+from django.contrib.auth.decorators import login_required
 import json
 
 
@@ -22,6 +23,9 @@ def main_view(request):
 
 @ensure_csrf_cookie
 def chat_view(request):
+    if not request.user.is_authenticated:
+        login_url = settings.LOGIN_URL
+        return redirect(f"{login_url}?next={request.path}&reason=chat")
     return render(request, 'core/chat.html')
 
 
