@@ -26,3 +26,5 @@ numpy==2.2.1
 langchain
 langchain-openai
 langchain-chroma
+channels==4.1.0
+daphne==4.1.1

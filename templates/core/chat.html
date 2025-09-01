@@ -40,7 +40,7 @@ axios.defaults.headers.common['X-CSRFToken'] = getCookie('csrftoken');
 const { createApp } = Vue;
 createApp({
     data() {
-        return { sessions: [], currentSession: null, messages: [], query: '' };
+        return { sessions: [], currentSession: null, messages: [], query: '', socket: null };
     },
     methods: {
         loadSessions() {
@@ -56,6 +56,14 @@ createApp({
             axios.get(`/api/chat/sessions/${session.id}/messages/`).then(res => {
                 this.messages = res.data;
             });
+            if (this.socket) {
+                this.socket.close();
+            }
+            this.socket = new WebSocket(`ws://${window.location.host}/ws/chat/${session.id}/`);
+            this.socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                this.messages.push({ id: Date.now(), role: 'assistant', content: data.answer });
+            };
         },
         createSession() {
             axios.post('/api/chat/sessions/', {}).then(res => {
@@ -73,13 +81,11 @@ createApp({
             });
         },
         sendMessage() {
-            if (!this.query || !this.currentSession) return;
+            if (!this.query || !this.currentSession || !this.socket) return;
             const text = this.query;
             this.query = '';
-            axios.post(`/api/chat/sessions/${this.currentSession.id}/messages/`, { query: text }).then(res => {
-                this.messages.push({ id: Date.now(), role: 'user', content: text });
-                this.messages.push({ id: Date.now()+1, role: 'assistant', content: res.data.answer });
-            });
+            this.messages.push({ id: Date.now(), role: 'user', content: text });
+            this.socket.send(JSON.stringify({ message: text }));
         }
     },
     mounted() {
