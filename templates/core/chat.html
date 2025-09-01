@@ -79,29 +79,50 @@
         </div>
       </div>
     </div>
+    <!-- chat-input-container 를 #app 내부로 이동 -->
+    <div class="chat-input-container">
+      <div class="chat-input-wrapper">
+        <!-- keypress -> keydown 로 변경, Shift+Enter 줄바꿈 지원 -->
+        <textarea v-model="currentMessage"
+                  @keydown.enter.exact.prevent="sendMessage"
+                  @keydown.enter.shift.prevent="insertNewline"
+                  :disabled="isLoading"
+                  placeholder="무엇이든 물어보세요... (예: 서울 A등급 요양원)"
+                  class="chat-input"
+                  rows="1"></textarea>
+        <button @click="sendMessage" :disabled="isLoading || !currentMessage.trim()" class="chat-send-btn" aria-label="전송">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
   </div>
 </main>
 <!-- Footer intentionally omitted for chat focus -->
-<div class="chat-input-container">
-  <div class="chat-input-wrapper">
-    <textarea v-model="currentMessage" @keypress.enter.prevent="sendMessage" :disabled="isLoading" placeholder="무엇이든 물어보세요... (예: 서울 A등급 요양원)" class="chat-input" rows="1"></textarea>
-    <button @click="sendMessage" :disabled="isLoading || !currentMessage.trim()" class="chat-send-btn" aria-label="전송">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-    </button>
-  </div>
-</div>
 <script>
 const { createApp } = Vue;
 createApp({
-  data(){return{messages:[],currentMessage:'',isLoading:false,messageId:1,ws:null,wsConnected:false,reconnectWait:1000,streamingBot:null}},
-  mounted(){ const p=new URLSearchParams(window.location.search); const init=p.get('message'); this.setupWS(); if(init){ this.currentMessage=decodeURIComponent(init); this.sendMessage(); } },
+  data(){return{messages:[],currentMessage:'',isLoading:false,messageId:1,ws:null,wsConnected:false,reconnectWait:1000,streamingBot:null,pendingInit:null}},
+  mounted(){ const p=new URLSearchParams(window.location.search); const init=p.get('message'); this.setupWS(); if(init){ this.currentMessage=decodeURIComponent(init); this.pendingInit=this.currentMessage; } },
   methods:{
+    insertNewline(){ // Shift+Enter
+      const ta = event.target;
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      this.currentMessage = this.currentMessage.slice(0,start) + '\n' + this.currentMessage.slice(end);
+      this.$nextTick(()=>{ ta.selectionStart = ta.selectionEnd = start + 1; });
+    },
     setExample(txt){ this.currentMessage=txt; this.sendMessage(); },
     setupWS(){
       const protocol = (window.location.protocol === 'https:') ? 'wss://' : 'ws://';
       const url = protocol + window.location.host + '/ws/chat/';
       this.ws = new WebSocket(url);
-      this.ws.onopen = ()=>{ this.wsConnected=true; this.reconnectWait=1000; };
+      this.ws.onopen = ()=>{
+        this.wsConnected=true;
+        this.reconnectWait=1000;
+        if(this.pendingInit){
+          const initMsg=this.pendingInit; this.pendingInit=null; this.sendMessage(initMsg);
+        }
+      };
       this.ws.onclose = ()=>{ this.wsConnected=false; if(this.isLoading && this.streamingBot){ this.streamingBot.isError=true; } setTimeout(()=>{ this.setupWS(); }, Math.min(this.reconnectWait,10000)); this.reconnectWait*=2; };
       this.ws.onerror = ()=>{};
       this.ws.onmessage = (evt)=>{ try{ const payload=JSON.parse(evt.data); this.handlePayload(payload); }catch(e){ console.error('bad payload',e);} };
@@ -116,7 +137,21 @@ createApp({
       if(p.type==='error'){ if(!this.streamingBot) this.createStreamingBot(); this.streamingBot.isError=true; this.streamingBot.content+='\n[오류] '+(p.message||'알 수 없는 오류'); this.isLoading=false; this.streamingBot=null; }
     },
     createStreamingBot(){ const botMsg={id:this.messageId++,type:'bot',content:'',sources:[],timestamp:new Date()}; this.messages.push(botMsg); this.streamingBot=botMsg; },
-    sendMessage(){ if(!this.currentMessage.trim()||this.isLoading) return; if(!this.wsConnected){ this.messages.push({id:this.messageId++,type:'bot',content:'연결 대기 중입니다. 잠시 후 다시 시도해주세요.',isError:true}); return; } const userMsg={id:this.messageId++,type:'user',content:this.currentMessage,timestamp:new Date()}; this.messages.push(userMsg); const toSend=this.currentMessage; this.currentMessage=''; this.isLoading=true; this.ws.send(JSON.stringify({action:'chat',query:toSend})); this.scrollToBottom(); },
+    sendMessage(text){
+      const content = (typeof text === 'string') ? text : this.currentMessage;
+      if(!content.trim()||this.isLoading) return;
+      if(!this.wsConnected){
+        // 초기 진입 상태라면 pendingInit에 저장 후 onopen에서 전송
+        if(!this.pendingInit) this.pendingInit=content;
+        return;
+      }
+      const userMsg={id:this.messageId++,type:'user',content:content,timestamp:new Date()};
+      this.messages.push(userMsg);
+      if(typeof text !== 'string') this.currentMessage=''; else if(this.currentMessage===content) this.currentMessage='';
+      this.isLoading=true;
+      this.ws.send(JSON.stringify({action:'chat',query:content}));
+      this.scrollToBottom();
+    },
     formatMessage(c){ return c.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); },
     scrollToBottom(){ this.$nextTick(()=>{ const el=this.$refs.messagesContainer; if(el){ el.scrollTop=el.scrollHeight; } }); }
   }

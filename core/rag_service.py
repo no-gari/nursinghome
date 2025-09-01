@@ -1,4 +1,5 @@
 import re
+import logging
 from typing import List, Dict, Any, Sequence  # Sequence 미사용 가능하지만 유지
 
 from django.conf import settings
@@ -11,6 +12,8 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage
 
 from core.models import Facility, Hospital
+
+logger = logging.getLogger(__name__)
 
 
 class RAGService:
@@ -60,17 +63,18 @@ class RAGService:
 
     def _search_postgres(self, query_embedding: List[float], top_k: int) -> List[Dict[str, Any]]:
         results: List[Dict[str, Any]] = []
-        # Facility
+        # pgvector는 '[v1,v2,...]' 형태 문자열을 ::vector 캐스팅해 사용
+        vec_literal = '[' + ','.join(f'{x:.6f}' for x in query_embedding) + ']'
         with connection.cursor() as cur:
             cur.execute(
                 """
-                SELECT id, name, summary, (summary_embedding <=> %s) AS distance
+                SELECT id, name, summary, (summary_embedding <=> %s::vector) AS distance
                 FROM core_facility
                 WHERE summary_embedding IS NOT NULL
-                ORDER BY summary_embedding <=> %s
+                ORDER BY summary_embedding <=> %s::vector
                 LIMIT %s
                 """,
-                [query_embedding, query_embedding, top_k]
+                [vec_literal, vec_literal, top_k]
             )
             for row in cur.fetchall():
                 results.append({
@@ -80,17 +84,16 @@ class RAGService:
                     'summary': row[2] or '',
                     'distance': float(row[3]) if row[3] is not None else 0.0,
                 })
-        # Hospital
         with connection.cursor() as cur:
             cur.execute(
                 """
-                SELECT id, name, summary, (summary_embedding <=> %s) AS distance
+                SELECT id, name, summary, (summary_embedding <=> %s::vector) AS distance
                 FROM core_hospital
                 WHERE summary_embedding IS NOT NULL
-                ORDER BY summary_embedding <=> %s
+                ORDER BY summary_embedding <=> %s::vector
                 LIMIT %s
                 """,
-                [query_embedding, query_embedding, top_k]
+                [vec_literal, vec_literal, top_k]
             )
             for row in cur.fetchall():
                 results.append({
@@ -122,7 +125,10 @@ class RAGService:
     def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         query_embedding = self.embeddings.embed_query(query)
         if self._pgvector_supported():
-            return self._search_postgres(query_embedding, top_k)
+            try:
+                return self._search_postgres(query_embedding, top_k)
+            except Exception as e:
+                logger.warning(f"pgvector 검색 실패, 파이썬 fallback 사용: {e}")
         return self._search_fallback_python(query_embedding, top_k)
 
     # ------------------------- Answer Generation ------------------------- #
