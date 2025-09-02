@@ -1,29 +1,56 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CareBridge - AI 상담</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-    <meta name="csrf-token" content="{{ csrf_token }}" />
-    <style>
-      body { font-family:'Pretendard', -apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif; }
-      .chat-scroll { scrollbar-width:thin; scrollbar-color:#cbd5e1 transparent; }
-      .chat-scroll::-webkit-scrollbar { width:10px; }
-      .chat-scroll::-webkit-scrollbar-track { background:transparent; }
-      .chat-scroll::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:6px; border:2px solid transparent; background-clip:padding-box; }
-      .chat-scroll::-webkit-scrollbar-thumb:hover { background:#94a3b8; }
-      .msg-bubble a { text-decoration:underline; }
-      .fade-top, .fade-bottom { position:sticky; height:20px; z-index:10; }
-      .fade-top { top:0; background:linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0)); }
-      .fade-bottom { bottom:0; background:linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,0)); }
-      @media (max-width: 768px){ .sidebar-col { display:none; } }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareBridge - AI 상담</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <meta name="csrf-token" content="{{ csrf_token }}" />
+  <style>
+    body { font-family:'Pretendard', -apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif; }
+    .chat-scroll { scrollbar-width:thin; scrollbar-color:#cbd5e1 transparent; }
+    .chat-scroll::-webkit-scrollbar { width:10px; }
+    .chat-scroll::-webkit-scrollbar-track { background:transparent; }
+    .chat-scroll::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:6px; border:2px solid transparent; background-clip:padding-box; }
+    .chat-scroll::-webkit-scrollbar-thumb:hover { background:#94a3b8; }
+    .msg-bubble a { text-decoration:underline; }
+    .fade-top, .fade-bottom { position:sticky; height:20px; z-index:10; }
+    .fade-top { top:0; background:linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0)); }
+    .fade-bottom { bottom:0; background:linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,0)); }
+    @media (max-width: 768px){ .sidebar-col { display:none; } }
+    /* Navbar height / transition (다른 페이지와 동일) */
+    .hdr{transition:height .2s ease, box-shadow .2s ease, background .2s ease;}
+    .hdr:not(.shrink){height:70px;}
+    .hdr.shrink{height:56px;}
+    .cb-modal-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:1.25rem;z-index:1000;}
+    .cb-modal-fade-enter-active,.cb-modal-fade-leave-active{transition:opacity .25s ease, transform .25s ease;}
+    .cb-modal-fade-enter-from,.cb-modal-fade-leave-to{opacity:0;transform:scale(.95);}
+    /* -------- Chat modernized styles (no gradients / no avatars) -------- */
+    .chat-wrapper{display:flex;flex-direction:column;min-height:0;}
+    .messages-stream{scroll-behavior:smooth;}
+    .msg-row{position:relative;}
+    .msg-bubble{border-radius:18px; padding:10px 16px; font-size:14.5px; line-height:1.6; box-shadow:0 1px 2px rgba(15,23,42,0.06); word-break:break-word; white-space:pre-wrap; background:#ffffff; border:1px solid #e2e8f0; max-width:100%;}
+    .msg-user{background:#f5f3ff; color:#111827; border-color:#ddd6fe;}
+    .msg-user a{color:#4338ca; text-decoration:underline;}
+    .msg-group{text-align:left;}
+    .msg-group.user{text-align:right;}
+    .msg-group + .msg-group{margin-top:1rem;}
+    .msg-meta{margin-top:4px; font-size:11px; color:#94a3b8;}
+    .msg-bubble:focus{outline:2px solid #6366f1; outline-offset:2px;}
+    .suggestion-pill{transition:.18s background-color, .18s border-color, .18s color;}
+    .suggestion-pill:hover{border-color:#6366f1; background:#eef2ff; color:#4338ca;}
+    /* Subtle fade for scroll edges already present */
+    /* Remove old avatar spacing side-effects */
+    .messages-container{padding-top:1rem;}
+    /* Input area refinement */
+    .chat-input{transition:border-color .15s, box-shadow .15s;}
+    .chat-input:focus{border-color:#6366f1; box-shadow:0 0 0 2px rgba(99,102,241,0.25);}
+  </style>
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col">
-<header id="siteHeader" class="sticky top-0 z-40 bg-white/85 backdrop-blur border-b border-slate-200">
+<header id="siteHeader" class="hdr sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 flex flex-col justify-center">
   {% include 'core/_navbar.html' %}
 </header>
 <main id="app" class="flex-1 flex overflow-hidden relative">
@@ -51,7 +78,7 @@
           <span class="flex-1 truncate" v-text="s.title || '제목없음'"></span>
           <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
             <button @click.stop="renameSession(s)" class="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-white/70 border border-transparent hover:border-slate-300" title="이름 변경">✎</button>
-            <button @click.stop="deleteSession(s)" class="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-white/70 border border-transparent hover:border-rose-300" title="삭제">🗑</button>
+            <button @click.stop="openDeleteSession(s)" class="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-white/70 border border-transparent hover:border-rose-300" title="삭제">🗑</button>
           </div>
         </li>
       </ul>
@@ -92,27 +119,17 @@
           <button @click="setExample('비급여 비용 저렴한 곳 비교해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">비급여 저렴 비교</button>
           <button @click="setExample('경기도 10년 이상 운영 A등급 추천')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">경기 10년+ A등급</button>
         </div>
-        <!-- Messages Loop -->
-        <div v-for="m in messages" :key="m.id" class="mb-6 flex" :class="m.type==='user' ? 'justify-end' : 'justify-start'">
-          <div class="flex items-start gap-3 max-w-full" :class="m.type==='user' ? 'flex-row-reverse' : ''">
-            <div class="w-9 h-9 rounded-full flex items-center justify-center shadow-sm text-white"
-                 :class="m.type==='user' ? 'bg-indigo-600' : 'bg-slate-700'">
-              <svg v-if="m.type==='user'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5Z"/><path d="M3.6 20.2C4.6 16.9 8 15 12 15s7.4 1.9 8.4 5.2"/></svg>
-              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V9a5 5 0 0 1 10 0v2"/><path d="M12 16h.01"/></svg>
-            </div>
-            <div class="relative group">
-              <div class="msg-bubble rounded-2xl px-4 py-3 text-[14.5px] leading-relaxed shadow-sm whitespace-pre-wrap break-words"
-                   :class="m.type==='user' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-700'" v-html="formatMessage(m.content)"></div>
-              <div v-if="m.sources && m.sources.length" class="mt-2 ml-1 p-3 rounded-xl bg-slate-50 border border-slate-200 text-[12px] text-slate-600 space-y-1 w-full max-w-md">
-                <div class="font-semibold text-slate-700 text-xs">참고 소스</div>
-                <div v-for="s in m.sources" :key="s.id" class="truncate">{{ s.rank }}. [{{ s.type }}] {{ s.name }}</div>
-              </div>
-            </div>
+        <!-- Messages Loop (아바타 제거 버전) -->
+        <div v-for="m in messages" :key="m.id" class="msg-group" :class="m.type==='user' ? 'user' : 'bot'">
+          <div :class="['inline-block msg-bubble', m.type==='user' ? 'msg-user' : 'msg-bot']" v-html="formatMessage(m.content)"></div>
+          <div v-if="m.sources && m.sources.length" class="mt-2 inline-block text-left p-3 rounded-xl bg-slate-50 border border-slate-200 text-[12px] text-slate-600 space-y-1 max-w-md">
+            <div class="font-semibold text-slate-700 text-xs">참고 소스</div>
+            <div v-for="s in m.sources" :key="s.id" class="truncate">{{ s.rank }}. [{{ s.type }}] {{ s.name }}</div>
           </div>
         </div>
         <!-- Loading -->
-        <div v-if="isLoading && !streamingBot" class="flex items-center gap-3 text-xs text-slate-500">
-          <span class="inline-flex w-6 h-6 rounded-full bg-slate-700 text-white items-center justify-center">🤖</span>
+        <div v-if="isLoading && !streamingBot" class="flex items-center gap-2 text-xs text-slate-500 mt-6">
+          <span class="inline-flex w-5 h-5 rounded-full bg-slate-400 text-white items-center justify-center text-[10px]">AI</span>
           <span>답변 준비 중...</span>
           <span class="flex gap-1"><span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span><span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse delay-150"></span><span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse delay-300"></span></span>
         </div>
@@ -137,139 +154,313 @@
       </div>
     </div>
   </section>
+
+  <!-- (모달) 세션 이름 변경 -->
+  <transition name="cb-modal-fade">
+    <div v-if="renameDialog.open" class="cb-modal-overlay" @keydown.esc.prevent="cancelRename" @click.self="cancelRename">
+      <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+      <div class="relative w-full max-w-md origin-center rounded-2xl shadow-[0_8px_30px_-5px_rgba(15,23,42,0.25)] bg-white border border-slate-200 px-6 pt-7 pb-6">
+        <h3 class="text-lg font-semibold tracking-tight text-slate-800 text-center mb-1">세션 이름 변경</h3>
+        <p class="text-slate-500 text-xs text-center mb-5">대화 목록에서 쉽게 찾을 수 있는 이름으로 수정하세요.</p>
+        <form @submit.prevent="confirmRenameSession" class="space-y-4">
+          <div>
+            <input ref="renameInput" v-model.trim="renameDialog.title" :disabled="renameDialog.saving" @keydown.enter.exact.prevent="confirmRenameSession" type="text" maxlength="80" class="w-full h-11 px-4 rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-sm placeholder-slate-400" placeholder="새 세션 이름" />
+            <div class="mt-1 flex justify-between text-[11px] text-slate-400">
+              <span v-if="renameDialog.error" class="text-rose-500" v-text="renameDialog.error"></span>
+              <span class="ml-auto" v-text="renameDialog.title.length + '/80'"></span>
+            </div>
+          </div>
+          <div class="flex gap-2 pt-1">
+            <button type="button" @click="cancelRename" :disabled="renameDialog.saving" class="flex-1 h-10 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition disabled:opacity-40">취소</button>
+            <button type="submit" :disabled="renameDisabled" class="flex-1 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-1">
+              <svg v-if="renameDialog.saving" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" class="opacity-20"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+              <span>저장</span>
+            </button>
+          </div>
+        </form>
+        <button type="button" @click="cancelRename" class="absolute top-2.5 right-2.5 w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100">
+          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+  </transition>
+
+  <!-- (모달) 세션 삭제 확인 -->
+  <transition name="cb-modal-fade">
+    <div v-if="deleteDialog.open" class="cb-modal-overlay" @keydown.esc.prevent="cancelDelete" @click.self="cancelDelete">
+      <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+      <div class="relative w-full max-w-sm origin-center rounded-2xl shadow-[0_8px_30px_-5px_rgba(15,23,42,0.25)] bg-white border border-slate-200 px-6 pt-7 pb-6">
+        <h3 class="text-lg font-semibold tracking-tight text-slate-800 text-center mb-2">세션 삭제</h3>
+        <p class="text-slate-500 text-xs text-center mb-5" v-html="deleteDialogMessage"></p>
+        <div v-if="deleteDialog.error" class="mb-3 text-center text-[11px] text-rose-600" v-text="deleteDialog.error"></div>
+        <div class="flex gap-2">
+          <button type="button" @click="cancelDelete" :disabled="deleteDialog.deleting" class="flex-1 h-10 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition disabled:opacity-40">취소</button>
+          <button type="button" @click="confirmDeleteSession" :disabled="deleteDialog.deleting" class="flex-1 h-10 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-1">
+            <svg v-if="deleteDialog.deleting" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" class="opacity-20"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+            <span>삭제</span>
+          </button>
+        </div>
+        <button type="button" @click="cancelDelete" class="absolute top-2.5 right-2.5 w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100">
+          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+  </transition>
 </main>
 
 <script>
-const { createApp } = Vue;
-createApp({
-  data(){return{
-    messages:[],currentMessage:'',isLoading:false,messageId:1,ws:null,wsConnected:false,reconnectWait:1000,streamingBot:null,pendingInit:null,
-    sessions:[],activeSessionId:null,loadingSessions:false,
-    mobileSidebarOpen:false
-  }},
-  computed:{
-    activeSessionTitle(){
-      const s=this.sessions.find(x=>x.id===this.activeSessionId);
-      return s ? s.title : '';
+  // 헤더 높이 shrink 효과 (다른 페이지와 동일)
+  (function(){
+    const headerEl=document.getElementById('siteHeader');
+    function onScroll(){ if(window.scrollY>16){headerEl.classList.add('shrink','shadow-sm');} else {headerEl.classList.remove('shrink','shadow-sm');} }
+    window.addEventListener('scroll',onScroll); onScroll();
+  })();
+  const { createApp } = Vue;
+  createApp({
+    data(){return{
+      messages:[],currentMessage:'',isLoading:false,messageId:1,ws:null,wsConnected:false,reconnectWait:1000,streamingBot:null,pendingInit:null,
+      sessions:[],activeSessionId:null,loadingSessions:false,
+      mobileSidebarOpen:false,
+      renameDialog:{open:false,session:null,title:'',saving:false,error:null},
+      deleteDialog:{open:false,session:null,deleting:false,error:null}
+    }},
+    computed:{
+      activeSessionTitle(){
+        const s=this.sessions.find(x=>x.id===this.activeSessionId);
+        return s ? s.title : '';
+      },
+      sidebarClasses(){
+        return [
+          'w-60 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out',
+          // 모바일: fixed positioning with slide animation
+          'fixed lg:static inset-y-0 left-0 z-40',
+          // 모바일에서 열림/닫힘 상태
+          this.mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        ].join(' ');
+      },
+      renameDisabled(){
+        if(!this.renameDialog.open) return true;
+        if(this.renameDialog.saving) return true;
+        const orig=(this.renameDialog.session? this.renameDialog.session.title||'' : '').trim();
+        const cur=this.renameDialog.title.trim();
+        return !cur || cur===orig;
+      },
+      deleteDialogMessage(){
+        const title=(this.deleteDialog.session && (this.deleteDialog.session.title || '제목없음')) || '제목없음';
+        return `'${title}' 대화를 삭제할까요?<br>이 작업은 되돌릴 수 없습니다.`;
+      }
     },
-    sidebarClasses(){
-      return [
-        'w-60 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out',
-        // 모바일: fixed positioning with slide animation
-        'fixed lg:static inset-y-0 left-0 z-40',
-        // 모바일에서 열림/닫힘 상태
-        this.mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      ].join(' ');
+    mounted(){
+      this.fetchSessions().then(()=>{
+        const p=new URLSearchParams(window.location.search);
+        const sid=p.get('session');
+        const message=p.get('message');
+
+        if(sid){
+          this.selectSession(parseInt(sid));
+        } else if(message) {
+          // 메인 페이지에서 새로운 질문이 전달된 경우 새 세션 생성
+          this.createSessionAndSendMessage(decodeURIComponent(message));
+        } else if(this.sessions.length){
+          this.selectSession(this.sessions[0].id);
+        }
+      });
+      this.setupWS();
+    },
+    methods:{
+      csrf(){ return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); },
+      apiHeaders(json=true){ const h={'X-CSRFToken':this.csrf()}; if(json) h['Content-Type']='application/json'; return h; },
+
+      // 사이드바 토글 메소드들
+      openMobileSidebar(){
+        this.mobileSidebarOpen = true;
+        document.body.style.overflow = 'hidden';
+      },
+      closeMobileSidebar(){
+        this.mobileSidebarOpen = false;
+        document.body.style.overflow = 'auto';
+      },
+
+      async fetchSessions(){
+        if(this.loadingSessions) return;
+        this.loadingSessions=true;
+        try{
+          const r=await fetch('/api/chat/sessions/');
+          if(r.ok){
+            this.sessions=await r.json();
+          }
+        }catch(e){
+          console.warn('세션 목록 로드 실패:', e);
+        } finally{
+          this.loadingSessions=false;
+        }
+      },
+
+      async createSession(){
+        try{
+          const r=await fetch('/api/chat/sessions/',{
+            method:'POST',
+            headers:this.apiHeaders(),
+            body:JSON.stringify({title:'새 대화'})
+          });
+          if(r.ok){
+            const s=await r.json();
+            this.sessions.unshift(s);
+            this.selectSession(s.id,true);
+            // 모바일에서 새 세션 생성 후 사이드바 닫기
+            if(window.innerWidth < 1024) {
+              this.closeMobileSidebar();
+            }
+          }
+        }catch(e){
+          console.warn('세션 생성 실패:', e);
+        }
+      },
+
+      // 새 세션을 생성하고 메시지를 전송하는 메소드
+      async createSessionAndSendMessage(message){
+        try{
+          const r=await fetch('/api/chat/sessions/',{
+            method:'POST',
+            headers:this.apiHeaders(),
+            body:JSON.stringify({title:'새 대화'})
+          });
+          if(r.ok){
+            const s=await r.json();
+            this.sessions.unshift(s);
+            this.activeSessionId=s.id;
+            this.messages=[];
+
+            // 모바일에서 새 세션 생성 후 사이드바 닫기
+            if(window.innerWidth < 1024) {
+              this.closeMobileSidebar();
+            }
+
+            // 메시지 전송
+            this.currentMessage = message;
+            this.$nextTick(() => {
+              this.sendMessage();
+            });
+          }
+        }catch(e){
+          console.warn('세션 생성 및 메시지 전송 실패:', e);
+        }
+      },
+
+      async selectSession(id, justCreated=false){
+        if(this.activeSessionId===id) return;
+        this.activeSessionId=id;
+        this.messages=[];
+
+        // 모바일에서 세션 선택 시 사이드바 닫기
+        if(window.innerWidth < 1024) {
+          this.closeMobileSidebar();
+        }
+
+        try{
+          const r=await fetch(`/api/chat/sessions/${id}/messages/`);
+          if(r.ok){
+            const data=await r.json();
+            for(const m of data.messages){
+              this.messages.push(m);
+              this.messageId++;
+            }
+            this.scrollToBottom();
+            if(justCreated) this.focusInput();
+          }
+        }catch(e){
+          console.warn('세션 메시지 로드 실패:', e);
+        }
+      },
+
+      renameActive(){ if(!this.activeSessionId) return; const s=this.sessions.find(x=>x.id===this.activeSessionId); if(!s) return; this.renameSession(s); },
+      renameSession(s){
+        this.renameDialog.session=s;
+        this.renameDialog.title=(s.title||'').trim();
+        this.renameDialog.error=null;
+        this.renameDialog.open=true;
+        this.$nextTick(()=>{ this.$refs.renameInput && this.$refs.renameInput.focus(); });
+      },
+      cancelRename(){
+        if(this.renameDialog.saving) return;
+        this.renameDialog.open=false;
+        this.renameDialog.session=null;
+        this.renameDialog.title='';
+        this.renameDialog.error=null;
+      },
+      async confirmRenameSession(){
+        if(this.renameDisabled) return;
+        const s=this.renameDialog.session; if(!s) return;
+        const newTitle=this.renameDialog.title.trim();
+        this.renameDialog.saving=true; this.renameDialog.error=null;
+        try{
+          const r=await fetch(`/api/chat/sessions/${s.id}/`,{method:'PATCH',headers:this.apiHeaders(),body:JSON.stringify({title:newTitle})});
+          if(r.ok){
+            const updated=await r.json();
+            const idx=this.sessions.findIndex(x=>x.id===s.id);
+            if(idx>-1) this.sessions[idx]=updated;
+            if(this.activeSessionId===s.id) {/* nothing extra */}
+            this.cancelRename();
+          } else {
+            this.renameDialog.error='저장 실패';
+          }
+        }catch(e){
+          this.renameDialog.error='네트워크 오류';
+        } finally {
+          this.renameDialog.saving=false;
+        }
+      },
+      openDeleteSession(s){
+        this.deleteDialog.session=s;
+        this.deleteDialog.error=null;
+        this.deleteDialog.deleting=false;
+        this.deleteDialog.open=true;
+      },
+      cancelDelete(){
+        if(this.deleteDialog.deleting) return;
+        this.deleteDialog.open=false;
+        this.deleteDialog.session=null;
+        this.deleteDialog.error=null;
+      },
+      async confirmDeleteSession(){
+        if(!this.deleteDialog.session || this.deleteDialog.deleting) return;
+        const s=this.deleteDialog.session;
+        this.deleteDialog.deleting=true; this.deleteDialog.error=null;
+        try{
+          const r=await fetch(`/api/chat/sessions/${s.id}/`,{method:'DELETE',headers:this.apiHeaders(false)});
+          if(r.status===204){
+            this.sessions=this.sessions.filter(x=>x.id!==s.id);
+            if(this.activeSessionId===s.id){
+              this.activeSessionId=null; this.messages=[];
+              if(this.sessions.length) this.selectSession(this.sessions[0].id);
+            }
+            this.cancelDelete();
+          } else {
+            this.deleteDialog.error='삭제 실패';
+          }
+        }catch(e){
+          this.deleteDialog.error='네트워크 오류';
+        } finally {
+          this.deleteDialog.deleting=false;
+        }
+      },
+      focusInput(){ this.$nextTick(()=>{ const ta=document.querySelector('textarea'); if(ta) ta.focus(); }); },
+      insertNewline(e){ const ta=e.target; const start=ta.selectionStart; const end=ta.selectionEnd; this.currentMessage=this.currentMessage.slice(0,start)+'\n'+this.currentMessage.slice(end); this.$nextTick(()=>{ ta.selectionStart=ta.selectionEnd=start+1; }); },
+      setExample(txt){ this.currentMessage=txt; this.sendMessage(); },
+      setupWS(){ const protocol=location.protocol==='https:'?'wss://':'ws://'; const url=protocol+location.host+'/ws/chat/'; this.ws=new WebSocket(url); this.ws.onopen=()=>{ this.wsConnected=true; this.reconnectWait=1000; if(this.pendingInit){ const initMsg=this.pendingInit; this.pendingInit=null; this.sendMessage(initMsg); } }; this.ws.onclose=()=>{ this.wsConnected=false; if(this.isLoading && this.streamingBot){ this.streamingBot.isError=true; } setTimeout(()=>this.setupWS(), Math.min(this.reconnectWait,10000)); this.reconnectWait*=2; }; this.ws.onmessage=(evt)=>{ try{ const p=JSON.parse(evt.data); this.handlePayload(p); }catch(e){} }; },
+      handlePayload(p){ if(p.type==='session'){ const exists=this.sessions.find(x=>x.id===p.session_id); if(!exists){ this.sessions.unshift({id:p.session_id,title:p.title}); } this.activeSessionId=p.session_id; }
+        if(!this.streamingBot && p.type==='token'){ this.createStreamingBot(); }
+        if(p.type==='sources'){ if(!this.streamingBot) this.createStreamingBot(); this.streamingBot.sources=p.sources||[]; return; }
+        if(p.type==='token'){ this.streamingBot.content+=p.text; this.scrollToBottom(); return; }
+        if(p.type==='end'){ this.isLoading=false; this.streamingBot=null; this.scrollToBottom(); return; }
+        if(p.type==='error'){ if(!this.streamingBot) this.createStreamingBot(); this.streamingBot.isError=true; this.streamingBot.content+='\n[오류] '+(p.message||'알 수 없는 오류'); this.isLoading=false; this.streamingBot=null; }
+      },
+      createStreamingBot(){ const botMsg={id:this.messageId++,type:'bot',content:'',sources:[],timestamp:new Date()}; this.messages.push(botMsg); this.streamingBot=botMsg; },
+      sendMessage(text){ const content=(typeof text==='string')?text:this.currentMessage; if(!content.trim()||this.isLoading) return; if(!this.wsConnected){ if(!this.pendingInit) this.pendingInit=content; return; } const userMsg={id:this.messageId++,type:'user',content:content,timestamp:new Date()}; this.messages.push(userMsg); if(typeof text!=='string') this.currentMessage=''; else if(this.currentMessage===content) this.currentMessage=''; this.isLoading=true; const payload={action:'chat',query:content}; if(this.activeSessionId) payload.session_id=this.activeSessionId; this.ws.send(JSON.stringify(payload)); this.scrollToBottom(); },
+      formatMessage(c){ return c.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); },
+      scrollToBottom(){ this.$nextTick(()=>{ const el=this.$refs.messagesContainer; if(el){ el.scrollTop=el.scrollHeight; } }); }
     }
-  },
-  mounted(){
-    this.fetchSessions().then(()=>{
-      const p=new URLSearchParams(window.location.search);
-      const sid=p.get('session');
-      if(sid){
-        this.selectSession(parseInt(sid));
-      } else if(this.sessions.length){
-        this.selectSession(this.sessions[0].id);
-      }
-    });
-    this.setupWS();
-  },
-  methods:{
-    csrf(){ return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); },
-    apiHeaders(json=true){ const h={'X-CSRFToken':this.csrf()}; if(json) h['Content-Type']='application/json'; return h; },
-
-    // 사이드바 토글 메소드들
-    openMobileSidebar(){
-      this.mobileSidebarOpen = true;
-      document.body.style.overflow = 'hidden';
-    },
-    closeMobileSidebar(){
-      this.mobileSidebarOpen = false;
-      document.body.style.overflow = 'auto';
-    },
-
-    async fetchSessions(){
-      if(this.loadingSessions) return;
-      this.loadingSessions=true;
-      try{
-        const r=await fetch('/api/chat/sessions/');
-        if(r.ok){
-          this.sessions=await r.json();
-        }
-      }catch(e){
-        console.warn('세션 목록 로드 실패:', e);
-      } finally{
-        this.loadingSessions=false;
-      }
-    },
-
-    async createSession(){
-      try{
-        const r=await fetch('/api/chat/sessions/',{
-          method:'POST',
-          headers:this.apiHeaders(),
-          body:JSON.stringify({title:'새 대화'})
-        });
-        if(r.ok){
-          const s=await r.json();
-          this.sessions.unshift(s);
-          this.selectSession(s.id,true);
-          // 모바일에서 새 세션 생성 후 사이드바 닫기
-          if(window.innerWidth < 1024) {
-            this.closeMobileSidebar();
-          }
-        }
-      }catch(e){
-        console.warn('세션 생성 실패:', e);
-      }
-    },
-
-    async selectSession(id, justCreated=false){
-      if(this.activeSessionId===id) return;
-      this.activeSessionId=id;
-      this.messages=[];
-
-      // 모바일에서 세션 선택 시 사이드바 닫기
-      if(window.innerWidth < 1024) {
-        this.closeMobileSidebar();
-      }
-
-      try{
-        const r=await fetch(`/api/chat/sessions/${id}/messages/`);
-        if(r.ok){
-          const data=await r.json();
-          for(const m of data.messages){
-            this.messages.push(m);
-            this.messageId++;
-          }
-          this.scrollToBottom();
-          if(justCreated) this.focusInput();
-        }
-      }catch(e){
-        console.warn('세션 메시지 로드 실패:', e);
-      }
-    },
-
-    renameActive(){ if(!this.activeSessionId) return; const s=this.sessions.find(x=>x.id===this.activeSessionId); if(!s) return; this.renameSession(s); },
-    async renameSession(s){ const title=prompt('새 제목 입력', s.title||''); if(title===null) return; const newTitle=title.trim(); if(!newTitle || newTitle===s.title) return; try{ const r=await fetch(`/api/chat/sessions/${s.id}/`,{method:'PATCH',headers:this.apiHeaders(),body:JSON.stringify({title:newTitle})}); if(r.ok){ const updated=await r.json(); const idx=this.sessions.findIndex(x=>x.id===s.id); if(idx>-1) this.sessions[idx]=updated; } }catch(e){} },
-    async deleteSession(s){ if(!confirm('삭제하시겠습니까?')) return; try{ const r=await fetch(`/api/chat/sessions/${s.id}/`,{method:'DELETE',headers:this.apiHeaders(false)}); if(r.status===204){ this.sessions=this.sessions.filter(x=>x.id!==s.id); if(this.activeSessionId===s.id){ this.activeSessionId=null; this.messages=[]; if(this.sessions.length) this.selectSession(this.sessions[0].id); } } }catch(e){} },
-    focusInput(){ this.$nextTick(()=>{ const ta=document.querySelector('textarea'); if(ta) ta.focus(); }); },
-    insertNewline(e){ const ta=e.target; const start=ta.selectionStart; const end=ta.selectionEnd; this.currentMessage=this.currentMessage.slice(0,start)+'\n'+this.currentMessage.slice(end); this.$nextTick(()=>{ ta.selectionStart=ta.selectionEnd=start+1; }); },
-    setExample(txt){ this.currentMessage=txt; this.sendMessage(); },
-    setupWS(){ const protocol=location.protocol==='https:'?'wss://':'ws://'; const url=protocol+location.host+'/ws/chat/'; this.ws=new WebSocket(url); this.ws.onopen=()=>{ this.wsConnected=true; this.reconnectWait=1000; if(this.pendingInit){ const initMsg=this.pendingInit; this.pendingInit=null; this.sendMessage(initMsg); } }; this.ws.onclose=()=>{ this.wsConnected=false; if(this.isLoading && this.streamingBot){ this.streamingBot.isError=true; } setTimeout(()=>this.setupWS(), Math.min(this.reconnectWait,10000)); this.reconnectWait*=2; }; this.ws.onmessage=(evt)=>{ try{ const p=JSON.parse(evt.data); this.handlePayload(p); }catch(e){} }; },
-    handlePayload(p){ if(p.type==='session'){ const exists=this.sessions.find(x=>x.id===p.session_id); if(!exists){ this.sessions.unshift({id:p.session_id,title:p.title}); } this.activeSessionId=p.session_id; }
-      if(!this.streamingBot && p.type==='token'){ this.createStreamingBot(); }
-      if(p.type==='sources'){ if(!this.streamingBot) this.createStreamingBot(); this.streamingBot.sources=p.sources||[]; return; }
-      if(p.type==='token'){ this.streamingBot.content+=p.text; this.scrollToBottom(); return; }
-      if(p.type==='end'){ this.isLoading=false; this.streamingBot=null; this.scrollToBottom(); return; }
-      if(p.type==='error'){ if(!this.streamingBot) this.createStreamingBot(); this.streamingBot.isError=true; this.streamingBot.content+='\n[오류] '+(p.message||'알 수 없는 오류'); this.isLoading=false; this.streamingBot=null; }
-    },
-    createStreamingBot(){ const botMsg={id:this.messageId++,type:'bot',content:'',sources:[],timestamp:new Date()}; this.messages.push(botMsg); this.streamingBot=botMsg; },
-    sendMessage(text){ const content=(typeof text==='string')?text:this.currentMessage; if(!content.trim()||this.isLoading) return; if(!this.wsConnected){ if(!this.pendingInit) this.pendingInit=content; return; } const userMsg={id:this.messageId++,type:'user',content:content,timestamp:new Date()}; this.messages.push(userMsg); if(typeof text!=='string') this.currentMessage=''; else if(this.currentMessage===content) this.currentMessage=''; this.isLoading=true; const payload={action:'chat',query:content}; if(this.activeSessionId) payload.session_id=this.activeSessionId; this.ws.send(JSON.stringify(payload)); this.scrollToBottom(); },
-    formatMessage(c){ return c.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); },
-    scrollToBottom(){ this.$nextTick(()=>{ const el=this.$refs.messagesContainer; if(el){ el.scrollTop=el.scrollHeight; } }); }
-  }
-}).mount('#app');
+  }).mount('#app');
 </script>
 </body>
 </html>
