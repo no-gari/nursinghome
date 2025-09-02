@@ -1,146 +1,262 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CareBridge - 채팅</title>
-    <!-- Tailwind & Fonts (공통 헤더/푸터 스타일 적용 위해 추가) -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CareBridge - AI 상담</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <!-- axios 제거 가능 (다른 부분서 사용 가능해 유지) -->
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <meta name="csrf-token" content="{{ csrf_token }}" />
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif; background:linear-gradient(160deg,#ffffff 0%,#f5f8fb 55%,#eef3f9 100%); color:#374151; line-height:1.6; display:flex; flex-direction:column; min-height:100vh; }
-        .hdr{transition:height .2s ease, box-shadow .2s ease, background .2s ease; backdrop-filter:blur(8px);} .hdr:not(.shrink){height:70px;} .hdr.shrink{height:56px;}
-        main.chat-page { flex:1; display:flex; flex-direction:column; padding-top:8px; }
-        .chat-container { flex:1; display:flex; flex-direction:column; width:100%; max-width:960px; margin:0 auto; padding:0 14px; }
-        /* 내부 헤더 제거됨 */
-        .chat-messages { flex:1; overflow-y:auto; padding:16px 4px 140px; background:transparent; }
-        .suggestions { display:flex; flex-wrap:wrap; gap:10px; padding:12px 4px 4px; }
-        .suggestion-chip { background:#ffffff; border:1px solid #e2e8f0; border-radius:9999px; padding:6px 14px; font-size:12px; font-weight:500; color:#334155; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(15,23,42,0.06); transition:.2s; }
-        .suggestion-chip:hover { background:#f1f5f9; border-color:#cbd5e1; }
-        .message { margin-bottom:24px; display:flex; gap:12px; }
-        .message.user { justify-content:flex-end; }
-        .message.user .message-content { background:#2563eb; color:#fff; max-width:70%; }
-        .message.bot { justify-content:flex-start; }
-        .message.bot .message-content { background:#ffffff; color:#374151; max-width:80%; border:1px solid #e5e7eb; }
-        .message-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; box-shadow:0 2px 4px rgba(15,23,42,0.08); }
-        .message.user .message-avatar { background:#2563eb; color:#fff; }
-        .message.bot .message-avatar { background:#6366f1; color:#fff; }
-        .message-content { padding:14px 18px; border-radius:18px; line-height:1.58; font-size:15px; }
-        .chat-input-container { position:fixed; left:0; right:0; bottom:0; background:rgba(255,255,255,.9); border-top:1px solid #e2e8f0; backdrop-filter:blur(10px); padding:18px 16px 22px; }
-        .chat-input-wrapper { max-width:960px; margin:0 auto; position:relative; }
-        .chat-input { width:100%; padding:15px 20px; border:1px solid #d1d5db; border-radius:14px; font-size:15px; outline:none; transition:.25s; padding-right:60px; resize:none; min-height:52px; max-height:150px; background:#fff; box-shadow:0 2px 6px rgba(15,23,42,0.06); }
-        .chat-input:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,0.18); }
-        .chat-send-btn { position:absolute; right:8px; bottom:8px; background:#6366f1; color:#fff; border:none; width:40px; height:40px; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:.25s; box-shadow:0 4px 14px -2px rgba(99,102,241,.4); }
-        .chat-send-btn:hover:not(:disabled) { background:#4f46e5; }
-        .chat-send-btn:disabled { background:#94a3b8; cursor:not-allowed; box-shadow:none; }
-        .loading { display:flex; align-items:center; gap:8px; color:#64748b; font-style:italic; }
-        .loading-dots { display:flex; gap:4px; }
-        .loading-dot { width:6px; height:6px; background:#64748b; border-radius:50%; animation:loading 1.5s infinite; }
-        .loading-dot:nth-child(2){animation-delay:.2s;} .loading-dot:nth-child(3){animation-delay:.4s;}
-        @keyframes loading { 0%,60%,100%{transform:translateY(0);} 30%{transform:translateY(-6px);} }
-        .error-message { background:#fef2f2 !important; color:#dc2626 !important; border-color:#fecaca !important; }
-        .layout { display:flex; height:100%; }
-        .sidebar { width:250px; background:#f8fafc; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; }
-        .sidebar-header { padding:12px 14px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; }
-        .sessions { flex:1; overflow-y:auto; }
-        .session-item { padding:10px 14px; cursor:pointer; border-bottom:1px solid #eef2f7; display:flex; align-items:center; gap:8px; font-size:14px; }
-        .session-item.active { background:#e0e7ff; font-weight:600; }
-        .session-item:hover { background:#f1f5f9; }
-        .session-actions { display:flex; gap:6px; margin-left:auto; opacity:0; transition:.2s; }
-        .session-item:hover .session-actions { opacity:1; }
-        .session-actions button { background:transparent; border:none; cursor:pointer; color:#475569; font-size:12px; padding:2px 4px; }
-        .session-actions button:hover { color:#1e293b; }
-        .new-session-btn { background:#6366f1; color:#fff; border:none; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px; }
-        .new-session-btn:hover { background:#4f46e5; }
-        .sidebar-footer { padding:10px 12px; border-top:1px solid #e2e8f0; font-size:11px; color:#64748b; }
-        @media (max-width: 900px){ .sidebar { display:none; } }
+      body { font-family:'Pretendard', -apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif; }
+      .chat-scroll { scrollbar-width:thin; scrollbar-color:#cbd5e1 transparent; }
+      .chat-scroll::-webkit-scrollbar { width:10px; }
+      .chat-scroll::-webkit-scrollbar-track { background:transparent; }
+      .chat-scroll::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:6px; border:2px solid transparent; background-clip:padding-box; }
+      .chat-scroll::-webkit-scrollbar-thumb:hover { background:#94a3b8; }
+      .msg-bubble a { text-decoration:underline; }
+      .fade-top, .fade-bottom { position:sticky; height:20px; z-index:10; }
+      .fade-top { top:0; background:linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0)); }
+      .fade-bottom { bottom:0; background:linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,0)); }
+      @media (max-width: 768px){ .sidebar-col { display:none; } }
     </style>
 </head>
-<body>
-<header id="siteHeader" class="hdr sticky top-0 z-40 bg-white/80 border-b border-slate-200 flex flex-col justify-center">
-    {% include 'core/_navbar.html' %}
+<body class="bg-slate-50 min-h-screen flex flex-col">
+<header id="siteHeader" class="sticky top-0 z-40 bg-white/85 backdrop-blur border-b border-slate-200">
+  {% include 'core/_navbar.html' %}
 </header>
-<meta name="csrf-token" content="{{ csrf_token }}">
-<main class="chat-page">
-  <div id="app" class="flex-1 flex flex-col layout">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <strong style="font-size:14px;">대화</strong>
-        <button class="new-session-btn" @click="createSession" title="새 대화"><span>＋</span><span>새로</span></button>
+<main id="app" class="flex-1 flex overflow-hidden relative">
+  <!-- 모바일 오버레이 -->
+  <div v-show="mobileSidebarOpen" class="fixed inset-0 z-30 bg-black/30 lg:hidden" @click="closeMobileSidebar"></div>
+
+  <!-- Sidebar -->
+  <aside :class="sidebarClasses">
+    <div class="px-4 h-12 flex items-center justify-between border-b border-slate-200">
+      <h2 class="text-xs font-semibold tracking-wide text-slate-600 select-none">대화 목록</h2>
+      <div class="flex items-center gap-1">
+        <button @click="createSession" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-300 bg-white text-slate-600 hover:border-slate-500 hover:text-slate-800" title="새 대화">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <button @click="closeMobileSidebar" class="lg:hidden inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-300 bg-white text-slate-600 hover:border-slate-500" title="닫기">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
-      <div class="sessions">
-        <div v-for="s in sessions" :key="s.id" :class="['session-item', {active: s.id===activeSessionId}]" @click="selectSession(s.id)">
-          <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" v-text="s.title || '제목없음'"></span>
-          <div class="session-actions">
-            <button @click.stop="renameSession(s)">✎</button>
-            <button @click.stop="deleteSession(s)">🗑</button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto chat-scroll">
+      <ul class="py-1 text-sm">
+        <li v-for="s in sessions" :key="s.id" @click="selectSession(s.id)"
+            :class="['group cursor-pointer px-3 py-2 flex items-center gap-2 border-l-2', s.id===activeSessionId ? 'bg-indigo-50 border-indigo-500 text-slate-900 font-medium' : 'border-transparent text-slate-600 hover:bg-slate-100']">
+          <span class="flex-1 truncate" v-text="s.title || '제목없음'"></span>
+          <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+            <button @click.stop="renameSession(s)" class="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-white/70 border border-transparent hover:border-slate-300" title="이름 변경">✎</button>
+            <button @click.stop="deleteSession(s)" class="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-white/70 border border-transparent hover:border-rose-300" title="삭제">🗑</button>
           </div>
-        </div>
-        <div v-if="sessions.length===0" style="padding:14px; font-size:13px; color:#64748b;">세션이 없습니다.</div>
+        </li>
+      </ul>
+      <div v-if="sessions.length===0" class="px-4 py-6 text-center text-xs text-slate-500">세션이 없습니다.</div>
+    </div>
+    <div class="p-3 border-t border-slate-200 text-[11px] text-slate-500">자동 저장됩니다</div>
+  </aside>
+
+  <!-- Chat column -->
+  <section class="flex-1 flex flex-col min-w-0">
+    <!-- Toolbar -->
+    <div class="h-12 px-4 flex items-center gap-3 border-b border-slate-200 bg-white/70 backdrop-blur">
+      <!-- 모바일 햄버거 -->
+      <button @click="openMobileSidebar" class="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-300 bg-white text-slate-600 hover:border-slate-500" title="메뉴">
+        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+
+      <div class="flex items-center gap-2 text-slate-500">
+        <svg class="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17l-5 3 1.9-5.8L4 9.5l6-.2L12 4l2 5.3 6 .2-4.9 4.7L17 20z"/></svg>
+        <span class="text-sm font-semibold text-slate-700" v-text="activeSessionTitle || '새 대화'"></span>
       </div>
-      <div class="sidebar-footer">클릭해 과거 대화를 불러오세요</div>
-    </aside>
-    <div class="flex-1 flex flex-col">
-      <div class="chat-container">
-        <!-- 초기 예시 프롬프트 (메시지 없을 때만 표시) -->
-        <div v-if="messages.length === 0 && !isLoading" class="suggestions" aria-label="예시 질문">
-          <button type="button" class="suggestion-chip" @click="setExample('서울 A등급 요양원 추천해줘')">🏆 <span>서울 A등급 요양원 추천</span></button>
-          <button type="button" class="suggestion-chip" @click="setExample('대기자가 적은 곳 찾아줘')">⏱ <span>대기 적은 곳</span></button>
-          <button type="button" class="suggestion-chip" @click="setExample('물리치료 프로그램 있는 곳 알려줘')">🏃‍♂️ <span>물리치료 프로그램</span></button>
-          <button type="button" class="suggestion-chip" @click="setExample('비급여 비용 저렴한 곳 비교해줘')">💰 <span>비급여 저렴 비교</span></button>
-          <button type="button" class="suggestion-chip" @click="setExample('경기도 10년 이상 운영 A등급 추천')">📊 <span>경기 10년+ A등급</span></button>
+
+      <div class="flex gap-2 ml-auto">
+        <button @click="renameActive()" :disabled="!activeSessionId" class="px-3 h-8 text-xs rounded-md border border-slate-300 bg-white text-slate-600 disabled:opacity-40 hover:border-slate-500 hover:text-slate-800">이름 변경</button>
+        <button @click="createSession" class="px-3 h-8 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-500">새 대화</button>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="flex-1 overflow-y-auto chat-scroll relative" ref="messagesContainer">
+      <div class="fade-top"></div>
+      <div class="max-w-3xl mx-auto w-full px-4 pt-4 pb-40">
+        <!-- Suggestions -->
+        <div v-if="messages.length===0 && !isLoading" class="flex flex-wrap gap-3 mb-6">
+          <button @click="setExample('서울 A등급 요양원 추천해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">서울 A등급 추천</button>
+          <button @click="setExample('대기자가 적은 곳 찾아줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">대기 적은 곳</button>
+          <button @click="setExample('물리치료 프로그램 있는 곳 알려줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">물리치료 프로그램</button>
+          <button @click="setExample('비급여 비용 저렴한 곳 비교해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">비급여 저렴 비교</button>
+          <button @click="setExample('경기도 10년 이상 운영 A등급 추천')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">경기 10년+ A등급</button>
         </div>
-        <div class="chat-messages" ref="messagesContainer">
-          <div v-for="message in messages" :key="message.id" :class="['message', message.type]">
-            <div class="message-avatar"><span v-if="message.type === 'user'">👤</span><span v-else>🤖</span></div>
-            <div class="message-content" :class="{ 'error-message': message.isError }">
-              <div v-html="formatMessage(message.content)"></div>
-              <div v-if="message.sources && message.sources.length" class="mt-3 pt-2 border-t border-slate-200 text-xs text-slate-500 space-y-1">
-                <div class="font-semibold text-slate-600">참고 소스</div>
-                <div v-for="s in message.sources" :key="s.id">{{ s.rank }}. [{{ s.type }}] {{ s.name }}</div>
+        <!-- Messages Loop -->
+        <div v-for="m in messages" :key="m.id" class="mb-6 flex" :class="m.type==='user' ? 'justify-end' : 'justify-start'">
+          <div class="flex items-start gap-3 max-w-full" :class="m.type==='user' ? 'flex-row-reverse' : ''">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center shadow-sm text-white"
+                 :class="m.type==='user' ? 'bg-indigo-600' : 'bg-slate-700'">
+              <svg v-if="m.type==='user'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5Z"/><path d="M3.6 20.2C4.6 16.9 8 15 12 15s7.4 1.9 8.4 5.2"/></svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V9a5 5 0 0 1 10 0v2"/><path d="M12 16h.01"/></svg>
+            </div>
+            <div class="relative group">
+              <div class="msg-bubble rounded-2xl px-4 py-3 text-[14.5px] leading-relaxed shadow-sm whitespace-pre-wrap break-words"
+                   :class="m.type==='user' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-700'" v-html="formatMessage(m.content)"></div>
+              <div v-if="m.sources && m.sources.length" class="mt-2 ml-1 p-3 rounded-xl bg-slate-50 border border-slate-200 text-[12px] text-slate-600 space-y-1 w-full max-w-md">
+                <div class="font-semibold text-slate-700 text-xs">참고 소스</div>
+                <div v-for="s in m.sources" :key="s.id" class="truncate">{{ s.rank }}. [{{ s.type }}] {{ s.name }}</div>
               </div>
             </div>
           </div>
-          <div v-if="isLoading && !streamingBot" class="message bot">
-            <div class="message-avatar">🤖</div>
-            <div class="message-content loading"><span>답변 준비 중</span><div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div></div>
-          </div>
+        </div>
+        <!-- Loading -->
+        <div v-if="isLoading && !streamingBot" class="flex items-center gap-3 text-xs text-slate-500">
+          <span class="inline-flex w-6 h-6 rounded-full bg-slate-700 text-white items-center justify-center">🤖</span>
+          <span>답변 준비 중...</span>
+          <span class="flex gap-1"><span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span><span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse delay-150"></span><span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse delay-300"></span></span>
         </div>
       </div>
-      <div class="chat-input-container">
-        <div class="chat-input-wrapper">
-          <textarea v-model="currentMessage" @keydown.enter.exact.prevent="sendMessage" @keydown.enter.shift.prevent="insertNewline" :disabled="isLoading" placeholder="무엇이든 물어보세요... (예: 서울 A등급 요양원)" class="chat-input" rows="1"></textarea>
-          <button @click="sendMessage" :disabled="isLoading || !currentMessage.trim()" class="chat-send-btn" aria-label="전송">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      <div class="fade-bottom"></div>
+    </div>
+
+    <!-- Input -->
+    <div class="fixed left-0 right-0 bottom-0 bg-white/95 backdrop-blur border-t border-slate-200">
+      <div class="max-w-3xl mx-auto px-4 py-4">
+        <div class="relative">
+          <textarea v-model="currentMessage" @keydown.enter.exact.prevent="sendMessage" @keydown.enter.shift.prevent="insertNewline" rows="1"
+                    :disabled="isLoading"
+                    class="w-full resize-none rounded-2xl border border-slate-300 bg-white px-4 py-4 pr-16 text-sm shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 max-h-52"
+                    placeholder="무엇이든 물어보세요... (예: 서울 A등급 요양원)"></textarea>
+          <button @click="sendMessage" :disabled="isLoading || !currentMessage.trim()"
+                  class="absolute bottom-2 right-2 h-11 px-5 rounded-xl text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm flex items-center gap-1">
+            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+            <span>전송</span>
           </button>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </main>
-<!-- Footer intentionally omitted for chat focus -->
+
 <script>
 const { createApp } = Vue;
 createApp({
-  data(){return{messages:[],currentMessage:'',isLoading:false,messageId:1,ws:null,wsConnected:false,reconnectWait:1000,streamingBot:null,pendingInit:null,sessions:[],activeSessionId:null,loadingSessions:false}} ,
-  mounted(){ this.fetchSessions().then(()=>{ const p=new URLSearchParams(window.location.search); const sid=p.get('session'); if(sid){ this.selectSession(parseInt(sid)); } else if(this.sessions.length){ this.selectSession(this.sessions[0].id); } }); this.setupWS(); },
+  data(){return{
+    messages:[],currentMessage:'',isLoading:false,messageId:1,ws:null,wsConnected:false,reconnectWait:1000,streamingBot:null,pendingInit:null,
+    sessions:[],activeSessionId:null,loadingSessions:false,
+    mobileSidebarOpen:false
+  }},
+  computed:{
+    activeSessionTitle(){
+      const s=this.sessions.find(x=>x.id===this.activeSessionId);
+      return s ? s.title : '';
+    },
+    sidebarClasses(){
+      return [
+        'w-60 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out',
+        // 모바일: fixed positioning with slide animation
+        'fixed lg:static inset-y-0 left-0 z-40',
+        // 모바일에서 열림/닫힘 상태
+        this.mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      ].join(' ');
+    }
+  },
+  mounted(){
+    this.fetchSessions().then(()=>{
+      const p=new URLSearchParams(window.location.search);
+      const sid=p.get('session');
+      if(sid){
+        this.selectSession(parseInt(sid));
+      } else if(this.sessions.length){
+        this.selectSession(this.sessions[0].id);
+      }
+    });
+    this.setupWS();
+  },
   methods:{
     csrf(){ return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); },
     apiHeaders(json=true){ const h={'X-CSRFToken':this.csrf()}; if(json) h['Content-Type']='application/json'; return h; },
-    async fetchSessions(){ if(this.loadingSessions) return; this.loadingSessions=true; try{ const r=await fetch('/api/chat/sessions/'); if(r.ok){ this.sessions=await r.json(); } }catch(e){ console.warn('세션 목록 실패',e);} finally{ this.loadingSessions=false;} },
-    async createSession(){ try{ const r=await fetch('/api/chat/sessions/',{method:'POST',headers:this.apiHeaders(),body:JSON.stringify({title:'새 대화'})}); if(r.ok){ const s=await r.json(); this.sessions.unshift(s); this.selectSession(s.id,true); } }catch(e){ alert('세션 생성 실패'); } },
-    async renameSession(s){ const title=prompt('새 제목 입력', s.title||''); if(title===null) return; try{ const r=await fetch(`/api/chat/sessions/${s.id}/`,{method:'PATCH',headers:this.apiHeaders(),body:JSON.stringify({title})}); if(r.ok){ const updated=await r.json(); const idx=this.sessions.findIndex(x=>x.id===s.id); if(idx>-1) this.sessions[idx]=updated; } }catch(e){ alert('이름 변경 실패'); } },
-    async deleteSession(s){ if(!confirm('삭제하시겠습니까?')) return; try{ const r=await fetch(`/api/chat/sessions/${s.id}/`,{method:'DELETE',headers:this.apiHeaders(false)}); if(r.status===204){ this.sessions=this.sessions.filter(x=>x.id!==s.id); if(this.activeSessionId===s.id){ this.activeSessionId=null; this.messages=[]; if(this.sessions.length) this.selectSession(this.sessions[0].id); } } }catch(e){ alert('삭제 실패'); } },
-    async selectSession(id, justCreated=false){ if(this.activeSessionId===id){ return; } this.activeSessionId=id; this.messages=[]; try{ const r=await fetch(`/api/chat/sessions/${id}/messages/`); if(r.ok){ const data=await r.json(); // data.messages: user/bot pair 순
-          for(const m of data.messages){ this.messages.push(m); this.messageId++; }
-          this.scrollToBottom(); if(justCreated){ this.focusInput(); } } }catch(e){ console.warn('세션 메시지 로드 실패',e);} },
-    focusInput(){ this.$nextTick(()=>{ const ta=document.querySelector('.chat-input'); if(ta) ta.focus(); }); },
-    insertNewline(){ const ta=event.target; const start=ta.selectionStart; const end=ta.selectionEnd; this.currentMessage=this.currentMessage.slice(0,start)+'\n'+this.currentMessage.slice(end); this.$nextTick(()=>{ ta.selectionStart=ta.selectionEnd=start+1; }); },
+
+    // 사이드바 토글 메소드들
+    openMobileSidebar(){
+      this.mobileSidebarOpen = true;
+      document.body.style.overflow = 'hidden';
+    },
+    closeMobileSidebar(){
+      this.mobileSidebarOpen = false;
+      document.body.style.overflow = 'auto';
+    },
+
+    async fetchSessions(){
+      if(this.loadingSessions) return;
+      this.loadingSessions=true;
+      try{
+        const r=await fetch('/api/chat/sessions/');
+        if(r.ok){
+          this.sessions=await r.json();
+        }
+      }catch(e){
+        console.warn('세션 목록 로드 실패:', e);
+      } finally{
+        this.loadingSessions=false;
+      }
+    },
+
+    async createSession(){
+      try{
+        const r=await fetch('/api/chat/sessions/',{
+          method:'POST',
+          headers:this.apiHeaders(),
+          body:JSON.stringify({title:'새 대화'})
+        });
+        if(r.ok){
+          const s=await r.json();
+          this.sessions.unshift(s);
+          this.selectSession(s.id,true);
+          // 모바일에서 새 세션 생성 후 사이드바 닫기
+          if(window.innerWidth < 1024) {
+            this.closeMobileSidebar();
+          }
+        }
+      }catch(e){
+        console.warn('세션 생성 실패:', e);
+      }
+    },
+
+    async selectSession(id, justCreated=false){
+      if(this.activeSessionId===id) return;
+      this.activeSessionId=id;
+      this.messages=[];
+
+      // 모바일에서 세션 선택 시 사이드바 닫기
+      if(window.innerWidth < 1024) {
+        this.closeMobileSidebar();
+      }
+
+      try{
+        const r=await fetch(`/api/chat/sessions/${id}/messages/`);
+        if(r.ok){
+          const data=await r.json();
+          for(const m of data.messages){
+            this.messages.push(m);
+            this.messageId++;
+          }
+          this.scrollToBottom();
+          if(justCreated) this.focusInput();
+        }
+      }catch(e){
+        console.warn('세션 메시지 로드 실패:', e);
+      }
+    },
+
+    renameActive(){ if(!this.activeSessionId) return; const s=this.sessions.find(x=>x.id===this.activeSessionId); if(!s) return; this.renameSession(s); },
+    async renameSession(s){ const title=prompt('새 제목 입력', s.title||''); if(title===null) return; const newTitle=title.trim(); if(!newTitle || newTitle===s.title) return; try{ const r=await fetch(`/api/chat/sessions/${s.id}/`,{method:'PATCH',headers:this.apiHeaders(),body:JSON.stringify({title:newTitle})}); if(r.ok){ const updated=await r.json(); const idx=this.sessions.findIndex(x=>x.id===s.id); if(idx>-1) this.sessions[idx]=updated; } }catch(e){} },
+    async deleteSession(s){ if(!confirm('삭제하시겠습니까?')) return; try{ const r=await fetch(`/api/chat/sessions/${s.id}/`,{method:'DELETE',headers:this.apiHeaders(false)}); if(r.status===204){ this.sessions=this.sessions.filter(x=>x.id!==s.id); if(this.activeSessionId===s.id){ this.activeSessionId=null; this.messages=[]; if(this.sessions.length) this.selectSession(this.sessions[0].id); } } }catch(e){} },
+    focusInput(){ this.$nextTick(()=>{ const ta=document.querySelector('textarea'); if(ta) ta.focus(); }); },
+    insertNewline(e){ const ta=e.target; const start=ta.selectionStart; const end=ta.selectionEnd; this.currentMessage=this.currentMessage.slice(0,start)+'\n'+this.currentMessage.slice(end); this.$nextTick(()=>{ ta.selectionStart=ta.selectionEnd=start+1; }); },
     setExample(txt){ this.currentMessage=txt; this.sendMessage(); },
-    setupWS(){ const protocol=(window.location.protocol==='https:')?'wss://':'ws://'; const url=protocol+window.location.host+'/ws/chat/'; this.ws=new WebSocket(url); this.ws.onopen=()=>{ this.wsConnected=true; this.reconnectWait=1000; if(this.pendingInit){ const initMsg=this.pendingInit; this.pendingInit=null; this.sendMessage(initMsg); } }; this.ws.onclose=()=>{ this.wsConnected=false; if(this.isLoading && this.streamingBot){ this.streamingBot.isError=true; } setTimeout(()=>{ this.setupWS(); }, Math.min(this.reconnectWait,10000)); this.reconnectWait*=2; }; this.ws.onerror=()=>{}; this.ws.onmessage=(evt)=>{ try{ const payload=JSON.parse(evt.data); this.handlePayload(payload); }catch(e){ console.error('bad payload',e);} }; },
+    setupWS(){ const protocol=location.protocol==='https:'?'wss://':'ws://'; const url=protocol+location.host+'/ws/chat/'; this.ws=new WebSocket(url); this.ws.onopen=()=>{ this.wsConnected=true; this.reconnectWait=1000; if(this.pendingInit){ const initMsg=this.pendingInit; this.pendingInit=null; this.sendMessage(initMsg); } }; this.ws.onclose=()=>{ this.wsConnected=false; if(this.isLoading && this.streamingBot){ this.streamingBot.isError=true; } setTimeout(()=>this.setupWS(), Math.min(this.reconnectWait,10000)); this.reconnectWait*=2; }; this.ws.onmessage=(evt)=>{ try{ const p=JSON.parse(evt.data); this.handlePayload(p); }catch(e){} }; },
     handlePayload(p){ if(p.type==='session'){ const exists=this.sessions.find(x=>x.id===p.session_id); if(!exists){ this.sessions.unshift({id:p.session_id,title:p.title}); } this.activeSessionId=p.session_id; }
       if(!this.streamingBot && p.type==='token'){ this.createStreamingBot(); }
       if(p.type==='sources'){ if(!this.streamingBot) this.createStreamingBot(); this.streamingBot.sources=p.sources||[]; return; }
@@ -154,8 +270,6 @@ createApp({
     scrollToBottom(){ this.$nextTick(()=>{ const el=this.$refs.messagesContainer; if(el){ el.scrollTop=el.scrollHeight; } }); }
   }
 }).mount('#app');
-
-const siteHeader=document.getElementById('siteHeader'); function onScroll(){ if(window.scrollY>16) siteHeader.classList.add('shrink'); else siteHeader.classList.remove('shrink'); } window.addEventListener('scroll',onScroll); onScroll();
 </script>
 </body>
 </html>
