@@ -3,10 +3,12 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication  # 추가
+from rest_framework.permissions import IsAuthenticated  # 추가
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.conf import settings
-from .models import Facility, ChatHistory, Tag, Hospital
-from .serializers import FacilityListSerializer, FacilityDetailSerializer, ChatRequestSerializer, ChatResponseSerializer
+from .models import Facility, ChatHistory, Tag, Hospital, ChatSession
+from .serializers import FacilityListSerializer, FacilityDetailSerializer, ChatRequestSerializer, ChatResponseSerializer, ChatSessionSerializer
 from .rag_service import RAGService
 from django.utils.decorators import method_decorator
 from .regions import regions
@@ -283,27 +285,95 @@ class FacilityViewSet(viewsets.ReadOnlyModelViewSet):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ChatbotAPI(APIView):
-    """RAG 챗봇 API"""
-    authentication_classes = []  # SessionAuthentication 비활성 (CSRF 회피)
-    permission_classes = []
+    """RAG 챗봇 API (단발 호출)"""
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = []  # 비로그인 허용 (저장만 제한)
 
     def post(self, request):
-        # 'query' 또는 'message' 둘 다 지원
         raw_query = request.data.get('query') or request.data.get('message')
+        session_id = request.data.get('session_id')
         if not raw_query:
             return Response({'error': 'query 필드가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        chat_session = None
+        if request.user.is_authenticated:
+            if session_id:
+                chat_session = ChatSession.objects.filter(id=session_id, user=request.user).first()
+            if not chat_session:
+                # 새 세션 생성 (첫 메시지 제목 자동)
+                title = raw_query.strip()[:40]
+                chat_session = ChatSession.objects.create(user=request.user, title=title)
 
         try:
             rag_service = RAGService()
             result = rag_service.chat(raw_query)
-            # result 예: { 'answer': '...', 'sources': [...] }
             answer = result.get('answer') or result.get('response') or ''
             sources = result.get('sources', [])
             if request.user.is_authenticated:
-                ChatHistory.objects.create(user=request.user, query=raw_query, answer=answer)
-            return Response({'answer': answer, 'sources': sources}, status=status.HTTP_200_OK)
+                ChatHistory.objects.create(user=request.user, session=chat_session, query=raw_query, answer=answer)
+            return Response({'answer': answer, 'sources': sources, 'session_id': chat_session.id if chat_session else None}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': f'챗봇 처리 중 오류: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ChatSessionListCreateAPI(APIView):
+    """사용자 채팅 세션 목록 및 생성"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = ChatSession.objects.filter(user=request.user).order_by('-updated_at')
+        data = ChatSessionSerializer(qs, many=True).data
+        return Response(data)
+
+    def post(self, request):
+        title = (request.data.get('title') or '').strip()
+        if not title:
+            title = '새 대화'
+        session = ChatSession.objects.create(user=request.user, title=title[:100])
+        return Response(ChatSessionSerializer(session).data, status=status.HTTP_201_CREATED)
+
+
+class ChatSessionRenameDeleteAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        session = get_object_or_404(ChatSession, pk=pk, user=request.user)
+        title = (request.data.get('title') or '').strip()
+        if title:
+            session.title = title[:255]
+            session.save(update_fields=['title', 'updated_at'])
+        return Response(ChatSessionSerializer(session).data)
+
+    def delete(self, request, pk):
+        session = get_object_or_404(ChatSession, pk=pk, user=request.user)
+        session.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChatSessionMessagesAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        session = get_object_or_404(ChatSession, pk=pk, user=request.user)
+        histories = ChatHistory.objects.filter(session=session, user=request.user).order_by('created_at')
+        # 프론트 기존 구조(user / bot 분리)에 맞게 변환
+        messages = []
+        for h in histories:
+            messages.append({
+                'id': f"{h.id}_q",
+                'type': 'user',
+                'content': h.query,
+                'created_at': h.created_at,
+            })
+            if h.answer:
+                messages.append({
+                    'id': f"{h.id}_a",
+                    'type': 'bot',
+                    'content': h.answer,
+                    'created_at': h.created_at,
+                    'sources': [],
+                })
+        return Response({'session': ChatSessionSerializer(session).data, 'messages': messages})
 
 
 @api_view(['POST'])

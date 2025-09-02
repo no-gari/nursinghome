@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Facility, FacilityBasic, FacilityEvaluation, FacilityStaff, FacilityProgram, FacilityLocation, FacilityNonCovered
+from .models import Facility, FacilityBasic, FacilityEvaluation, FacilityStaff, FacilityProgram, FacilityLocation, FacilityNonCovered, ChatSession, ChatHistory
 
 class FacilityBasicSerializer(serializers.ModelSerializer):
     class Meta:
@@ -58,8 +58,25 @@ class FacilityListSerializer(serializers.ModelSerializer):
 
 class ChatRequestSerializer(serializers.Serializer):
     query = serializers.CharField(max_length=1000, help_text="사용자 질문")
+    session_id = serializers.IntegerField(required=False, help_text='대화가 속할 세션 ID')
 
 class ChatResponseSerializer(serializers.Serializer):
     answer = serializers.CharField(help_text="생성된 답변")
     sources = serializers.ListField(help_text="참조된 요양원 정보")
     query = serializers.CharField(help_text="원본 질문")
+    session_id = serializers.IntegerField(help_text='세션 ID')
+
+class ChatSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatSession
+        fields = ['id', 'title', 'created_at', 'updated_at']
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    role = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChatHistory
+        fields = ['id', 'session_id', 'query', 'answer', 'created_at', 'role']
+
+    def get_role(self, obj):
+        return 'user' if obj.query and not obj.answer else 'assistant'

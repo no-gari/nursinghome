@@ -42,7 +42,21 @@
         .loading-dot:nth-child(2){animation-delay:.2s;} .loading-dot:nth-child(3){animation-delay:.4s;}
         @keyframes loading { 0%,60%,100%{transform:translateY(0);} 30%{transform:translateY(-6px);} }
         .error-message { background:#fef2f2 !important; color:#dc2626 !important; border-color:#fecaca !important; }
-        @media (max-width: 768px){ .chat-messages { padding:12px 0 140px; } .message-content { font-size:14px; } .chat-input-container { padding:14px 12px 18px; } .suggestions { gap:8px; } }
+        .layout { display:flex; height:100%; }
+        .sidebar { width:250px; background:#f8fafc; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; }
+        .sidebar-header { padding:12px 14px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; }
+        .sessions { flex:1; overflow-y:auto; }
+        .session-item { padding:10px 14px; cursor:pointer; border-bottom:1px solid #eef2f7; display:flex; align-items:center; gap:8px; font-size:14px; }
+        .session-item.active { background:#e0e7ff; font-weight:600; }
+        .session-item:hover { background:#f1f5f9; }
+        .session-actions { display:flex; gap:6px; margin-left:auto; opacity:0; transition:.2s; }
+        .session-item:hover .session-actions { opacity:1; }
+        .session-actions button { background:transparent; border:none; cursor:pointer; color:#475569; font-size:12px; padding:2px 4px; }
+        .session-actions button:hover { color:#1e293b; }
+        .new-session-btn { background:#6366f1; color:#fff; border:none; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px; }
+        .new-session-btn:hover { background:#4f46e5; }
+        .sidebar-footer { padding:10px 12px; border-top:1px solid #e2e8f0; font-size:11px; color:#64748b; }
+        @media (max-width: 900px){ .sidebar { display:none; } }
     </style>
 </head>
 <body>
@@ -51,48 +65,58 @@
 </header>
 <meta name="csrf-token" content="{{ csrf_token }}">
 <main class="chat-page">
-  <div id="app" class="flex-1 flex flex-col">
-    <form style="display:none;">{% csrf_token %}</form>
-    <div class="chat-container">
-      <!-- 초기 예시 프롬프트 (메시지 없을 때만 표시) -->
-      <div v-if="messages.length === 0 && !isLoading" class="suggestions" aria-label="예시 질문">
-        <button type="button" class="suggestion-chip" @click="setExample('서울 A등급 요양원 추천해줘')">🏆 <span>서울 A등급 요양원 추천</span></button>
-        <button type="button" class="suggestion-chip" @click="setExample('대기자가 적은 곳 찾아줘')">⏱ <span>대기 적은 곳</span></button>
-        <button type="button" class="suggestion-chip" @click="setExample('물리치료 프로그램 있는 곳 알려줘')">🏃‍♂️ <span>물리치료 프로그램</span></button>
-        <button type="button" class="suggestion-chip" @click="setExample('비급여 비용 저렴한 곳 비교해줘')">💰 <span>비급여 저렴 비교</span></button>
-        <button type="button" class="suggestion-chip" @click="setExample('경기도 10년 이상 운영 A등급 추천')">📊 <span>경기 10년+ A등급</span></button>
+  <div id="app" class="flex-1 flex flex-col layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <strong style="font-size:14px;">대화</strong>
+        <button class="new-session-btn" @click="createSession" title="새 대화"><span>＋</span><span>새로</span></button>
       </div>
-      <div class="chat-messages" ref="messagesContainer">
-        <div v-for="message in messages" :key="message.id" :class="['message', message.type]">
-          <div class="message-avatar"><span v-if="message.type === 'user'">👤</span><span v-else>🤖</span></div>
-          <div class="message-content" :class="{ 'error-message': message.isError }">
-            <div v-html="formatMessage(message.content)"></div>
-            <div v-if="message.sources && message.sources.length" class="mt-3 pt-2 border-t border-slate-200 text-xs text-slate-500 space-y-1">
-              <div class="font-semibold text-slate-600">참고 소스</div>
-              <div v-for="s in message.sources" :key="s.id">{{ s.rank }}. [{{ s.type }}] {{ s.name }}</div>
-            </div>
+      <div class="sessions">
+        <div v-for="s in sessions" :key="s.id" :class="['session-item', {active: s.id===activeSessionId}]" @click="selectSession(s.id)">
+          <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" v-text="s.title || '제목없음'"></span>
+          <div class="session-actions">
+            <button @click.stop="renameSession(s)">✎</button>
+            <button @click.stop="deleteSession(s)">🗑</button>
           </div>
         </div>
-        <div v-if="isLoading && !streamingBot" class="message bot">
-          <div class="message-avatar">🤖</div>
-          <div class="message-content loading"><span>답변 준비 중</span><div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div></div>
+        <div v-if="sessions.length===0" style="padding:14px; font-size:13px; color:#64748b;">세션이 없습니다.</div>
+      </div>
+      <div class="sidebar-footer">클릭해 과거 대화를 불러오세요</div>
+    </aside>
+    <div class="flex-1 flex flex-col">
+      <div class="chat-container">
+        <!-- 초기 예시 프롬프트 (메시지 없을 때만 표시) -->
+        <div v-if="messages.length === 0 && !isLoading" class="suggestions" aria-label="예시 질문">
+          <button type="button" class="suggestion-chip" @click="setExample('서울 A등급 요양원 추천해줘')">🏆 <span>서울 A등급 요양원 추천</span></button>
+          <button type="button" class="suggestion-chip" @click="setExample('대기자가 적은 곳 찾아줘')">⏱ <span>대기 적은 곳</span></button>
+          <button type="button" class="suggestion-chip" @click="setExample('물리치료 프로그램 있는 곳 알려줘')">🏃‍♂️ <span>물리치료 프로그램</span></button>
+          <button type="button" class="suggestion-chip" @click="setExample('비급여 비용 저렴한 곳 비교해줘')">💰 <span>비급여 저렴 비교</span></button>
+          <button type="button" class="suggestion-chip" @click="setExample('경기도 10년 이상 운영 A등급 추천')">📊 <span>경기 10년+ A등급</span></button>
+        </div>
+        <div class="chat-messages" ref="messagesContainer">
+          <div v-for="message in messages" :key="message.id" :class="['message', message.type]">
+            <div class="message-avatar"><span v-if="message.type === 'user'">👤</span><span v-else>🤖</span></div>
+            <div class="message-content" :class="{ 'error-message': message.isError }">
+              <div v-html="formatMessage(message.content)"></div>
+              <div v-if="message.sources && message.sources.length" class="mt-3 pt-2 border-t border-slate-200 text-xs text-slate-500 space-y-1">
+                <div class="font-semibold text-slate-600">참고 소스</div>
+                <div v-for="s in message.sources" :key="s.id">{{ s.rank }}. [{{ s.type }}] {{ s.name }}</div>
+              </div>
+            </div>
+          </div>
+          <div v-if="isLoading && !streamingBot" class="message bot">
+            <div class="message-avatar">🤖</div>
+            <div class="message-content loading"><span>답변 준비 중</span><div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div></div>
+          </div>
         </div>
       </div>
-    </div>
-    <!-- chat-input-container 를 #app 내부로 이동 -->
-    <div class="chat-input-container">
-      <div class="chat-input-wrapper">
-        <!-- keypress -> keydown 로 변경, Shift+Enter 줄바꿈 지원 -->
-        <textarea v-model="currentMessage"
-                  @keydown.enter.exact.prevent="sendMessage"
-                  @keydown.enter.shift.prevent="insertNewline"
-                  :disabled="isLoading"
-                  placeholder="무엇이든 물어보세요... (예: 서울 A등급 요양원)"
-                  class="chat-input"
-                  rows="1"></textarea>
-        <button @click="sendMessage" :disabled="isLoading || !currentMessage.trim()" class="chat-send-btn" aria-label="전송">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-        </button>
+      <div class="chat-input-container">
+        <div class="chat-input-wrapper">
+          <textarea v-model="currentMessage" @keydown.enter.exact.prevent="sendMessage" @keydown.enter.shift.prevent="insertNewline" :disabled="isLoading" placeholder="무엇이든 물어보세요... (예: 서울 A등급 요양원)" class="chat-input" rows="1"></textarea>
+          <button @click="sendMessage" :disabled="isLoading || !currentMessage.trim()" class="chat-send-btn" aria-label="전송">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -101,57 +125,31 @@
 <script>
 const { createApp } = Vue;
 createApp({
-  data(){return{messages:[],currentMessage:'',isLoading:false,messageId:1,ws:null,wsConnected:false,reconnectWait:1000,streamingBot:null,pendingInit:null}},
-  mounted(){ const p=new URLSearchParams(window.location.search); const init=p.get('message'); this.setupWS(); if(init){ this.currentMessage=decodeURIComponent(init); this.pendingInit=this.currentMessage; } },
+  data(){return{messages:[],currentMessage:'',isLoading:false,messageId:1,ws:null,wsConnected:false,reconnectWait:1000,streamingBot:null,pendingInit:null,sessions:[],activeSessionId:null,loadingSessions:false}} ,
+  mounted(){ this.fetchSessions().then(()=>{ const p=new URLSearchParams(window.location.search); const sid=p.get('session'); if(sid){ this.selectSession(parseInt(sid)); } else if(this.sessions.length){ this.selectSession(this.sessions[0].id); } }); this.setupWS(); },
   methods:{
-    insertNewline(){ // Shift+Enter
-      const ta = event.target;
-      const start = ta.selectionStart;
-      const end = ta.selectionEnd;
-      this.currentMessage = this.currentMessage.slice(0,start) + '\n' + this.currentMessage.slice(end);
-      this.$nextTick(()=>{ ta.selectionStart = ta.selectionEnd = start + 1; });
-    },
+    csrf(){ return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); },
+    apiHeaders(json=true){ const h={'X-CSRFToken':this.csrf()}; if(json) h['Content-Type']='application/json'; return h; },
+    async fetchSessions(){ if(this.loadingSessions) return; this.loadingSessions=true; try{ const r=await fetch('/api/chat/sessions/'); if(r.ok){ this.sessions=await r.json(); } }catch(e){ console.warn('세션 목록 실패',e);} finally{ this.loadingSessions=false;} },
+    async createSession(){ try{ const r=await fetch('/api/chat/sessions/',{method:'POST',headers:this.apiHeaders(),body:JSON.stringify({title:'새 대화'})}); if(r.ok){ const s=await r.json(); this.sessions.unshift(s); this.selectSession(s.id,true); } }catch(e){ alert('세션 생성 실패'); } },
+    async renameSession(s){ const title=prompt('새 제목 입력', s.title||''); if(title===null) return; try{ const r=await fetch(`/api/chat/sessions/${s.id}/`,{method:'PATCH',headers:this.apiHeaders(),body:JSON.stringify({title})}); if(r.ok){ const updated=await r.json(); const idx=this.sessions.findIndex(x=>x.id===s.id); if(idx>-1) this.sessions[idx]=updated; } }catch(e){ alert('이름 변경 실패'); } },
+    async deleteSession(s){ if(!confirm('삭제하시겠습니까?')) return; try{ const r=await fetch(`/api/chat/sessions/${s.id}/`,{method:'DELETE',headers:this.apiHeaders(false)}); if(r.status===204){ this.sessions=this.sessions.filter(x=>x.id!==s.id); if(this.activeSessionId===s.id){ this.activeSessionId=null; this.messages=[]; if(this.sessions.length) this.selectSession(this.sessions[0].id); } } }catch(e){ alert('삭제 실패'); } },
+    async selectSession(id, justCreated=false){ if(this.activeSessionId===id){ return; } this.activeSessionId=id; this.messages=[]; try{ const r=await fetch(`/api/chat/sessions/${id}/messages/`); if(r.ok){ const data=await r.json(); // data.messages: user/bot pair 순
+          for(const m of data.messages){ this.messages.push(m); this.messageId++; }
+          this.scrollToBottom(); if(justCreated){ this.focusInput(); } } }catch(e){ console.warn('세션 메시지 로드 실패',e);} },
+    focusInput(){ this.$nextTick(()=>{ const ta=document.querySelector('.chat-input'); if(ta) ta.focus(); }); },
+    insertNewline(){ const ta=event.target; const start=ta.selectionStart; const end=ta.selectionEnd; this.currentMessage=this.currentMessage.slice(0,start)+'\n'+this.currentMessage.slice(end); this.$nextTick(()=>{ ta.selectionStart=ta.selectionEnd=start+1; }); },
     setExample(txt){ this.currentMessage=txt; this.sendMessage(); },
-    setupWS(){
-      const protocol = (window.location.protocol === 'https:') ? 'wss://' : 'ws://';
-      const url = protocol + window.location.host + '/ws/chat/';
-      this.ws = new WebSocket(url);
-      this.ws.onopen = ()=>{
-        this.wsConnected=true;
-        this.reconnectWait=1000;
-        if(this.pendingInit){
-          const initMsg=this.pendingInit; this.pendingInit=null; this.sendMessage(initMsg);
-        }
-      };
-      this.ws.onclose = ()=>{ this.wsConnected=false; if(this.isLoading && this.streamingBot){ this.streamingBot.isError=true; } setTimeout(()=>{ this.setupWS(); }, Math.min(this.reconnectWait,10000)); this.reconnectWait*=2; };
-      this.ws.onerror = ()=>{};
-      this.ws.onmessage = (evt)=>{ try{ const payload=JSON.parse(evt.data); this.handlePayload(payload); }catch(e){ console.error('bad payload',e);} };
-    },
-    handlePayload(p){
-      if(!this.streamingBot && p.type==='token'){ // fallback
-        this.createStreamingBot();
-      }
+    setupWS(){ const protocol=(window.location.protocol==='https:')?'wss://':'ws://'; const url=protocol+window.location.host+'/ws/chat/'; this.ws=new WebSocket(url); this.ws.onopen=()=>{ this.wsConnected=true; this.reconnectWait=1000; if(this.pendingInit){ const initMsg=this.pendingInit; this.pendingInit=null; this.sendMessage(initMsg); } }; this.ws.onclose=()=>{ this.wsConnected=false; if(this.isLoading && this.streamingBot){ this.streamingBot.isError=true; } setTimeout(()=>{ this.setupWS(); }, Math.min(this.reconnectWait,10000)); this.reconnectWait*=2; }; this.ws.onerror=()=>{}; this.ws.onmessage=(evt)=>{ try{ const payload=JSON.parse(evt.data); this.handlePayload(payload); }catch(e){ console.error('bad payload',e);} }; },
+    handlePayload(p){ if(p.type==='session'){ const exists=this.sessions.find(x=>x.id===p.session_id); if(!exists){ this.sessions.unshift({id:p.session_id,title:p.title}); } this.activeSessionId=p.session_id; }
+      if(!this.streamingBot && p.type==='token'){ this.createStreamingBot(); }
       if(p.type==='sources'){ if(!this.streamingBot) this.createStreamingBot(); this.streamingBot.sources=p.sources||[]; return; }
       if(p.type==='token'){ this.streamingBot.content+=p.text; this.scrollToBottom(); return; }
       if(p.type==='end'){ this.isLoading=false; this.streamingBot=null; this.scrollToBottom(); return; }
       if(p.type==='error'){ if(!this.streamingBot) this.createStreamingBot(); this.streamingBot.isError=true; this.streamingBot.content+='\n[오류] '+(p.message||'알 수 없는 오류'); this.isLoading=false; this.streamingBot=null; }
     },
     createStreamingBot(){ const botMsg={id:this.messageId++,type:'bot',content:'',sources:[],timestamp:new Date()}; this.messages.push(botMsg); this.streamingBot=botMsg; },
-    sendMessage(text){
-      const content = (typeof text === 'string') ? text : this.currentMessage;
-      if(!content.trim()||this.isLoading) return;
-      if(!this.wsConnected){
-        // 초기 진입 상태라면 pendingInit에 저장 후 onopen에서 전송
-        if(!this.pendingInit) this.pendingInit=content;
-        return;
-      }
-      const userMsg={id:this.messageId++,type:'user',content:content,timestamp:new Date()};
-      this.messages.push(userMsg);
-      if(typeof text !== 'string') this.currentMessage=''; else if(this.currentMessage===content) this.currentMessage='';
-      this.isLoading=true;
-      this.ws.send(JSON.stringify({action:'chat',query:content}));
-      this.scrollToBottom();
-    },
+    sendMessage(text){ const content=(typeof text==='string')?text:this.currentMessage; if(!content.trim()||this.isLoading) return; if(!this.wsConnected){ if(!this.pendingInit) this.pendingInit=content; return; } const userMsg={id:this.messageId++,type:'user',content:content,timestamp:new Date()}; this.messages.push(userMsg); if(typeof text!=='string') this.currentMessage=''; else if(this.currentMessage===content) this.currentMessage=''; this.isLoading=true; const payload={action:'chat',query:content}; if(this.activeSessionId) payload.session_id=this.activeSessionId; this.ws.send(JSON.stringify(payload)); this.scrollToBottom(); },
     formatMessage(c){ return c.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); },
     scrollToBottom(){ this.$nextTick(()=>{ const el=this.$refs.messagesContainer; if(el){ el.scrollTop=el.scrollHeight; } }); }
   }

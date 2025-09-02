@@ -22,4 +22,7 @@ urlpatterns = [
     path('api/initialize-rag/', views.initialize_rag, name='initialize_rag'),
     path('hospitals/', views.HospitalListView.as_view(), name='hospital_list'),  # 병원 리스트
     path('hospital/id/<int:pk>/', views.hospital_detail_by_id, name='hospital_detail_by_id'),  # 신규: id 기반
+    path('api/chat/sessions/', views.ChatSessionListCreateAPI.as_view(), name='chat_session_list_create'),
+    path('api/chat/sessions/<int:pk>/', views.ChatSessionRenameDeleteAPI.as_view(), name='chat_session_detail'),
+    path('api/chat/sessions/<int:pk>/messages/', views.ChatSessionMessagesAPI.as_view(), name='chat_session_messages'),
 ]

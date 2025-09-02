@@ -157,10 +157,24 @@ class FacilityImage(TimestampedModel):
         return f"{self.facility.code} - {self.original_url.split('/')[-1]}"
 
 
+class ChatSession(TimestampedModel):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='chat_sessions')
+    title = models.CharField(max_length=255, blank=True, help_text='첫 질문 요약 등을 제목으로 사용')
+
+    class Meta:
+        ordering = ['-updated_at']
+        verbose_name = '채팅 세션'
+        verbose_name_plural = '채팅 세션'
+
+    def __str__(self):
+        return f"Session {self.id} - {self.title or '제목없음'}"
+
+
 class ChatHistory(TimestampedModel):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chat_histories"
     )
+    session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='messages', null=True, blank=True)
     query = models.TextField()
     answer = models.TextField(blank=True)
 
@@ -170,7 +184,7 @@ class ChatHistory(TimestampedModel):
         verbose_name_plural = "채팅 기록"
 
     def __str__(self):
-        return f"{self.user} - {self.created_at:%Y-%m-%d %H:%M:%S}"
+        return f"{self.user} - {self.created_at:%Y-%m-%d %H:%M:%S} ({self.session_id or 'no-session'})"
 
 
 class Blog(TimestampedModel):

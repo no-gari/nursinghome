@@ -3,21 +3,23 @@ import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from core.rag_service import RAGService
+from django.utils import timezone
+from core.models import ChatSession, ChatHistory
 
 logger = logging.getLogger(__name__)
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.is_streaming = False
+        self.current_session = None
         await self.accept()
         logger.info(f"WebSocket connected: {self.channel_name}")
-        # 프론트에서 'connected' 타입을 기대할 수 있으므로 명시적 전송
         await self.send_json({'type': 'connected', 'message': '연결됨'})
-        # 하위 호환 (기존 info 타입 사용하던 경우)
         await self.send_json({'type': 'info', 'message': '연결됨'})
 
     async def disconnect(self, close_code):
         self.is_streaming = False
+        self.current_session = None
         logger.info(f"WebSocket disconnected: {self.channel_name}, code: {close_code}")
 
     async def receive(self, text_data=None, bytes_data=None):
@@ -64,15 +66,52 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if self.is_streaming:
                 await self.send_json({'type': 'error', 'message': '이전 스트림 진행 중'})
                 return
-            await self._handle_query(query)
+            session_id = data.get('session_id')
+            await self._handle_query(query, session_id=session_id)
         else:
             await self.send_json({'type': 'error', 'message': f'알 수 없는 action: {action}'})
 
-    async def _handle_query(self, query: str):
+    async def _ensure_session(self, session_id: int, first_query: str):
+        user = self.scope.get('user')
+        if not user or not user.is_authenticated:
+            self.current_session = None
+            return None
+        if session_id:
+            try:
+                session = await sync_to_async(ChatSession.objects.get)(id=session_id, user=user)
+                self.current_session = session
+                return session
+            except ChatSession.DoesNotExist:
+                pass
+        # 새 세션 생성
+        title = first_query.strip()[:40]
+        session = await sync_to_async(ChatSession.objects.create)(user=user, title=title)
+        self.current_session = session
+        await self.send_json({'type': 'session', 'session_id': session.id, 'title': session.title})
+        return session
+
+    async def _handle_query(self, query: str, session_id=None):
         self.is_streaming = True
         logger.info(f"Starting query processing: {query}")
 
+        # 세션 확보 (인증된 사용자만)
         try:
+            await self._ensure_session(session_id, query)
+        except Exception as e:
+            logger.error(f"Session ensure error: {e}")
+            await self.send_json({'type': 'error', 'message': f'세션 생성 오류: {e}'})
+            self.is_streaming = False
+            return
+
+        answer_buffer = []
+        history_id = None
+        try:
+            user = self.scope.get('user')
+            if user and user.is_authenticated and self.current_session:
+                # 질문 즉시 기록 (빈 답변)
+                history = await sync_to_async(ChatHistory.objects.create)(user=user, session=self.current_session, query=query, answer='')
+                history_id = history.id
+
             logger.info("Initializing RAG service...")
             rag_service = await sync_to_async(RAGService)()
             logger.info("RAG service initialized successfully")
@@ -92,6 +131,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         if item is None:
                             logger.info("Stream completed normally (None sentinel)")
                             break
+                        if item.get('type') == 'token':
+                            answer_buffer.append(item.get('text') or '')
                         logger.info(f"Stream item: {item}")
                         await self.send_json(item)
                 except Exception as e:
@@ -104,6 +145,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
             logger.error(f"Query handling error: {e}", exc_info=True)
             await self.send_json({'type': 'error', 'message': f'처리 중 오류가 발생했습니다: {e}'})
         finally:
+            # 저장
+            try:
+                user = self.scope.get('user')
+                if user and user.is_authenticated and self.current_session:
+                    final_answer = ''.join(answer_buffer).strip()
+                    if history_id is not None:
+                        await sync_to_async(ChatHistory.objects.filter(id=history_id).update)(answer=final_answer, updated_at=timezone.now())
+                    elif final_answer:
+                        await sync_to_async(ChatHistory.objects.create)(user=user, session=self.current_session, query=query, answer=final_answer)
+                    self.current_session.updated_at = timezone.now()
+                    await sync_to_async(self.current_session.save)(update_fields=['updated_at'])
+            except Exception as save_e:
+                logger.error(f"History save error: {save_e}")
             self.is_streaming = False
             logger.info("Query processing finished")
 
