@@ -138,17 +138,20 @@
     </div>
 
     <!-- Input -->
-    <div class="fixed left-0 right-0 bottom-0 bg-white/95 backdrop-blur border-t border-slate-200">
-      <div class="max-w-3xl mx-auto px-4 py-4">
+    <!-- 기존: 고정 흰색 박스(bg-white/95 ...) -> 제거하고 투명 배경 + 떠 있는 입력 캡슐 -->
+    <div class="fixed inset-x-0 bottom-0 pb-3 pt-2">
+      <div class="max-w-3xl mx-auto px-4">
         <div class="relative">
+          <!-- 상단 그라데이션 페이드 (메시지와 구분) -->
+          <div class="pointer-events-none absolute -top-6 left-0 right-0 h-6 bg-gradient-to-t from-slate-50/90 via-slate-50/40 to-transparent"></div>
           <textarea v-model="currentMessage" @keydown.enter.exact.prevent="sendMessage" @keydown.enter.shift.prevent="insertNewline" rows="1"
                     :disabled="isLoading"
-                    class="w-full resize-none rounded-2xl border border-slate-300 bg-white px-4 py-4 pr-16 text-sm shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 max-h-52"
-                    placeholder="무엇이든 물어보세요... (예: 서울 A등급 요양원)"></textarea>
+                    class="w-full resize-none rounded-2xl border border-slate-300 bg-white/90 backdrop-blur-sm px-4 py-4 pr-16 text-sm shadow-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 max-h-52 placeholder-slate-400"
+                    placeholder="무엇이든 물어보세요... (Shift+Enter 줄바꿈)"></textarea>
           <button @click="sendMessage" :disabled="isLoading || !currentMessage.trim()"
-                  class="absolute bottom-2 right-2 h-11 px-5 rounded-xl text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm flex items-center gap-1">
-            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-            <span>전송</span>
+                  aria-label="메시지 전송"
+                  class="absolute bottom-2.5 right-2.5 w-11 h-11 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-md flex items-center justify-center transition">
+            <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 20.6 21 12 3.4 3.4 5 10l9 2-9 2z"/></svg>
           </button>
         </div>
       </div>
