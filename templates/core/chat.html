@@ -78,7 +78,11 @@
           <span class="flex-1 truncate" v-text="s.title || '제목없음'"></span>
           <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
             <button @click.stop="renameSession(s)" class="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-white/70 border border-transparent hover:border-slate-300" title="이름 변경">✎</button>
-            <button @click.stop="openDeleteSession(s)" class="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-white/70 border border-transparent hover:border-rose-300" title="삭제">🗑</button>
+            <button @click.stop="openDeleteSession(s)" class="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-white/70 border border-transparent hover:border-rose-300" title="삭제">
+              <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14ZM10 11v6M14 11v6"/>
+              </svg>
+            </button>
           </div>
         </li>
       </ul>
@@ -103,7 +107,6 @@
       </button>
 
       <div class="flex items-center gap-2 text-slate-500">
-        <svg class="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17l-5 3 1.9-5.8L4 9.5l6-.2L12 4l2 5.3 6 .2-4.9 4.7L17 20z"/></svg>
         <span class="text-sm font-semibold text-slate-700" v-text="activeSessionTitle || '새 대화'"></span>
       </div>
 
@@ -285,7 +288,7 @@
       csrf(){ return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); },
       apiHeaders(json=true){ const h={'X-CSRFToken':this.csrf()}; if(json) h['Content-Type']='application/json'; return h; },
 
-      // 사이드바 토글 메소��들
+      // 사이��바 토글 메소��들
       openMobileSidebar(){
         this.mobileSidebarOpen = true;
         document.body.style.overflow = 'hidden';
