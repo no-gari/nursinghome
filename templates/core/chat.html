@@ -47,34 +47,34 @@
     /* Input area refinement */
     .chat-input{transition:border-color .15s, box-shadow .15s;}
     .chat-input:focus{border-color:#6366f1; box-shadow:0 0 0 2px rgba(99,102,241,0.25);}
+    [v-cloak]{display:none !important;}
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col">
 <header id="siteHeader" class="hdr sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 flex flex-col justify-center">
   {% include 'core/_navbar.html' %}
 </header>
-<main id="app" class="flex-1 flex overflow-hidden relative">
+<main id="app" v-cloak class="flex-1 flex overflow-hidden relative">
   <!-- 모바일 오버레이 -->
   <div v-show="mobileSidebarOpen" class="fixed inset-0 z-30 bg-black/30 lg:hidden" @click="closeMobileSidebar"></div>
 
   <!-- Sidebar -->
   <aside :class="sidebarClasses">
-    <div class="px-4 h-12 flex items-center justify-between border-b border-slate-200">
-      <h2 class="text-xs font-semibold tracking-wide text-slate-600 select-none">대화 목록</h2>
-      <div class="flex items-center gap-1">
-        <button @click="createSession" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-300 bg-white text-slate-600 hover:border-slate-500 hover:text-slate-800" title="새 대화">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 5v14M5 12h14"/></svg>
-        </button>
-        <button @click="closeMobileSidebar" class="lg:hidden inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-300 bg-white text-slate-600 hover:border-slate-500" title="닫기">
-          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
+    <div class="p-3 border-b border-slate-200 relative">
+      <button @click="createSession" class="w-full inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white border border-slate-300 text-slate-700 hover:border-slate-500 hover:bg-slate-50 shadow-sm" title="새 대화">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="text-sm font-medium">새 대화</span>
+      </button>
+      <button @click="closeMobileSidebar" class="lg:hidden absolute top-3 right-3 inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-300 bg-white text-slate-600 hover:border-slate-500" title="닫기">
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
+    <div class="px-4 pt-2 pb-1 text-[11px] uppercase tracking-wider text-slate-500">대화 목록</div>
 
     <div class="flex-1 overflow-y-auto chat-scroll">
       <ul class="py-1 text-sm">
         <li v-for="s in sessions" :key="s.id" @click="selectSession(s.id)"
-            :class="['group cursor-pointer px-3 py-2 flex items-center gap-2 border-l-2', s.id===activeSessionId ? 'bg-indigo-50 border-indigo-500 text-slate-900 font-medium' : 'border-transparent text-slate-600 hover:bg-slate-100']">
+            :class="['group cursor-pointer mx-2 my-1 px-3 py-2 rounded-lg flex items-center gap-2', s.id===activeSessionId ? 'bg-white shadow-sm ring-1 ring-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100']">
           <span class="flex-1 truncate" v-text="s.title || '제목없음'"></span>
           <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
             <button @click.stop="renameSession(s)" class="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-white/70 border border-transparent hover:border-slate-300" title="이름 변경">✎</button>
@@ -84,7 +84,13 @@
       </ul>
       <div v-if="sessions.length===0" class="px-4 py-6 text-center text-xs text-slate-500">세션이 없습니다.</div>
     </div>
-    <div class="p-3 border-t border-slate-200 text-[11px] text-slate-500">자동 저장됩니다</div>
+    <div class="p-3 border-t border-slate-200">
+      <div class="flex gap-2 mb-2">
+        <button @click="renameActive()" :disabled="!activeSessionObj" class="flex-1 h-9 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs hover:border-slate-500 disabled:opacity-40">이름 변경</button>
+        <button @click="openDeleteSession(activeSessionObj)" :disabled="!activeSessionObj" class="h-9 w-9 rounded-lg border border-slate-300 bg-white text-slate-600 hover:border-rose-400 hover:text-rose-600 disabled:opacity-40">🗑</button>
+      </div>
+      <div class="text-[11px] text-slate-500">자동 저장됩니다</div>
+    </div>
   </aside>
 
   <!-- Chat column -->
@@ -101,7 +107,7 @@
         <span class="text-sm font-semibold text-slate-700" v-text="activeSessionTitle || '새 대화'"></span>
       </div>
 
-      <div class="flex gap-2 ml-auto">
+      <div class="flex gap-2 ml-auto hidden">
         <button @click="renameActive()" :disabled="!activeSessionId" class="px-3 h-8 text-xs rounded-md border border-slate-300 bg-white text-slate-600 disabled:opacity-40 hover:border-slate-500 hover:text-slate-800">이름 변경</button>
         <button @click="createSession" class="px-3 h-8 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-500">새 대화</button>
       </div>
@@ -232,9 +238,14 @@
         const s=this.sessions.find(x=>x.id===this.activeSessionId);
         return s ? s.title : '';
       },
+      activeSessionObj(){
+        const s=this.sessions.find(x=>x.id===this.activeSessionId);
+        return s || null;
+      },
+
       sidebarClasses(){
         return [
-          'w-60 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out',
+          'w-64 bg-slate-50 border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out',
           // 모바일: fixed positioning with slide animation
           'fixed lg:static inset-y-0 left-0 z-40',
           // 모바일에서 열림/닫힘 상태
@@ -274,7 +285,7 @@
       csrf(){ return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); },
       apiHeaders(json=true){ const h={'X-CSRFToken':this.csrf()}; if(json) h['Content-Type']='application/json'; return h; },
 
-      // 사이드바 토글 메소드들
+      // 사이드바 토글 메소��들
       openMobileSidebar(){
         this.mobileSidebarOpen = true;
         document.body.style.overflow = 'hidden';
@@ -310,7 +321,7 @@
             const s=await r.json();
             this.sessions.unshift(s);
             this.selectSession(s.id,true);
-            // 모바일에서 새 세션 생성 후 사이드바 닫기
+            // 모바일에��� 새 세션 생�� 후 사이드바 닫기
             if(window.innerWidth < 1024) {
               this.closeMobileSidebar();
             }
@@ -372,7 +383,7 @@
             if(justCreated) this.focusInput();
           }
         }catch(e){
-          console.warn('세션 메시지 로드 실패:', e);
+          console.warn('세션 메시지 ��드 실패:', e);
         }
       },
 
