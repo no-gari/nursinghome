@@ -48,6 +48,70 @@
     .chat-input{transition:border-color .15s, box-shadow .15s;}
     .chat-input:focus{border-color:#6366f1; box-shadow:0 0 0 2px rgba(99,102,241,0.25);}
     [v-cloak]{display:none !important;}
+    /* 카드 UI 추가 */
+    .facility-card{position:relative;display:flex;flex-direction:column;border:1px solid #e2e8f0;border-radius:14px;background:#ffffff;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,0.05);transition:.25s border-color,.25s box-shadow,.25s transform;}
+    .facility-card:hover{border-color:#6366f1;box-shadow:0 4px 14px -4px rgba(99,102,241,0.25);}
+    .facility-card img{width:100%;height:140px;object-fit:cover;background:#f1f5f9;}
+    .facility-card-badge{position:absolute;top:8px;left:8px;background:rgba(15,23,42,0.8);color:#fff;font-size:11px;padding:4px 8px;border-radius:20px;backdrop-filter:blur(4px);}
+    .facility-card-grade{font-weight:600;font-size:11px;color:#4f46e5;background:#eef2ff;padding:2px 6px;border-radius:6px;}
+    .facility-card-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px;}
+    .facility-card-title{font-size:14px;font-weight:600;line-height:1.3;color:#1e293b;display:flex;align-items:center;gap:6px;}
+    .facility-card-meta{display:flex;flex-wrap:wrap;gap:6px;font-size:10.5px;color:#64748b;}
+    .facility-chip{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:2px 6px;line-height:1;font-weight:500;}
+    .facility-chip.green{background:#ecfdf5;border-color:#a7f3d0;color:#047857;}
+    .facility-chip.amber{background:#fffbeb;border-color:#fde68a;color:#92400e;}
+    .facility-card-footer{margin-top:4px;display:flex;justify-content:space-between;align-items:center;}
+    .facility-link{font-size:11px;color:#4f46e5;text-decoration:underline;text-underline-offset:2px;}
+    /* 새 카드(가로 스크롤) 스타일 */
+    .card-scroll{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 6px 2px;margin:4px 0 8px;scrollbar-width:thin;}
+    .card-scroll::-webkit-scrollbar{height:8px;}
+    .card-scroll::-webkit-scrollbar-track{background:transparent;}
+    .card-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;}
+    .mini-card{flex:0 0 auto;width:170px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,0.05);padding:6px 8px 8px;display:flex;flex-direction:column;gap:4px;position:relative;}
+    .mini-card:hover{border-color:#6366f1;box-shadow:0 3px 10px -2px rgba(99,102,241,0.25);}
+    .mini-img-wrap{position:relative;width:100%;height:90px;border-radius:10px;overflow:hidden;background:#f1f5f9;}
+    .mini-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+    .mini-grade{position:absolute;bottom:4px;left:4px;background:rgba(15,23,42,.75);color:#fff;font-size:10px;font-weight:500;padding:2px 6px;border-radius:12px;backdrop-filter:blur(4px);}
+    .mini-loc{font-size:11px;color:#475569;line-height:1.3;min-height:28px;display:flex;align-items:flex-start;}
+    .mini-stats{display:flex;flex-wrap:wrap;gap:4px;font-size:10px;color:#334155;}
+    .mini-stats span{background:#f1f5f9;border:1px solid #e2e8f0;padding:2px 5px;border-radius:6px;line-height:1;font-weight:500;}
+    .mini-link{margin-top:2px;font-size:11px;color:#4f46e5;text-decoration:underline;text-underline-offset:3px;align-self:flex-start;}
+    .mini-link:hover{color:#4338ca;}
+    .mini-empty{font-size:10px;color:#94a3b8;font-style:italic;}
+    .seg-block + .seg-block{margin-top:16px;}
+    /* 새 FANCY Carousel Styles */
+    .carousel-wrapper{position:relative;margin:10px 0 18px;}
+    .carousel-mask-left, .carousel-mask-right{pointer-events:none;position:absolute;top:0;bottom:0;width:60px;z-index:2;}
+    .carousel-mask-left{left:0;background:linear-gradient(to right,rgba(248,250,252,1),rgba(248,250,252,0));}
+    .carousel-mask-right{right:0;background:linear-gradient(to left,rgba(248,250,252,1),rgba(248,250,252,0));}
+    .carousel-track{display:flex;gap:20px;overflow-x:auto;padding:8px 4px 12px;scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none;}
+    .carousel-track::-webkit-scrollbar{display:none;}
+    .carousel-card{flex:0 0 auto;width:260px;background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;box-shadow:0 4px 16px -6px rgba(30,41,59,0.18),0 2px 6px -2px rgba(30,41,59,0.08);scroll-snap-align:start;position:relative;display:flex;flex-direction:column;transition:.35s box-shadow,.35s transform,.35s border-color;}
+    .carousel-card:hover{box-shadow:0 10px 28px -8px rgba(99,102,241,0.4),0 4px 12px -2px rgba(30,41,59,0.15);transform:translateY(-4px);border-color:#818cf8;}
+    .card-media{position:relative;width:100%;height:150px;border-radius:20px 20px 16px 16px;overflow:hidden;background:#f1f5f9;}
+    .card-media img{width:100%;height:100%;object-fit:cover;display:block;}
+    .card-grade{position:absolute;top:10px;left:10px;background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;font-size:11px;font-weight:600;padding:6px 10px;border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,0.25);letter-spacing:.5px;}
+    .card-body{display:flex;flex-direction:column;padding:14px 16px 16px;gap:10px;}
+    .card-title{font-size:15px;font-weight:700;line-height:1.35;color:#1e293b;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:42px;}
+    .card-location{font-size:12px;line-height:1.45;color:#475569;position:relative;padding-left:18px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+    .card-location:before{content:'';position:absolute;left:0;top:1px;width:12px;height:12px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E");background-size:contain;background-repeat:no-repeat;}
+    .card-stats{display:flex;flex-wrap:wrap;gap:6px;}
+    .stat-pill{font-size:11px;font-weight:600;line-height:1;padding:6px 10px;border-radius:30px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(0,0,0,0.04);}
+    .stat-pill.good{background:#ecfdf5;border-color:#a7f3d0;color:#047857;}
+    .card-actions{display:flex;align-items:center;justify-content:space-between;margin-top:2px;}
+    .detail-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#4f46e5;background:#eef2ff;padding:8px 14px;border-radius:12px;border:1px solid #c7d2fe;transition:.25s background,.25s box-shadow;}
+    .detail-btn:hover{background:#e0e7ff;box-shadow:0 2px 6px -2px rgba(99,102,241,.4);}
+    .empty-label{font-size:11px;color:#94a3b8;font-style:italic;}
+    .carousel-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:5;display:flex;flex-direction:column;gap:8px;}
+    .carousel-btn{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.85);backdrop-filter:blur(6px);border:1px solid #e2e8f0;box-shadow:0 4px 14px -4px rgba(30,41,59,0.25);cursor:pointer;color:#334155;transition:.25s background,.25s transform,.25s color;}
+    .carousel-btn:hover{background:#6366f1;color:#fff;transform:translateY(-2px);}
+    .carousel-btn:active{transform:translateY(0);}
+    .carousel-nav.prev{left:-4px;}
+    .carousel-nav.next{right:-4px;}
+    @media (max-width: 900px){
+      .carousel-card{width:220px;}
+      .card-media{height:130px;}
+    }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col">
@@ -61,7 +125,7 @@
   <!-- Sidebar -->
   <aside :class="sidebarClasses">
     <div class="p-3 border-b border-slate-200 relative">
-      <button @click="createSession" class="w-full inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white border border-slate-300 text-slate-700 hover:border-slate-500 hover:bg-slate-50 shadow-sm" title="새 대화">
+      <button @click="createSession" class="w-full inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white border border-slate-300 text-slate-700 hover:border-slate-500 hover:bg-slate-50 shadow-sm" title="새 ��화">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 5v14M5 12h14"/></svg>
         <span class="text-sm font-medium">새 대화</span>
       </button>
@@ -122,41 +186,90 @@
       <div class="max-w-3xl mx-auto w-full px-4 pt-4 pb-40">
         <!-- Suggestions -->
         <div v-if="messages.length===0 && !isLoading" class="flex flex-wrap gap-3 mb-6">
-          <button @click="setExample('서울 A등급 요양원 추천해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">서울 A등급 추천</button>
+          <button @click="setExample('서울 A등급 요양원 추천해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">서울 A등급 ���천</button>
           <button @click="setExample('대기자가 적은 곳 찾아줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">대기 적은 곳</button>
           <button @click="setExample('물리치료 프로그램 있는 곳 알려줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">물리치료 프로그램</button>
           <button @click="setExample('비급여 비용 저렴한 곳 비교해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">비급여 저렴 비교</button>
           <button @click="setExample('경기도 10년 이상 운영 A등급 추천')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">경기 10년+ A등급</button>
         </div>
-        <!-- Messages Loop (아바타 제거 버전) -->
+        <!-- Messages Loop -->
         <div v-for="m in messages" :key="m.id" class="msg-group" :class="m.type==='user' ? 'user' : 'bot'">
-          <div :class="['inline-block msg-bubble', m.type==='user' ? 'msg-user' : 'msg-bot']" v-html="formatMessage(m.content)"></div>
-          <div v-if="m.sources && m.sources.length" class="mt-3 text-left p-3 rounded-xl bg-white border border-slate-200 text-[12px] text-slate-600 space-y-2 shadow-sm max-w-3xl">
-            <div class="font-semibold text-slate-700 text-xs tracking-wide">참고 소스</div>
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div v-for="s in m.sources" :key="s.id" class="group border border-slate-200 rounded-lg p-3 bg-slate-50/60 hover:bg-white hover:border-indigo-300 transition flex flex-col">
-                <div class="flex items-start justify-between gap-2">
-                  <div class="text-[11px] font-medium text-slate-700 leading-snug flex-1">
-                    <span class="text-indigo-600">{{ s.rank }}.</span>
-                    [{{ s.type }}] {{ s.name }}
+          <!-- 번호형 세그먼트 모드 (각 카드 단독) -->
+          <template v-if="m.type==='bot' && m.segments && m.segments.length">
+            <div v-for="seg in m.segments" :key="seg.rank" class="seg-block">
+              <div class="inline-block msg-bubble msg-bot w-full text-left" v-html="formatMessage(seg.text)"></div>
+              <div v-if="seg.card" class="carousel-wrapper mt-3">
+                <div class="carousel-track" style="gap:0;">
+                  <div class="carousel-card">
+                    <div class="card-media">
+                      <img v-if="seg.card.primary_image_url" :src="seg.card.primary_image_url" :alt="seg.card.name" loading="lazy" />
+                      <div v-else class="flex items-center justify-center w-full h-full text-[12px] text-slate-400 font-medium">NO IMAGE</div>
+                      <div v-if="seg.card.grade" class="card-grade" v-text="seg.card.grade"></div>
+                    </div>
+                    <div class="card-body">
+                      <div class="card-title" v-text="seg.card.name"></div>
+                      <div class="card-location" v-text="seg.card.location || '주소 정보 없음'"></div>
+                      <div class="card-stats">
+                        <span v-if="seg.card.type==='facility' && seg.card.capacity!==null" class="stat-pill" v-text="'정원 '+seg.card.capacity"></span>
+                        <span v-if="seg.card.type==='facility' && seg.card.occupancy!==null" class="stat-pill" v-text="'현원 '+seg.card.occupancy"></span>
+                        <span v-if="seg.card.type==='facility' && seg.card.waiting!==null" class="stat-pill" v-text="'대기 '+seg.card.waiting"></span>
+                        <span v-if="seg.card.immediate_admission===true" class="stat-pill good">즉시입소</span>
+                      </div>
+                      <div class="card-actions">
+                        <a v-if="seg.card.detail_url" :href="seg.card.detail_url" target="_blank" class="detail-btn">
+                          <span>상세보기</span>
+                          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M5 10v11h11"/></svg>
+                        </a>
+                        <span v-else class="empty-label">상세 없음</span>
+                      </div>
+                    </div>
                   </div>
-                  <div v-if="s.distance!==undefined" class="text-[10px] text-slate-400">유사도 <span v-text="formatSimilarity(s.distance)"></span></div>
                 </div>
-                <div v-if="s.image_urls && s.image_urls.length" class="mt-2 flex gap-2 overflow-hidden">
-                  <img v-for="(img,i) in s.image_urls.slice(0,2)" :key="i" :src="img" class="w-20 h-14 object-cover rounded-md border border-slate-200 bg-white" loading="lazy" />
-                </div>
-                <div class="mt-2 space-y-1 text-[11px] leading-relaxed break-all">
-                  <div v-if="s.detail_url"><span class="font-semibold text-slate-500">상세:</span> <a :href="s.detail_url" target="_blank" class="text-indigo-600 underline decoration-dotted break-all">{{ s.detail_url }}</a></div>
-                  <div v-if="s.image_urls && s.image_urls.length"><span class="font-semibold text-slate-500">대표사진:</span> <a :href="s.image_urls[0]" target="_blank" class="text-slate-600 hover:text-indigo-600 underline decoration-dotted" v-text="s.image_urls[0]"></a></div>
-                  <div v-else><span class="font-semibold text-slate-500">대표사진:</span> 없음</div>
-                </div>
-                <a v-if="s.detail_url" :href="s.detail_url" target="_blank" class="mt-3 inline-flex items-center justify-center gap-1 text-[11px] px-2 py-1 rounded-md border border-slate-300 bg-white text-slate-600 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition">
-                  <span>상세 페이지</span>
-                  <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M5 10v11h11"/></svg>
-                </a>
               </div>
             </div>
-          </div>
+            <div v-if="m.summarySegment" class="inline-block msg-bubble msg-bot w-full text-left" v-html="formatMessage(m.summarySegment)"></div>
+          </template>
+
+          <!-- 집합 카드: Carousel -->
+          <template v-else>
+            <div v-if="m.type==='bot' && m.cards && m.cards.length" class="carousel-wrapper" :ref="'carousel-'+m.id">
+              <div class="carousel-mask-left"></div>
+              <div class="carousel-mask-right"></div>
+              <div class="carousel-nav prev">
+                <button class="carousel-btn" @click="scrollCarousel(m.id,-1)" aria-label="이전"><svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+              </div>
+              <div class="carousel-nav next">
+                <button class="carousel-btn" @click="scrollCarousel(m.id,1)" aria-label="다음"><svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+              </div>
+              <div class="carousel-track" :ref="'track-'+m.id">
+                <div v-for="c in m.cards" :key="c.id" class="carousel-card">
+                  <div class="card-media">
+                    <img v-if="c.primary_image_url" :src="c.primary_image_url" :alt="c.name" loading="lazy" />
+                    <div v-else class="flex items-center justify-center w-full h-full text-[12px] text-slate-400 font-medium">NO IMAGE</div>
+                    <div v-if="c.grade" class="card-grade" v-text="c.grade"></div>
+                  </div>
+                  <div class="card-body">
+                    <div class="card-title" v-text="c.name"></div>
+                    <div class="card-location" v-text="c.location || '주소 정보 없음'"></div>
+                    <div class="card-stats">
+                      <span v-if="c.type==='facility' && c.capacity!==null" class="stat-pill" v-text="'정원 '+c.capacity"></span>
+                      <span v-if="c.type==='facility' && c.occupancy!==null" class="stat-pill" v-text="'현원 '+c.occupancy"></span>
+                      <span v-if="c.type==='facility' && c.waiting!==null" class="stat-pill" v-text="'대기 '+c.waiting"></span>
+                      <span v-if="c.immediate_admission===true" class="stat-pill good">즉시입소</span>
+                    </div>
+                    <div class="card-actions">
+                      <a v-if="c.detail_url" :href="c.detail_url" target="_blank" class="detail-btn">
+                        <span>상세보기</span>
+                        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M5 10v11h11"/></svg>
+                      </a>
+                      <span v-else class="empty-label">상세 없음</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div :class="['inline-block msg-bubble', m.type==='user' ? 'msg-user' : 'msg-bot']" v-html="formatMessage(m.content)"></div>
+          </template>
         </div>
         <!-- Loading -->
         <div v-if="isLoading && !streamingBot" class="flex items-center gap-2 text-xs text-slate-500 mt-6">
@@ -173,7 +286,7 @@
     <div class="fixed inset-x-0 bottom-0 pb-3 pt-2">
       <div class="max-w-3xl mx-auto px-4">
         <div class="relative">
-          <!-- 상단 그라데이션 페이드 (메시지와 구분) -->
+          <!-- 상단 그라데��션 페이드 (메시지와 구분) -->
           <div class="pointer-events-none absolute -top-6 left-0 right-0 h-6 bg-gradient-to-t from-slate-50/90 via-slate-50/40 to-transparent"></div>
           <textarea id="chat-input" v-model="currentMessage" @keydown.enter.exact.prevent="sendMessage" @keydown.enter.shift.prevent="insertNewline" rows="1"
                     :disabled="isLoading"
@@ -298,7 +411,7 @@
         if(sid){
           this.selectSession(parseInt(sid));
         } else if(message) {
-          // 메인 페이지에서 새로운 질문이 전달된 ��우 새 세션 생성
+          // 메인 페이지에서 새로운 질문이 전달된 ��우 �� 세션 생성
           this.createSessionAndSendMessage(decodeURIComponent(message));
         } else if(this.sessions.length){
           this.selectSession(this.sessions[0].id);
@@ -370,7 +483,7 @@
             this.activeSessionId=s.id;
             this.messages=[];
 
-            // 모바일에서 새 세션 생성 후 사이드바 닫기
+            // 모바일에서 새 세션 생성 후 사이드��� 닫기
             if(window.innerWidth < 1024) {
               this.closeMobileSidebar();
             }
@@ -489,14 +602,83 @@
       insertNewline(e){ const ta=e.target; const start=ta.selectionStart; const end=ta.selectionEnd; this.currentMessage=this.currentMessage.slice(0,start)+'\n'+this.currentMessage.slice(end); this.$nextTick(()=>{ ta.selectionStart=ta.selectionEnd=start+1; }); },
       setExample(txt){ this.currentMessage=txt; this.sendMessage(); },
       setupWS(){ const protocol=location.protocol==='https:'?'wss://':'ws://'; const url=protocol+location.host+'/ws/chat/'; this.ws=new WebSocket(url); this.ws.onopen=()=>{ this.wsConnected=true; this.reconnectWait=1000; if(this.pendingInit){ const initMsg=this.pendingInit; this.pendingInit=null; this.sendMessage(initMsg); } }; this.ws.onclose=()=>{ this.wsConnected=false; if(this.isLoading && this.streamingBot){ this.streamingBot.isError=true; } setTimeout(()=>this.setupWS(), Math.min(this.reconnectWait,10000)); this.reconnectWait*=2; }; this.ws.onmessage=(evt)=>{ try{ const p=JSON.parse(evt.data); this.handlePayload(p); }catch(e){} }; },
-      handlePayload(p){ if(p.type==='session'){ const exists=this.sessions.find(x=>x.id===p.session_id); if(!exists){ this.sessions.unshift({id:p.session_id,title:p.title}); } this.activeSessionId=p.session_id; }
-        if(!this.streamingBot && p.type==='token'){ this.createStreamingBot(); }
-        if(p.type==='sources'){ if(!this.streamingBot) this.createStreamingBot(); this.streamingBot.sources=p.sources||[]; return; }
-        if(p.type==='token'){ this.streamingBot.content+=p.text; this.scrollToBottom(); return; }
-        if(p.type==='end'){ this.isLoading=false; this.streamingBot=null; this.scrollToBottom(); return; }
-        if(p.type==='error'){ if(!this.streamingBot) this.createStreamingBot(); this.streamingBot.isError=true; this.streamingBot.content+='\n[오류] '+(p.message||'알 수 없는 오류'); this.isLoading=false; this.streamingBot=null; }
+      handlePayload(p){
+        if(p.type==='session'){
+          const exists=this.sessions.find(x=>x.id===p.session_id); if(!exists){ this.sessions.unshift({id:p.session_id,title:p.title}); }
+          this.activeSessionId=p.session_id;
+        }
+        if(!this.streamingBot && (p.type==='token' || p.type==='sources')){ this.createStreamingBot(); }
+        if(p.type==='sources'){
+            if(!this.streamingBot) this.createStreamingBot();
+            this.streamingBot.sources=p.sources||[];
+            this.streamingBot.cards=p.cards||[]; // 새 카드 데이터
+            this.scrollToBottom();
+            return;
+        }
+        if(p.type==='token'){
+          this.streamingBot.content+=p.text; this.scrollToBottom(); return;
+        }
+        if(p.type==='end'){
+          this.isLoading=false; this.streamingBot=null; this.scrollToBottom(); return;
+        }
+        if(p.type==='error'){
+          if(!this.streamingBot) this.createStreamingBot();
+          this.streamingBot.isError=true; this.streamingBot.content+='\n[오류] '+(p.message||'알 수 없는 ��류'); this.isLoading=false; this.streamingBot=null;
+        }
       },
-      createStreamingBot(){ const botMsg={id:this.messageId++,type:'bot',content:'',sources:[],timestamp:new Date()}; this.messages.push(botMsg); this.streamingBot=botMsg; },
+      // 새 Carousel 스크롤 함수
+      scrollCarousel(msgId, dir){
+        const track=this.$refs['track-'+msgId];
+        if(!track) return;
+        const cards=track.querySelectorAll('.carousel-card');
+        if(!cards.length) return;
+        const gap=20; // matches CSS gap
+        const cardWidth=cards[0].offsetWidth + gap;
+        const currentIndex=Math.round(track.scrollLeft / cardWidth);
+        const targetIndex=currentIndex + (dir||0);
+        const clamped=Math.max(0, Math.min(cards.length-1, targetIndex));
+        track.scrollTo({left: clamped * cardWidth, behavior:'smooth'});
+      },
+
+      // 개선된 Carousel 스크롤 함수
+      scrollCarousel(msgId, dir){
+        // Vue 3에서 동적 ref 접근 시 배열일 수 있으므로 확인
+        let track = this.$refs['track-'+msgId];
+        if (Array.isArray(track)) {
+          track = track[0];
+        }
+
+        if(!track || !track.querySelectorAll) {
+          console.warn('Carousel track not found:', msgId);
+          return;
+        }
+
+        const cards = track.querySelectorAll('.carousel-card');
+        if(!cards.length) {
+          console.warn('No cards found in carousel:', msgId);
+          return;
+        }
+
+        try {
+          const gap = 20; // matches CSS gap
+          const cardWidth = cards[0].offsetWidth + gap;
+          const currentIndex = Math.round(track.scrollLeft / cardWidth);
+          const targetIndex = currentIndex + (dir || 0);
+          const clamped = Math.max(0, Math.min(cards.length - 1, targetIndex));
+
+          track.scrollTo({
+            left: clamped * cardWidth,
+            behavior: 'smooth'
+          });
+        } catch (error) {
+          console.error('Error scrolling carousel:', error);
+        }
+      },
+      handleSendClick(){ this.sendMessage(); },
+      createStreamingBot(){
+        const botMsg={id:this.messageId++,type:'bot',content:'',sources:[],cards:[],timestamp:new Date()};
+        this.messages.push(botMsg); this.streamingBot=botMsg;
+      },
       sendMessage(text){ const content=(typeof text==='string')?text:this.currentMessage; if(!content.trim()||this.isLoading) return; if(!this.wsConnected){ if(!this.pendingInit) this.pendingInit=content; return; } const userMsg={id:this.messageId++,type:'user',content:content,timestamp:new Date()}; this.messages.push(userMsg); if(typeof text!=='string') this.currentMessage=''; else if(this.currentMessage===content) this.currentMessage=''; this.isLoading=true; const payload={action:'chat',query:content}; if(this.activeSessionId) payload.session_id=this.activeSessionId; this.ws.send(JSON.stringify(payload)); this.scrollToBottom(); },
       formatMessage(c){
         if(!c) return '';
@@ -524,11 +706,11 @@
         // 10) 숫자 리스트 / 불릿 리스트 기본 li 변환
         out=out.replace(/^[\s]*[-*]\s+(.+)$/gm,'<li class="list-disc list-inside">$1</li>');
         out=out.replace(/^[\s]*\d+\.\s+(.+)$/gm,'<li class="list-decimal list-inside">$1</li>');
-        // 11) 연속 li 그룹 감싸기
+        // 11) 연속 li 그룹 감���기
         out=out.replace(/(<li class="list-disc list-inside">[\s\S]*?<\/li>)/g,(m)=>m) // no-op placeholder
            .replace(/(?:<li class="list-disc list-inside">.*?<\/li>\n?)+/g,(block)=>`<ul class="space-y-0.5">${block.replace(/\n/g,'')}</ul>`);
         out=out.replace(/(?:<li class="list-decimal list-inside">.*?<\/li>\n?)+/g,(block)=>`<ol class="space-y-0.5">${block.replace(/\n/g,'')}</ol>`);
-        // 12) 시설명/제목성 라인(콜론이 없고 다음 줄에 속성 패턴이 오는 경우) -> 얇은 블록 처리
+        // 12) 시설명/제목성 라인(콜론이 없고 다음 줄에 속성 패턴이 오��� 경우) -> 얇은 블록 처리
         // ��턴: 한글/영문/괄호 포함 이름 라인 뒤에 빈 줄(선택) 후 "등급:" 같은 라인
         out=out.replace(/^(?=([가-힣A-Za-z0-9()\[\]\s]{2,40}))\1\n+(?=등급:|정원|대기자|즉시입소|특징:|대표사진:|상세:)/gm,(m)=>`<div class="font-semibold text-slate-800 mt-2 mb-0">${m.trim()}</div>`);
         // 13) 속성 라벨 콜론 굵게
@@ -537,12 +719,28 @@
         out=out.replace(/\n{2,}/g,'\n');
         // 15) 남은 줄바꿈 -> <br>
         out=out.replace(/\n/g,'<br>');
-        // 16) <br>가 두 개 이상 연속되면 하나로 축소
+        // 16) <br>가 두 개 이상 연��되면 하나로 축소
         out=out.replace(/(<br>){2,}/g,'<br>');
         return out;
       },
       formatSimilarity(d){ if(d===null||d===undefined||isNaN(d)) return '-'; const v=1 - d; return v.toFixed(2); },
-      scrollToBottom(){ this.$nextTick(()=>{ const el=this.$refs.messagesContainer; if(el){ el.scrollTop=el.scrollHeight; } }); }
+      scrollToBottom(){ this.$nextTick(()=>{ const el=this.$refs.messagesContainer; if(el){ el.scrollTop=el.scrollHeight; } }); },
+      segmentBotMessage(botMsg){
+        if(!botMsg || !botMsg.content) return;
+        const text=botMsg.content.trim();
+        let mainPart=text; let summaryPart='';
+        const summaryIdx=text.indexOf('추천 및 정리:');
+        if(summaryIdx!==-1){ mainPart=text.slice(0, summaryIdx).trim(); summaryPart=text.slice(summaryIdx).trim(); }
+        const regex=/(\n|^)(\d+)\.\s+([^\n]+?:)?\s*([\s\S]*?)(?=(\n\n\d+\.|\n\n추천 및 정리:|$))/g;
+        const segments=[]; let m;
+        while((m=regex.exec(mainPart))!==null){
+          const rank=parseInt(m[2]);
+            const segText=(m[2]+'. '+(m[3]||'')+m[4]).trim();
+            const card=(botMsg.cards||[]).find(c=>c.rank===rank);
+            segments.push({rank, text:segText, card});
+        }
+        if(segments.length){ botMsg.segments=segments; if(summaryPart) botMsg.summarySegment=summaryPart; }
+      },
     }
   }).mount('#app');
 </script>

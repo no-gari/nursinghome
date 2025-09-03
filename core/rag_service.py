@@ -122,7 +122,6 @@ class RAGService:
         return results[:top_k]
 
     def _search_fallback_python(self, query_embedding: List[float], top_k: int) -> List[Dict[str, Any]]:
-        # Postgres 아닌 경우 (예: sqlite 개발 환경) - 파이썬에서 cosine distance 계산
         q = np.array(query_embedding, dtype='float32')
         results: List[Dict[str, Any]] = []
         for obj in Facility.objects.exclude(summary_embedding__isnull=True):
@@ -172,14 +171,14 @@ class RAGService:
                 f = facilities.get(it['id'])
                 if f:
                     it['detail_url'] = reverse('core:facility_detail', args=[f.code])
-                    # 대표 이미지 최대 3장
                     it['image_urls'] = [img.image.url for img in list(f.images.all()[:3])]
+                    it['full_location'] = f.location or ''
             else:
                 h = hospitals.get(it['id'])
                 if h:
-                    # 병원 상세는 id 기반 URL 사용
                     it['detail_url'] = reverse('core:hospital_detail_by_id', args=[h.id])
                     it['image_urls'] = [img.image.url for img in list(h.images.all()[:3])]
+                    it['full_location'] = h.location or ''
         return items
 
     # ------------------------- Answer Generation ------------------------- #
@@ -212,9 +211,52 @@ class RAGService:
                 meta_parts.append(f"상세:{item['detail_url']}")
             if item.get('image_urls'):
                 meta_parts.append(f"사진예시:{item['image_urls'][0]}")
+            if item.get('full_location'):
+                meta_parts.append(f"주소:{item['full_location']}")
             meta_line = ' | '.join(meta_parts)
             context_blocks.append(f"[{i}] 유형:{item['type']} | 이름:{item['name']} | {meta_line}\n요약: {summary}")
         return '\n\n'.join(context_blocks)
+
+    def _build_cards(self, items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """프론트에서 카드 형태(UI)로 바로 렌더링할 수 있는 구조 생성.
+        기존 sources 보다 풍부한 정보(정원/현원/대기/즉시입소 여부/대표이미지 등)를 담는다.
+        """
+        cards: List[Dict[str, Any]] = []
+        for rank, it in enumerate(items, 1):
+            # full_location 우선, 없으면 sido+sigungu
+            location = (it.get('full_location') or '').strip()
+            if not location:
+                location = f"{(it.get('sido') or '').strip()} {(it.get('sigungu') or '').strip()}".strip() or None
+            base = {
+                'rank': rank,
+                'type': it['type'],
+                'id': it['id'],
+                'code': it.get('code'),
+                'name': it['name'],
+                'grade': it.get('grade'),
+                'summary': it.get('summary', ''),
+                'distance': it.get('distance'),
+                'detail_url': it.get('detail_url'),
+                'image_urls': it.get('image_urls', []),
+                'primary_image_url': (it.get('image_urls') or [None])[0],
+                'has_images': it.get('has_images'),
+                'location': location,
+            }
+            if it['type'] == 'facility':
+                capacity = it.get('capacity')
+                occupancy = it.get('occupancy')
+                waiting = it.get('waiting')
+                immediate = None
+                if capacity is not None and occupancy is not None:
+                    immediate = (waiting or 0) == 0 and occupancy < capacity
+                base.update({
+                    'capacity': capacity,
+                    'occupancy': occupancy,
+                    'waiting': waiting,
+                    'immediate_admission': immediate,
+                })
+            cards.append(base)
+        return cards
 
     def generate_answer(self, query: str, items: List[Dict[str, Any]]) -> str:
         if not items:
@@ -223,18 +265,20 @@ class RAGService:
         system_msg = SystemMessage(content=(
             '당신은 한국 요양시설 및 요양병원 정보 전문가입니다. '
             '주어진 컨텍스트 내 사실만을 사용해 질문에 답변하고, '
-            '시설/병원 이름과 특징을 비교·요약하여 사용자가 선택을 돕도록 하세요.'
+            '선정된 시설을 번호 목록 + 간단 불릿(•) 형태로 가독성 있게 요약합니다.'
         ))
         user_prompt = (
             f"<컨텍스트>\n{context}\n\n"
             f"<사용자 질문>\n{query}\n\n"
-            "지침:\n"
-            "1. 제공된 문맥 밖 정보는 추론/생성하지 말 것.\n"
-            "2. 각 후보의 차별점(등급/특징/서비스)을 항목화.\n"
-            "3. 필요한 경우 추천 순위 또는 분류 제시.\n"
-            "4. 정보 누락 시 명확히 부족함 언급.\n"
-            "5. 간결하지만 핵심 수치/사실 포함.\n"
-            "6. 각 후보 서술 마지막 줄에 `상세: <URL>` 및 대표 사진이 있으면 `대표사진: <URL>` 명시 (sources.detail_url, sources.image_urls[0] 사용).\n"
+            "작성 형식 지침:\n"
+            "1) 각 시설/병원: '번호. 시설명: 서술형 1~2문장' 뒤에 바로 줄바꿈 후 1~3개의 불릿 라인(• 핵심 프로그램 / • 입소 가능성 / • 평가점수 또는 비용 특징 등).\n"
+            "2) 불릿 기호는 반드시 '•' (U+2022) 사용. '-', '*' 등 다른 기호나 표/마크다운 테이블 금지.\n"
+            "3) 문장 부분에 등급, 위치(간단 시군구 정도), 정원/현원/대기, 즉시 입소 가능 여부(가능하면 '즉시 입소 가능', 불가하면 '즉시 입소 불가'), 대표 특징 1~2개 자연스럽게 포함.\n"
+            "4) 평가 점수/총점 존재 시 한 문장 또는 불릿에 포함 ('평가 95.3점').\n"
+            "5) URL 있으면 문장 끝에 (상세: <URL>, 대표사진 있음/없음) 붙임. 실제 이미지 URL 나열 금지.\n"
+            "6) 모든 번호 목록 종료 후 빈 줄 1개 뒤 '추천 및 정리:' 로 시작하는 문단 2~3문장 + 선택 추천 1~2곳 근거. 이 요약 문단은 불릿 사용 금지.\n"
+            "7) 허구 정보 생성 금지. 모호하면 '정보 없음' 또는 '확인 필요' 간단 명시.\n"
+            "8) 전체 출력은 번호 단락 + 불릿 + 마지막 요약만 포함. 그 외 장식/머리글/코드블록 금지.\n"
         )
         human_msg = HumanMessage(content=user_prompt)
         response = self.llm.invoke([system_msg, human_msg])
@@ -245,6 +289,7 @@ class RAGService:
         items = self.search(query, top_k=top_k)
         items = self._enrich_items(items)
         answer = self.generate_answer(query, items)
+        cards = self._build_cards(items)
         return {
             'query': query,
             'answer': answer,
@@ -260,7 +305,8 @@ class RAGService:
                     'image_urls': item.get('image_urls', []),
                     'has_images': item.get('has_images'),
                 } for idx, item in enumerate(items)
-            ]
+            ],
+            'cards': cards,
         }
 
     def stream_chat(self, query: str, top_k: int = 5):
@@ -272,6 +318,7 @@ class RAGService:
         """
         items = self.search(query, top_k=top_k)
         items = self._enrich_items(items)
+        cards = self._build_cards(items)
         yield {
             'type': 'sources',
             'sources': [
@@ -286,28 +333,28 @@ class RAGService:
                     'image_urls': item.get('image_urls', []),
                     'has_images': item.get('has_images'),
                 } for idx, item in enumerate(items)
-            ]
+            ],
+            'cards': cards,
         }
         if not items:
-            yield {'type': 'token', 'text': '관련된 시설/병원 요약을 찾지 못했습니다.'}
+            yield {'type': 'token', 'text': '관련된 시설/병원 요약을 찾지 못���습니다.'}
             yield {'type': 'end'}
             return
         context = self._build_context(items)
         system_msg = SystemMessage(content=(
             '당신은 한국 요양시설 및 요양병원 정보 전문가입니다. '
-            '주어진 컨텍스트 내 사실만을 사용해 질문에 답변하고, '
-            '시설/병원 이름과 특징을 비교·요약하여 사용자가 선택을 돕도록 하세요.'
+            '주어진 컨텍스트 내 사실만을 사용해 번호별 단락 + 불릿(•) 혼합 서식을 생성합니다.'
         ))
         user_prompt = (
             f"<컨텍스트>\n{context}\n\n"
             f"<사용자 질문>\n{query}\n\n"
-            "지침:\n"
-            "1. 제공된 문맥 밖 정보는 추론/생성하지 말 것.\n"
-            "2. 각 후보의 차별점(등급/특징/서비스)을 항목화.\n"
-            "3. 필요한 경우 추천 순위 또는 분류 제시.\n"
-            "4. 정보 누락 시 명확히 부족함 언급.\n"
-            "5. 간결하지만 핵심 수치/사실 포함.\n"
-            "6. 각 후보 서술 마지막 줄에 `상세: <URL>` 및 대표 사진이 있으면 `대표사진: <URL>` 명시 (sources.detail_url, sources.image_urls[0] 사용).\n"
+            "형식 지침:\n"
+            "- '번호. 시설명: 1~2문장' + 바로 아래 1~3개 불릿(•). 불릿은 핵심 프로그램, 입소 가능성, 평가점수/특징 중 선택.\n"
+            "- 즉시 입소 조건 충족 시 불릿에 '• 즉시 입소 가능', 아니면 '• 즉시 입소 불가' 명시.\n"
+            "- URL 표기: 문장 끝 (상세: <URL>, 대표사진 있음/없음).\n"
+            "- 모든 번호 끝난 뒤 빈 줄 후 '추천 및 정리:' 문단(불릿 금지) 2~3문장.\n"
+            "- 허구 금지, 불확실 시 '정보 없음'.\n"
+            "- 다른 장식/표/머리글 금지, 불릿 기호는 반드시 '•'.\n"
         )
         human_msg = HumanMessage(content=user_prompt)
         try:
