@@ -104,6 +104,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
 
         answer_buffer = []
+        cards_data = []
+        sources_data = []
         history_id = None
         try:
             user = self.scope.get('user')
@@ -133,6 +135,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             break
                         if item.get('type') == 'token':
                             answer_buffer.append(item.get('text') or '')
+                        elif item.get('type') == 'sources':
+                            # 카드와 소스 정보 저장
+                            nonlocal cards_data, sources_data
+                            cards_data = item.get('cards', [])
+                            sources_data = item.get('sources', [])
                         logger.info(f"Stream item: {item}")
                         await self.send_json(item)
                 except Exception as e:
@@ -151,9 +158,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 if user and user.is_authenticated and self.current_session:
                     final_answer = ''.join(answer_buffer).strip()
                     if history_id is not None:
-                        await sync_to_async(ChatHistory.objects.filter(id=history_id).update)(answer=final_answer, updated_at=timezone.now())
+                        # 답변, 카드, 소스 정보 모두 업데이트
+                        await sync_to_async(ChatHistory.objects.filter(id=history_id).update)(
+                            answer=final_answer,
+                            cards=cards_data,
+                            sources=sources_data,
+                            updated_at=timezone.now()
+                        )
                     elif final_answer:
-                        await sync_to_async(ChatHistory.objects.create)(user=user, session=self.current_session, query=query, answer=final_answer)
+                        await sync_to_async(ChatHistory.objects.create)(
+                            user=user,
+                            session=self.current_session,
+                            query=query,
+                            answer=final_answer,
+                            cards=cards_data,
+                            sources=sources_data
+                        )
                     self.current_session.updated_at = timezone.now()
                     await sync_to_async(self.current_session.save)(update_fields=['updated_at'])
             except Exception as save_e:

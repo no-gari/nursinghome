@@ -258,58 +258,7 @@ class RAGService:
             cards.append(base)
         return cards
 
-    def generate_answer(self, query: str, items: List[Dict[str, Any]]) -> str:
-        if not items:
-            return '관련된 시설/병원 요약을 찾지 못했습니다.'
-        context = self._build_context(items)
-        system_msg = SystemMessage(content=(
-            '당신은 한국 요양시설 및 요양병원 정보 전문가입니다. '
-            '주어진 컨텍스트 내 사실만을 사용해 질문에 답변하고, '
-            '선정된 시설을 번호 목록 + 간단 불릿(•) 형태로 가독성 있게 요약합니다.'
-        ))
-        user_prompt = (
-            f"<컨텍스트>\n{context}\n\n"
-            f"<사용자 질문>\n{query}\n\n"
-            "작성 형식 지침:\n"
-            "1) 각 시설/병원: '번호. 시설명: 서술형 1~2문장' 뒤에 바로 줄바꿈 후 1~3개의 불릿 라인(• 핵심 프로그램 / • 입소 가능성 / • 평가점수 또는 비용 특징 등).\n"
-            "2) 불릿 기호는 반드시 '•' (U+2022) 사용. '-', '*' 등 다른 기호나 표/마크다운 테이블 금지.\n"
-            "3) 문장 부분에 등급, 위치(간단 시군구 정도), 정원/현원/대기, 즉시 입소 가능 여부(가능하면 '즉시 입소 가능', 불가하면 '즉시 입소 불가'), 대표 특징 1~2개 자연스럽게 포함.\n"
-            "4) 평가 점수/총점 존재 시 한 문장 또는 불릿에 포함 ('평가 95.3점').\n"
-            "5) URL 있으면 문장 끝에 (상세: <URL>, 대표사진 있음/없음) 붙임. 실제 이미지 URL 나열 금지.\n"
-            "6) 모든 번호 목록 종료 후 빈 줄 1개 뒤 '추천 및 정리:' 로 시작하는 문단 2~3문장 + 선택 추천 1~2곳 근거. 이 요약 문단은 불릿 사용 금지.\n"
-            "7) 허구 정보 생성 금지. 모호하면 '정보 없음' 또는 '확인 필요' 간단 명시.\n"
-            "8) 전체 출력은 번호 단락 + 불릿 + 마지막 요약만 포함. 그 외 장식/머리글/코드블록 금지.\n"
-        )
-        human_msg = HumanMessage(content=user_prompt)
-        response = self.llm.invoke([system_msg, human_msg])
-        return response.content.strip()
-
-    # ------------------------- Public Chat API ------------------------- #
-    def chat(self, query: str, top_k: int = 5) -> Dict[str, Any]:
-        items = self.search(query, top_k=top_k)
-        items = self._enrich_items(items)
-        answer = self.generate_answer(query, items)
-        cards = self._build_cards(items)
-        return {
-            'query': query,
-            'answer': answer,
-            'sources': [
-                {
-                    'rank': idx + 1,
-                    'type': item['type'],
-                    'id': item['id'],
-                    'code': item.get('code'),
-                    'name': item['name'],
-                    'distance': item['distance'],
-                    'detail_url': item.get('detail_url'),
-                    'image_urls': item.get('image_urls', []),
-                    'has_images': item.get('has_images'),
-                } for idx, item in enumerate(items)
-            ],
-            'cards': cards,
-        }
-
-    def stream_chat(self, query: str, top_k: int = 5):
+    def stream_chat(self, query: str, top_k: int = 8):
         """검색 + LLM 스트리밍 제너레이터. 각 yield는 dict.
         순서:
           1) {'type':'sources', 'sources': [...]} 첫 전송
@@ -337,7 +286,7 @@ class RAGService:
             'cards': cards,
         }
         if not items:
-            yield {'type': 'token', 'text': '관련된 시설/병원 요약을 찾지 못���습니다.'}
+            yield {'type': 'token', 'text': '관련된 시설/병원 요약을 찾지 못했습니다.'}
             yield {'type': 'end'}
             return
         context = self._build_context(items)
@@ -348,13 +297,21 @@ class RAGService:
         user_prompt = (
             f"<컨텍스트>\n{context}\n\n"
             f"<사용자 질문>\n{query}\n\n"
-            "형식 지침:\n"
-            "- '번호. 시설명: 1~2문장' + 바로 아래 1~3개 불릿(•). 불릿은 핵심 프로그램, 입소 가능성, 평가점수/특징 중 선택.\n"
-            "- 즉시 입소 조건 충족 시 불릿에 '• 즉시 입소 가능', 아니면 '• 즉시 입소 불가' 명시.\n"
-            "- URL 표기: 문장 끝 (상세: <URL>, 대표사진 있음/없음).\n"
-            "- 모든 번호 끝난 뒤 빈 줄 후 '추천 및 정리:' 문단(불릿 금지) 2~3문장.\n"
-            "- 허구 금지, 불확실 시 '정보 없음'.\n"
-            "- 다른 장식/표/머리글 금지, 불릿 기호는 반드시 '•'.\n"
+            "작성 형식 지침:\n"
+            "1) 각 시설/병원을 소개: '시설명은 h2로 표현. 그 아랫줄에 상세한 설명 2~3문장'으로 위치, 등급, 규모, 주요 특징을 자연스럽게 포함하세요.\n"
+            "2) 각 시설 설명 바로 아래에 3~4개의 핵심 불릿 포인트를 추가:\n"
+            "   • 입소 가능 여부 (즉시 입소 가능/불가, 대기 상황)\n"
+            "   • 평가 점수나 등급 정보 (구체적 점수가 있다면 포함)\n"
+            "   • 주요 프로그램이나 특화 서비스\n"
+            "   • 시설 규모나 운영 특징\n"
+            "3) 불릿 기호는 반드시 '•' (U+2022) 사용하고, 각 불릿은 구체적이고 유용한 정보를 제공하세요.\n"
+            "4) 모든 시설 소개 완료 후 빈 줄을 두고 '정리:' 섹션을 작성하세요. '정리'는 h2로 표현하세요.:\n"
+            "   - 질문 의도에 맞는 2~3개 시설을 구체적 근거와 함께 추천하되, h3로 시설 혹은 병원 명을 적으세요.\n"
+            "   - 각 추천 시설의 장점과 고려사항을 명시\n"
+            "   - 사용자가 선택할 때 도움이 되는 실용적 조언 포함\n"
+            "5) 컨텍스트에 있는 정보만 사용하고, 추측이나 허구 정보는 절대 포함하지 마세요.\n"
+            "6) 불확실한 정보는 '확인 필요' 또는 '정보 없음'으로 명시하세요.\n"
+            "7) 전체적으로 사용자가 실제 결정을 내리는 데 도움이 되는 상세하고 실용적인 정보를 제공하세요.\n"
         )
         human_msg = HumanMessage(content=user_prompt)
         try:

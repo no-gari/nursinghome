@@ -177,6 +177,9 @@ class ChatHistory(TimestampedModel):
     session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='messages', null=True, blank=True)
     query = models.TextField()
     answer = models.TextField(blank=True)
+    # 카드 및 소스 정보 추가
+    cards = models.JSONField(blank=True, default=list, verbose_name='카드 정보', help_text='RAG 검색 결과 카드 데이터')
+    sources = models.JSONField(blank=True, default=list, verbose_name='소스 정보', help_text='RAG 검색 소스 데이터')
 
     class Meta:
         ordering = ["-created_at"]

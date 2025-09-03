@@ -311,7 +311,7 @@ class ChatbotAPI(APIView):
             sources = result.get('sources', [])
             cards = result.get('cards', [])  # 카드 UI 데이터 추가
             if request.user.is_authenticated:
-                ChatHistory.objects.create(user=request.user, session=chat_session, query=raw_query, answer=answer)
+                ChatHistory.objects.create(user=request.user, session=chat_session, query=raw_query, answer=answer, cards=cards, sources=sources)
             return Response({'answer': answer, 'sources': sources, 'cards': cards, 'session_id': chat_session.id if chat_session else None}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': f'챗봇 처리 중 오류: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -372,7 +372,8 @@ class ChatSessionMessagesAPI(APIView):
                     'type': 'bot',
                     'content': h.answer,
                     'created_at': h.created_at,
-                    'sources': [],
+                    'sources': h.sources or [],
+                    'cards': h.cards or [],  # 카드 정보 추가
                 })
         return Response({'session': ChatSessionSerializer(session).data, 'messages': messages})
 
