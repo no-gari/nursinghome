@@ -175,11 +175,11 @@
         <div class="relative">
           <!-- 상단 그라데이션 페이드 (메시지와 구분) -->
           <div class="pointer-events-none absolute -top-6 left-0 right-0 h-6 bg-gradient-to-t from-slate-50/90 via-slate-50/40 to-transparent"></div>
-          <textarea v-model="currentMessage" @keydown.enter.exact.prevent="sendMessage" @keydown.enter.shift.prevent="insertNewline" rows="1"
+          <textarea id="chat-input" v-model="currentMessage" @keydown.enter.exact.prevent="sendMessage" @keydown.enter.shift.prevent="insertNewline" rows="1"
                     :disabled="isLoading"
                     class="w-full resize-none rounded-2xl border border-slate-300 bg-white/90 backdrop-blur-sm px-4 py-4 pr-16 text-sm shadow-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 max-h-52 placeholder-slate-400"
                     placeholder="무엇이든 물어보세요... (Shift+Enter 줄바꿈)"></textarea>
-          <button @click="sendMessage" :disabled="isLoading || !currentMessage.trim()"
+          <button @click="handleSendClick" :disabled="isLoading"
                   aria-label="메시지 전송"
                   class="absolute bottom-2.5 right-2.5 w-11 h-11 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-md flex items-center justify-center transition">
             <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 20.6 21 12 3.4 3.4 5 10l9 2-9 2z"/></svg>
@@ -439,13 +439,14 @@
             const idx=this.sessions.findIndex(x=>x.id===s.id);
             if(idx>-1) this.sessions[idx]=updated;
             if(this.activeSessionId===s.id) {/* nothing extra */}
+            this.renameDialog.saving=false;
             this.cancelRename();
           } else {
             this.renameDialog.error='저장 실패';
+            this.renameDialog.saving=false;
           }
         }catch(e){
           this.renameDialog.error='네트워크 오류';
-        } finally {
           this.renameDialog.saving=false;
         }
       },
@@ -473,13 +474,14 @@
               this.activeSessionId=null; this.messages=[];
               if(this.sessions.length) this.selectSession(this.sessions[0].id);
             }
+            this.deleteDialog.deleting=false;
             this.cancelDelete();
           } else {
             this.deleteDialog.error='삭제 실패';
+            this.deleteDialog.deleting=false;
           }
         }catch(e){
           this.deleteDialog.error='네트워크 오류';
-        } finally {
           this.deleteDialog.deleting=false;
         }
       },
@@ -496,7 +498,49 @@
       },
       createStreamingBot(){ const botMsg={id:this.messageId++,type:'bot',content:'',sources:[],timestamp:new Date()}; this.messages.push(botMsg); this.streamingBot=botMsg; },
       sendMessage(text){ const content=(typeof text==='string')?text:this.currentMessage; if(!content.trim()||this.isLoading) return; if(!this.wsConnected){ if(!this.pendingInit) this.pendingInit=content; return; } const userMsg={id:this.messageId++,type:'user',content:content,timestamp:new Date()}; this.messages.push(userMsg); if(typeof text!=='string') this.currentMessage=''; else if(this.currentMessage===content) this.currentMessage=''; this.isLoading=true; const payload={action:'chat',query:content}; if(this.activeSessionId) payload.session_id=this.activeSessionId; this.ws.send(JSON.stringify(payload)); this.scrollToBottom(); },
-      formatMessage(c){ return c.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); },
+      formatMessage(c){
+        if(!c) return '';
+        // 1) 코드 블록
+        let out=c
+          .replace(/```(\w*)\n?([\s\S]*?)```/g,'<pre class="bg-slate-100 border border-slate-200 rounded-lg p-3 my-2 overflow-x-auto"><code class="text-sm">$2</code></pre>');
+        // 2) HTML 위험 최소(기본적으로 특수태그 없다는 가정 - 필요시 escape 추가 가능)
+        // 3) 과도한 연속 빈 줄 -> 한 줄로 축소
+        out=out.replace(/\n{3,}/g,'\n\n');
+        // 4) 리스트 변환 전에 트리밍
+        out=out.trim();
+        // 5) 인라인 코드
+        out=out.replace(/`([^`]+)`/g,'<code class="bg-slate-100 text-slate-800 px-1 py-0.5 rounded text-[12px] font-mono">$1</code>');
+        // 6) 굵게/기울임 (겹치기 순서 주의)
+        out=out.replace(/\*\*(.*?)\*\*/g,'<strong class="font-semibold text-slate-900">$1</strong>');
+        out=out.replace(/\*(.*?)\*/g,'<em class="italic text-slate-700">$1</em>');
+        // 7) 링크
+        out=out.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" class="text-indigo-600 hover:text-indigo-700 underline">$1</a>');
+        // 8) 인용문
+        out=out.replace(/^>\s+(.+)$/gm,'<blockquote class="border-l-4 border-slate-300 pl-3 py-1 my-2 bg-slate-50 text-slate-600 text-sm">$1</blockquote>');
+        // 9) 헤딩 (#) – 마진 최소화
+        out=out.replace(/^### (.*)$/gm,'<div class="font-semibold text-slate-800 text-[15px] mt-3 mb-1">$1</div>')
+               .replace(/^## (.*)$/gm,'<div class="font-semibold text-slate-800 text-[16px] mt-4 mb-1">$1</div>')
+               .replace(/^# (.*)$/gm,'<div class="font-bold text-slate-800 text-[17px] mt-4 mb-1">$1</div>');
+        // 10) 숫자 리스트 / 불릿 리스트 기본 li 변환
+        out=out.replace(/^[\s]*[-*]\s+(.+)$/gm,'<li class="list-disc list-inside">$1</li>');
+        out=out.replace(/^[\s]*\d+\.\s+(.+)$/gm,'<li class="list-decimal list-inside">$1</li>');
+        // 11) 연속 li 그룹 감싸기
+        out=out.replace(/(<li class="list-disc list-inside">[\s\S]*?<\/li>)/g,(m)=>m) // no-op placeholder
+           .replace(/(?:<li class="list-disc list-inside">.*?<\/li>\n?)+/g,(block)=>`<ul class="space-y-0.5">${block.replace(/\n/g,'')}</ul>`);
+        out=out.replace(/(?:<li class="list-decimal list-inside">.*?<\/li>\n?)+/g,(block)=>`<ol class="space-y-0.5">${block.replace(/\n/g,'')}</ol>`);
+        // 12) 시설명/제목성 라인(콜론이 없고 다음 줄에 속성 패턴이 오는 경우) -> 얇은 블록 처리
+        // ��턴: 한글/영문/괄호 포함 이름 라인 뒤에 빈 줄(선택) 후 "등급:" 같은 라인
+        out=out.replace(/^(?=([가-힣A-Za-z0-9()\[\]\s]{2,40}))\1\n+(?=등급:|정원|대기자|즉시입소|특징:|대표사진:|상세:)/gm,(m)=>`<div class="font-semibold text-slate-800 mt-2 mb-0">${m.trim()}</div>`);
+        // 13) 속성 라벨 콜론 굵게
+        out=out.replace(/^((등급|정원\/현원|정원|현원|대기자|즉시입소|즉시입소 가능|주요 프로그램|특징|비급여 비용|접근성|평가점수|대표사진|상세)\s*:\s*)/gm,'<span class="font-medium text-slate-700">$1</span>');
+        // 14) 두 개 이상 연속 빈 줄 -> 하나의 <br>
+        out=out.replace(/\n{2,}/g,'\n');
+        // 15) 남은 줄바꿈 -> <br>
+        out=out.replace(/\n/g,'<br>');
+        // 16) <br>가 두 개 이상 연속되면 하나로 축소
+        out=out.replace(/(<br>){2,}/g,'<br>');
+        return out;
+      },
       formatSimilarity(d){ if(d===null||d===undefined||isNaN(d)) return '-'; const v=1 - d; return v.toFixed(2); },
       scrollToBottom(){ this.$nextTick(()=>{ const el=this.$refs.messagesContainer; if(el){ el.scrollTop=el.scrollHeight; } }); }
     }
