@@ -16,7 +16,7 @@ class RAGService:
       - 스트리밍 이벤트를 ChatConsumer 가 ���대로 중계 가능하도록 yield
     """
     LLM_MODEL = getattr(settings, 'OPENAI_LLM_MODEL', 'gpt-4o-mini')
-    PROMPT_ID = getattr(settings, 'OPENAI_PROMPT_ID', 'pmpt_68b67edbf3488193959e8c008c1ae0a8088de44335889dff')
+    PROMPT_ID = getattr(settings, 'OPENAI_PROMPT_ID', '')
     PROMPT_VERSION = getattr(settings, 'OPENAI_PROMPT_VERSION', '8')
 
     def __init__(self):
