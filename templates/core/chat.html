@@ -186,7 +186,7 @@
       <div class="max-w-3xl mx-auto w-full px-4 pt-4 pb-40">
         <!-- Suggestions -->
         <div v-if="messages.length===0 && !isLoading" class="flex flex-wrap gap-3 mb-6">
-          <button @click="setExample('서울 A등급 요양원 추천해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">서울 A등��� ���천</button>
+          <button @click="setExample('서울 A등급 요양원 추천해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">서울 A������ ���천</button>
           <button @click="setExample('대기자가 적은 곳 찾아줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">대기 적은 곳</button>
           <button @click="setExample('물리치료 프로그램 있는 곳 알려줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">물리치료 프로그램</button>
           <button @click="setExample('비급여 비용 저렴한 곳 비교해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">비급여 저렴 비교</button>
@@ -232,7 +232,11 @@
 
           <!-- 집합 카드: Carousel -->
           <template v-else>
-            <div v-if="m.type==='bot' && m.cards && m.cards.length" class="carousel-wrapper" :ref="'carousel-'+m.id">
+            <!-- 텍스트를 먼저 표시 -->
+            <div :class="['inline-block msg-bubble', m.type==='user' ? 'msg-user' : 'msg-bot']" v-html="formatMessage(m.content)"></div>
+
+            <!-- 카드를 텍스트 아래에 표시 -->
+            <div v-if="m.type==='bot' && m.cards && m.cards.length" class="carousel-wrapper mt-3" :ref="'carousel-'+m.id">
               <div class="carousel-mask-left"></div>
               <div class="carousel-mask-right"></div>
               <div class="carousel-nav prev">
@@ -268,7 +272,6 @@
                 </div>
               </div>
             </div>
-            <div :class="['inline-block msg-bubble', m.type==='user' ? 'msg-user' : 'msg-bot']" v-html="formatMessage(m.content)"></div>
           </template>
         </div>
         <!-- Loading -->
