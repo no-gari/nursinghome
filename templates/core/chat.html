@@ -125,7 +125,7 @@
   <!-- Sidebar -->
   <aside :class="sidebarClasses">
     <div class="p-3 border-b border-slate-200 relative">
-      <button @click="createSession" class="w-full inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white border border-slate-300 text-slate-700 hover:border-slate-500 hover:bg-slate-50 shadow-sm" title="새 ��화">
+      <button @click="createSession" class="w-full inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-white border border-slate-300 text-slate-700 hover:border-slate-500 hover:bg-slate-50 shadow-sm" title="새 ���화">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 5v14M5 12h14"/></svg>
         <span class="text-sm font-medium">새 대화</span>
       </button>
@@ -186,7 +186,7 @@
       <div class="max-w-3xl mx-auto w-full px-4 pt-4 pb-40">
         <!-- Suggestions -->
         <div v-if="messages.length===0 && !isLoading" class="flex flex-wrap gap-3 mb-6">
-          <button @click="setExample('서울 A등급 요양원 추천해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">서울 A등급 ���천</button>
+          <button @click="setExample('서울 A등급 요양원 추천해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">서울 A등��� ���천</button>
           <button @click="setExample('대기자가 적은 곳 찾아줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">대기 적은 곳</button>
           <button @click="setExample('물리치료 프로그램 있는 곳 알려줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">물리치료 프로그램</button>
           <button @click="setExample('비급여 비용 저렴한 곳 비교해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">비급여 저렴 비교</button>
@@ -369,7 +369,12 @@
       sessions:[],activeSessionId:null,loadingSessions:false,
       mobileSidebarOpen:false,
       renameDialog:{open:false,session:null,title:'',saving:false,error:null},
-      deleteDialog:{open:false,session:null,deleting:false,error:null}
+      deleteDialog:{open:false,session:null,deleting:false,error:null},
+      // 자동 스크롤 관련
+      autoScroll:true,
+      autoScrollThreshold:100,
+      userScrolled:false,
+      scrollTimeout:null
     }},
     computed:{
       activeSessionTitle(){
@@ -418,6 +423,13 @@
         }
       });
       this.setupWS();
+      // 스��롤 이벤트 리스너 추가
+      this.$nextTick(() => {
+        const container = this.$refs.messagesContainer;
+        if (container) {
+          container.addEventListener('scroll', this.handleScroll, { passive: true });
+        }
+      });
     },
     methods:{
       csrf(){ return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); },
@@ -465,7 +477,7 @@
             }
           }
         }catch(e){
-          console.warn('세션 생성 실패:', e);
+          console.warn('세션 생성 실��:', e);
         }
       },
 
@@ -604,28 +616,83 @@
       setupWS(){ const protocol=location.protocol==='https:'?'wss://':'ws://'; const url=protocol+location.host+'/ws/chat/'; this.ws=new WebSocket(url); this.ws.onopen=()=>{ this.wsConnected=true; this.reconnectWait=1000; if(this.pendingInit){ const initMsg=this.pendingInit; this.pendingInit=null; this.sendMessage(initMsg); } }; this.ws.onclose=()=>{ this.wsConnected=false; if(this.isLoading && this.streamingBot){ this.streamingBot.isError=true; } setTimeout(()=>this.setupWS(), Math.min(this.reconnectWait,10000)); this.reconnectWait*=2; }; this.ws.onmessage=(evt)=>{ try{ const p=JSON.parse(evt.data); this.handlePayload(p); }catch(e){} }; },
       handlePayload(p){
         if(p.type==='session'){
-          const exists=this.sessions.find(x=>x.id===p.session_id); if(!exists){ this.sessions.unshift({id:p.session_id,title:p.title}); }
+          const exists=this.sessions.find(x=>x.id===p.session_id);
+          if(!exists){ this.sessions.unshift({id:p.session_id,title:p.title}); }
           this.activeSessionId=p.session_id;
         }
-        if(!this.streamingBot && (p.type==='token' || p.type==='sources')){ this.createStreamingBot(); }
+        if(!this.streamingBot && (p.type==='token' || p.type==='sources')){
+          this.createStreamingBot();
+        }
         if(p.type==='sources'){
-            if(!this.streamingBot) this.createStreamingBot();
-            this.streamingBot.sources=p.sources||[];
-            this.streamingBot.cards=p.cards||[]; // 새 카드 데이터
-            this.scrollToBottom();
-            return;
+          if(!this.streamingBot) this.createStreamingBot();
+          this.streamingBot.sources=p.sources||[];
+          this.streamingBot.cards=p.cards||[];
+          this.scrollToBottom();
+          return;
         }
         if(p.type==='token'){
-          this.streamingBot.content+=p.text; this.scrollToBottom(); return;
+          this.streamingBot.content+=p.text;
+          // 토큰이 추가될 때마다 스크롤
+          this.scrollToBottom();
+          return;
         }
         if(p.type==='end'){
-          this.isLoading=false; this.streamingBot=null; this.scrollToBottom(); return;
+          this.isLoading=false;
+          this.streamingBot=null;
+          // 스트리밍 완료 시 최종 스크롤
+          this.scrollToBottom();
+          return;
         }
         if(p.type==='error'){
           if(!this.streamingBot) this.createStreamingBot();
-          this.streamingBot.isError=true; this.streamingBot.content+='\n[오류] '+(p.message||'알 수 없는 ��류'); this.isLoading=false; this.streamingBot=null;
+          this.streamingBot.isError=true;
+          this.streamingBot.content+='\n[오류] '+(p.message||'알 수 없는 오류');
+          this.isLoading=false;
+          this.streamingBot=null;
+          this.scrollToBottom();
         }
       },
+
+      // 스크롤 관련 ���서드들
+      handleScroll() {
+        const container = this.$refs.messagesContainer;
+        if (!container) return;
+
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+
+        // 바닥 근처에 있으면 자동 스크롤 활성화
+        if (distanceFromBottom <= this.autoScrollThreshold) {
+          this.autoScroll = true;
+          this.userScrolled = false;
+        } else {
+          // 사용자가 위로 스크롤했으면 자동 스크롤 비활성화
+          this.autoScroll = false;
+          this.userScrolled = true;
+        }
+      },
+
+      scrollToBottom(force = false) {
+        // force가 true이거나 자동 스크롤이 활성화되어 있을 때만 스크롤
+        if (!force && !this.autoScroll) return;
+
+        this.$nextTick(() => {
+          const container = this.$refs.messagesContainer;
+          if (container) {
+            container.scrollTo({
+              top: container.scrollHeight,
+              behavior: 'smooth'
+            });
+          }
+        });
+      },
+
+      forceScrollToBottom() {
+        this.autoScroll = true;
+        this.userScrolled = false;
+        this.scrollToBottom(true);
+      },
+
       // 새 Carousel 스크롤 함수
       scrollCarousel(msgId, dir){
         const track=this.$refs['track-'+msgId];
@@ -679,7 +746,24 @@
         const botMsg={id:this.messageId++,type:'bot',content:'',sources:[],cards:[],timestamp:new Date()};
         this.messages.push(botMsg); this.streamingBot=botMsg;
       },
-      sendMessage(text){ const content=(typeof text==='string')?text:this.currentMessage; if(!content.trim()||this.isLoading) return; if(!this.wsConnected){ if(!this.pendingInit) this.pendingInit=content; return; } const userMsg={id:this.messageId++,type:'user',content:content,timestamp:new Date()}; this.messages.push(userMsg); if(typeof text!=='string') this.currentMessage=''; else if(this.currentMessage===content) this.currentMessage=''; this.isLoading=true; const payload={action:'chat',query:content}; if(this.activeSessionId) payload.session_id=this.activeSessionId; this.ws.send(JSON.stringify(payload)); this.scrollToBottom(); },
+      sendMessage(text){
+        const content=(typeof text==='string')?text:this.currentMessage;
+        if(!content.trim()||this.isLoading) return;
+        if(!this.wsConnected){
+          if(!this.pendingInit) this.pendingInit=content;
+          return;
+        }
+        const userMsg={id:this.messageId++,type:'user',content:content,timestamp:new Date()};
+        this.messages.push(userMsg);
+        if(typeof text!=='string') this.currentMessage='';
+        else if(this.currentMessage===content) this.currentMessage='';
+        this.isLoading=true;
+        const payload={action:'chat',query:content};
+        if(this.activeSessionId) payload.session_id=this.activeSessionId;
+        this.ws.send(JSON.stringify(payload));
+        // 메시지 전송 후 스크롤
+        this.scrollToBottom(true);
+      },
       formatMessage(c){
         if(!c) return '';
         // 1) 코드 블록
@@ -724,7 +808,6 @@
         return out;
       },
       formatSimilarity(d){ if(d===null||d===undefined||isNaN(d)) return '-'; const v=1 - d; return v.toFixed(2); },
-      scrollToBottom(){ this.$nextTick(()=>{ const el=this.$refs.messagesContainer; if(el){ el.scrollTop=el.scrollHeight; } }); },
       segmentBotMessage(botMsg){
         if(!botMsg || !botMsg.content) return;
         const text=botMsg.content.trim();
