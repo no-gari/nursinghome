@@ -155,7 +155,11 @@
     <div class="p-3 border-t border-slate-200">
       <div class="flex gap-2 mb-2">
         <button @click="renameActive()" :disabled="!activeSessionObj" class="flex-1 h-9 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs hover:border-slate-500 disabled:opacity-40">이름 변경</button>
-        <button @click="openDeleteSession(activeSessionObj)" :disabled="!activeSessionObj" class="h-9 w-9 rounded-lg border border-slate-300 bg-white text-slate-600 hover:border-rose-400 hover:text-rose-600 disabled:opacity-40">🗑</button>
+        <button @click="openDeleteSession(activeSessionObj)" :disabled="!activeSessionObj" class="h-9 w-9 rounded-lg border border-slate-300 bg-white text-slate-600 hover:border-rose-400 hover:text-rose-600 disabled:opacity-40 inline-flex items-center justify-center" aria-label="대화 삭제">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14ZM10 11v6M14 11v6"/>
+          </svg>
+        </button>
       </div>
       <div class="text-[11px] text-slate-500">자동 저장됩니다</div>
     </div>
@@ -186,7 +190,7 @@
       <div class="max-w-3xl mx-auto w-full px-4 pt-4 pb-40">
         <!-- Suggestions -->
         <div v-if="messages.length===0 && !isLoading" class="flex flex-wrap gap-3 mb-6">
-          <button @click="setExample('서울 A등급 요양원 추천해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">서울 A�������� ���천</button>
+          <button @click="setExample('서울 A등급 요양원 추천해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">서울 A등급 요양원 추천</button>
           <button @click="setExample('대기자가 적은 곳 찾아줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">대기 적은 곳</button>
           <button @click="setExample('물리치료 프로그램 있는 곳 알려줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">물리치료 프로그램</button>
           <button @click="setExample('비급여 비용 저렴한 곳 비교해줘')" class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-slate-200 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">비급여 저렴 비교</button>
@@ -232,8 +236,8 @@
 
           <!-- 집합 카드: Carousel -->
           <template v-else>
-            <!-- 텍스트를 먼저 표시 -->
-            <div :class="['inline-block msg-bubble', m.type==='user' ? 'msg-user' : 'msg-bot']" v-html="formatMessage(m.content)"></div>
+            <!-- 텍스트를 먼저 표시 (내용이 있을 때만) -->
+            <div v-if="m.content && m.content.trim()" :class="['inline-block msg-bubble', m.type==='user' ? 'msg-user' : 'msg-bot']" v-html="formatMessage(m.content)"></div>
 
             <!-- 카드를 텍스트 아래에 표시 -->
             <div v-if="m.type==='bot' && m.cards && m.cards.length" class="carousel-wrapper mt-3" :ref="'carousel-'+m.id">
@@ -275,10 +279,15 @@
           </template>
         </div>
         <!-- Loading -->
-        <div v-if="isLoading && !streamingBot" class="flex items-center gap-2 text-xs text-slate-500 mt-6">
+        <div v-if="isLoading" class="flex items-center gap-2 text-xs text-slate-500 mt-6">
           <span class="inline-flex w-5 h-5 rounded-full bg-slate-400 text-white items-center justify-center text-[10px]">AI</span>
-          <span>답변 준비 중...</span>
-          <span class="flex gap-1"><span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span><span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse delay-150"></span><span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse delay-300"></span></span>
+          <span v-if="!streamingBot">답변 준비 중...</span>
+          <span v-else>답변 작성 중...</span>
+          <span class="flex gap-1">
+            <span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span>
+            <span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse delay-150"></span>
+            <span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse delay-300"></span>
+          </span>
         </div>
       </div>
       <div class="fade-bottom"></div>
@@ -377,7 +386,10 @@
       autoScroll:true,
       autoScrollThreshold:100,
       userScrolled:false,
-      scrollTimeout:null
+      scrollTimeout:null,
+      // 새로 추가: 이전 완료된 봇/지연된 카드 처리
+      lastCompletedBot:null,
+      postSourcesPending:false
     }},
     computed:{
       activeSessionTitle(){
@@ -623,36 +635,63 @@
           if(!exists){ this.sessions.unshift({id:p.session_id,title:p.title}); }
           this.activeSessionId=p.session_id;
         }
-        if(!this.streamingBot && (p.type==='token' || p.type==='sources')){
-          this.createStreamingBot();
-        }
+        // sources post-processing 식별용 타겟 결정 헬퍼
+        const resolveSourcesTarget=()=>{
+          if(this.postSourcesPending && this.lastCompletedBot){
+            // 이전 답변에 붙을 지연된 카드
+            return this.lastCompletedBot;
+          }
+          if(this.streamingBot){
+            return this.streamingBot;
+          }
+          return this.createStreamingBot();
+        };
         if(p.type==='sources'){
-          if(!this.streamingBot) this.createStreamingBot();
-          this.streamingBot.sources=p.sources||[];
-          this.streamingBot.cards=p.cards||[];
+          const target=resolveSourcesTarget();
+          target.sources=p.sources||[];
+          target.cards=p.cards||[];
+          delete target.placeholder;
+          if(this.postSourcesPending && target===this.lastCompletedBot){
+            // 지연된 sources 소화 완료
+            this.postSourcesPending=false;
+            this.lastCompletedBot=null;
+          }
           this.scrollToBottom();
           return;
         }
         if(p.type==='token'){
-          this.streamingBot.content+=p.text;
-          // 토큰이 추가될 때마다 스크롤
-          this.scrollToBottom();
-          return;
+          // 새 토큰: 현재 스트리밍 중 봇이 없다면(예외) placeholder 생성
+            if(!this.streamingBot){
+              // 만약 이전 답변 post-sources 대기 중이라도 새 토큰은 새 답변 것이므로 streamingBot 우선
+              this.streamingBot=this.createStreamingBot();
+            }
+            this.streamingBot.content+=p.text;
+            delete this.streamingBot.placeholder;
+            this.scrollToBottom();
+            return;
         }
         if(p.type==='end'){
+          if(this.streamingBot){
+            // 답변 본문 확정, 이후 sources 지연 도착 대비 플래그 세팅
+            this.lastCompletedBot=this.streamingBot;
+            this.postSourcesPending=true;
+          }
           this.isLoading=false;
           this.streamingBot=null;
-          // 스트리밍 완료 시 최종 스크롤
           this.scrollToBottom();
           return;
         }
         if(p.type==='error'){
-          if(!this.streamingBot) this.createStreamingBot();
+          if(!this.streamingBot){ this.streamingBot=this.createStreamingBot(); }
           this.streamingBot.isError=true;
           this.streamingBot.content+='\n[오류] '+(p.message||'알 수 없는 오류');
           this.isLoading=false;
+          // 오류이면 추가 sources 예상 없음
+          this.postSourcesPending=false;
+          this.lastCompletedBot=null;
           this.streamingBot=null;
           this.scrollToBottom();
+          return;
         }
       },
 
@@ -746,8 +785,11 @@
       },
       handleSendClick(){ this.sendMessage(); },
       createStreamingBot(){
-        const botMsg={id:this.messageId++,type:'bot',content:'',sources:[],cards:[],timestamp:new Date()};
-        this.messages.push(botMsg); this.streamingBot=botMsg;
+        // 항상 새 봇 placeholder 생성 (순서 고정)
+        const botMsg={id:this.messageId++,type:'bot',content:'',sources:[],cards:[],timestamp:new Date(),placeholder:true};
+        this.messages.push(botMsg);
+        this.streamingBot=botMsg;
+        return botMsg;
       },
       sendMessage(text){
         const content=(typeof text==='string')?text:this.currentMessage;
@@ -756,16 +798,24 @@
           if(!this.pendingInit) this.pendingInit=content;
           return;
         }
+        // 1. 사용자 메시지 추가
         const userMsg={id:this.messageId++,type:'user',content:content,timestamp:new Date()};
         this.messages.push(userMsg);
+        // 2. 바로 봇 placeholder 생성 (순서 확정)
+        this.createStreamingBot();
+        // 3. 입력 초기화
         if(typeof text!=='string') this.currentMessage='';
         else if(this.currentMessage===content) this.currentMessage='';
+        // 4. 상태 설정
         this.isLoading=true;
+        // 5. WebSocket 전송
         const payload={action:'chat',query:content};
         if(this.activeSessionId) payload.session_id=this.activeSessionId;
         this.ws.send(JSON.stringify(payload));
-        // 메시지 전송 후 스크롤
-        this.scrollToBottom(true);
+        // 6. 스크롤
+        this.$nextTick(() => {
+          this.scrollToBottom(true);
+        });
       },
       formatMessage(c){
         if(!c) return '';

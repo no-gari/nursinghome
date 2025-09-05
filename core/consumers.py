@@ -348,14 +348,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         'has_images': obj.has_images, 'location': obj.location or obj.sigungu or obj.sido,
                         'capacity': None, 'occupancy': None, 'waiting': None, 'immediate_admission': None,
                     })
+                rank += 1  # 카드가 실제로 생성될 때만 rank 증가
             else:
-                # 매칭 실패 시 placeholder (스킵하려면 continue)
-                cards.append({
-                    'rank': rank, 'type': 'facility', 'id': f'unknown_{rank}', 'code': None, 'name': name,
-                    'grade': None, 'summary': '', 'distance': None, 'detail_url': None,
-                    'image_urls': [], 'primary_image_url': None, 'has_images': False,
-                    'location': None, 'capacity': None, 'occupancy': None, 'waiting': None,
-                    'immediate_admission': None,
-                })
-            rank += 1
+                # 매칭 실패 시 카드 생성하지 않고 스킵
+                logger.info(f"No match found for: {name} - skipping card creation")
+                continue
         return cards
