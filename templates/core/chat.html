@@ -426,13 +426,35 @@
       this.fetchSessions().then(()=>{
         const p=new URLSearchParams(window.location.search);
         const sid=p.get('session');
-        const message=p.get('message');
+        const message=p.get('message'); // (구 버전 호환)
+        let initial = null;
+        if(message){
+          initial = decodeURIComponent(message);
+          // URL에서 질문 제거 (privacy)
+          try {
+            const base = sid ? (`?session=${sid}`) : '';
+            window.history.replaceState(null,'', location.pathname + base);
+          } catch(e){}
+        } else {
+          // sessionStorage 경로 (신규)
+            try {
+              const stored = sessionStorage.getItem('cb_initial_message');
+              if(stored){
+                initial = stored;
+                sessionStorage.removeItem('cb_initial_message');
+              }
+            } catch(e){}
+        }
 
         if(sid){
           this.selectSession(parseInt(sid));
-        } else if(message) {
-          // 메인 페이지에서 새로운 질문이 전달된 ��우 �� 세션 생성
-          this.createSessionAndSendMessage(decodeURIComponent(message));
+          if(initial){
+            // 세션 선택 완료 후 메시지 전송 (약간의 지연으로 WS 준비 보장)
+            setTimeout(()=>{ this.currentMessage = initial; this.sendMessage(); }, 50);
+          }
+        } else if(initial){
+          // 새 세션 생성 후 전송
+          this.createSessionAndSendMessage(initial);
         } else if(this.sessions.length){
           this.selectSession(this.sessions[0].id);
         }

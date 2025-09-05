@@ -75,8 +75,9 @@ createApp({
             return;
             {% endif %}
 
-            const encoded=encodeURIComponent(this.currentMessage);
-            window.location.href=`/chat/?message=${encoded}`;
+            // 쿼리스트링 대신 sessionStorage 사용 (URL에 질문 노출 방지)
+            try { sessionStorage.setItem('cb_initial_message', this.currentMessage.trim()); } catch(e) {}
+            window.location.href = '/chat/';
         },
         showSuccessNotice(msg){const n=document.createElement('div');n.className='success-notice';n.textContent=msg;document.body.appendChild(n);setTimeout(()=>n.remove(),3000);}
     }
