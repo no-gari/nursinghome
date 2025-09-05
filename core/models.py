@@ -1,6 +1,5 @@
 from django.db import models
 from django.conf import settings
-from pgvector.django import VectorField, HnswIndex
 
 
 class TimestampedModel(models.Model):
@@ -32,7 +31,6 @@ class Facility(TimestampedModel):
     program_info = models.JSONField(blank=True, default=dict, verbose_name='프로그램운영', help_text='{"제목": "내용"} 형태')
     noncovered_info = models.JSONField(blank=True, default=dict, verbose_name='비급여항목', help_text='{"제목": "금액"} 형태 (숫자만)')
     summary = models.TextField(blank=True, verbose_name='AI 요약', help_text='AI가 생성한 시설 요약 내용')
-    summary_embedding = VectorField(dimensions=1536, null=True, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, db_index=True, help_text='위도 (WGS84)')
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, db_index=True, help_text='경도 (WGS84)')
 
@@ -40,13 +38,6 @@ class Facility(TimestampedModel):
         ordering = ["name"]
         verbose_name = "시설"
         verbose_name_plural = "시설"
-        indexes = [
-            HnswIndex(
-                fields=['summary_embedding'],
-                name='facility_sum_hnsw',          # ← 반드시 이름 지정
-                opclasses=['vector_cosine_ops'],   # 리스트로
-            ),
-        ]
 
     def __str__(self):
         return f"{self.name} ({self.code})"
@@ -230,7 +221,6 @@ class Hospital(TimestampedModel):
     sigungu = models.CharField(max_length=30, blank=True, db_index=True, verbose_name='시군구')
     homepage_url = models.URLField(blank=True, verbose_name='홈페이지 URL')
     summary = models.TextField(blank=True, verbose_name='AI 요약', help_text='AI가 생성한 병원 요약 내용')
-    summary_embedding = VectorField(dimensions=1536, null=True, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, db_index=True, help_text='위도 (WGS84)')
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, db_index=True, help_text='경도 (WGS84)')
 
@@ -238,13 +228,6 @@ class Hospital(TimestampedModel):
         ordering = ["name"]
         verbose_name = "요양병원"
         verbose_name_plural = "요양병원"
-        indexes = [
-            HnswIndex(
-                fields=['summary_embedding'],
-                name='hospital_sum_hnsw',
-                opclasses=['vector_cosine_ops'],
-            ),
-        ]
 
     def __str__(self):
         return f"{self.name} ({self.code})"

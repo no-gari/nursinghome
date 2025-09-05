@@ -282,7 +282,7 @@
         <div v-if="isLoading" class="flex items-center gap-2 text-xs text-slate-500 mt-6">
           <span class="inline-flex w-5 h-5 rounded-full bg-slate-400 text-white items-center justify-center text-[10px]">AI</span>
           <span v-if="!streamingBot">답변 준비 중...</span>
-          <span v-else-if="streamingBot && !streamingBot.content">답변 작성 중...</span>
+          <!-- '답변 작성 중...' 문구 제거: 스트리밍 시작 직후에는 점 애니메이션만 표시 -->
           <span class="flex gap-1">
             <span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span>
             <span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse delay-150"></span>
@@ -833,26 +833,28 @@
             line.split('|').map(cell => cell.trim()).filter(cell => cell !== '')
           ).filter(row => row.length > 0);
 
-          let tableHtml = '<table class="min-w-full bg-white border border-gray-200 rounded-lg my-3 overflow-hidden shadow-sm">';
+          // 가로 스크롤 & 최소 폭 확보: 헤더 수 기반 동적 최소폭 (각 컬럼 140px 가정)
+          const minWidth = Math.max(headers.length * 140, 560); // px
+          let tableHtml = `<div class="overflow-x-auto my-3 -mx-1 px-1"><table class="w-full bg-white border border-gray-200 rounded-lg shadow-sm" style="min-width:${minWidth}px">`;
 
           // 테이블 헤더
           tableHtml += '<thead class="bg-gray-50"><tr>';
           headers.forEach(header => {
-            tableHtml += `<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">${header}</th>`;
+            tableHtml += `<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 whitespace-nowrap">${header}</th>`;
           });
           tableHtml += '</tr></thead>';
 
           // 테이블 본문
-          tableHtml += '<tbody class="bg-white divide-y divide-gray-200">';
+            tableHtml += '<tbody class="bg-white divide-y divide-gray-200">';
           rows.forEach((row, index) => {
             const bgClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
             tableHtml += `<tr class="${bgClass}">`;
             row.forEach(cell => {
-              tableHtml += `<td class="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">${cell}</td>`;
+              tableHtml += `<td class="px-4 py-3 text-sm text-gray-900 border-b border-gray-100 align-top whitespace-nowrap">${cell}</td>`;
             });
             tableHtml += '</tr>';
           });
-          tableHtml += '</tbody></table>';
+          tableHtml += '</tbody></table></div>';
 
           return tableHtml;
         });
