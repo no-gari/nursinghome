@@ -19,6 +19,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import HttpResponse
+from django.views.generic import RedirectView
 
 def websocket_info(request):
     """WebSocket 경로에 대한 HTTP 요청 처리"""
@@ -28,6 +29,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls', namespace='core')),
     path('account/', include('account.urls')),
+    path('accounts/login/', RedirectView.as_view(url='/account/auth/login/', permanent=False, query_string=True), name='legacy-accounts-login'),  # 구 경로 호환 + 쿼리 유지
     path('blog/', include('blog.urls', namespace='blog')),  # 블로그
     path('ws/chat/', websocket_info, name='websocket_info'),  # WebSocket 경로에 대한 HTTP 처리
 ]
