@@ -13,7 +13,6 @@ class RAGService:
       - 서버 내에서 추가 RAG 처리/분기 없음
       - 저장된 prompt id + version 그대로 사용
       - 사용자 질의는 input 으로 전달
-      - 스트리밍 이벤트를 ChatConsumer 가 ���대로 중계 가능하도록 yield
     """
     LLM_MODEL = getattr(settings, 'OPENAI_LLM_MODEL', 'gpt-4o-mini')
     PROMPT_ID = getattr(settings, 'OPENAI_PROMPT_ID', '')
