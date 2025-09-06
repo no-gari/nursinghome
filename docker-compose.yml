@@ -21,7 +21,7 @@ services:
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
-      - media_volume:/app/media
+      - ./media:/app/media
     expose:
       - "8000"
     command: /app/scripts/entrypoint.sh
@@ -36,9 +36,8 @@ services:
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - static_volume:/static:ro
-      - media_volume:/media:ro
+      - ./media:/app_media:ro
 
 volumes:
   redis-data:
   static_volume:
-  media_volume:

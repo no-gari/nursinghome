@@ -20,7 +20,7 @@
             {% endwith %}
             <div class="flex items-center gap-2 ml-2">
                 {% if request.user.is_authenticated %}
-                <span class="hidden lg:inline-block px-2 text-slate-600 text-[13px]">안녕하세요, <strong>{{ request.user.username }}</strong></span>
+                <span class="hidden lg:inline-block px-2 text-slate-600 text-[13px]">안녕하세요, <strong>{{ request.user.first_name }}</strong></span>
                 <a href="{% url 'auth-logout' %}?next={{ request.path }}" class="px-3 h-9 inline-flex items-center rounded-lg border border-slate-300 bg-white hover:border-slate-500 hover:text-slate-700 transition text-[13px] font-medium">로그아웃</a>
                 {% else %}
                 <a href="{% url 'login-page' %}?next={{ request.path }}" class="px-3 h-9 inline-flex items-center rounded-lg border border-slate-300 bg-white hover:border-slate-500 hover:text-slate-700 transition text-[13px] font-medium">로그인</a>
