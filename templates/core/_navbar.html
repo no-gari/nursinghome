@@ -73,7 +73,7 @@
                 <li class="pt-2">
                     {% if request.user.is_authenticated %}
                     <a href="{% url 'auth-logout' %}?next={{ request.path }}" class="block w-full text-center px-4 py-2.5 rounded-full bg-slate-900 text-white text-sm font-medium hover:bg-slate-700 transition">로그아웃</a>
-                    <div class="mt-2 text-[11px] text-slate-500 text-center">{{ request.user.username }} 님</div>
+                    <div class="mt-2 text-[11px] text-slate-500 text-center">{{ request.user.first_name }} 님</div>
                     {% else %}
                     <a href="{% url 'login-page' %}?next={{ request.path }}" class="block w-full text-center px-4 py-2.5 rounded-full bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">로그인</a>
                     {% endif %}
