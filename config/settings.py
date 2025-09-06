@@ -16,48 +16,46 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+# 환경변수 로드 (.env는 docker-compose env_file 로 주입)
+from dotenv import load_dotenv
+load_dotenv()
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("DJANGO_SECRET", "")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+# DEBUG / ALLOWED_HOSTS 환경변수화
+DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
 
 KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY", "")
 KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET", "")
-KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI", "http://localhost:8000/account/auth/kakao/callback/")
+KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI", "")
 
 # Google Geocoding API 키
 GOOGLE_GEOCODING_API_KEY = os.getenv("GOOGLE_GEOCODING_API_KEY", "")
-
 # Google Maps JavaScript API 키 (웹에서 지도 표시용)
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_GEOCODING_API_KEY", "")
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'daphne',
     'django.contrib.staticfiles',
-    'rest_framework',  # DRF 추가
-    'corsheaders',     # CORS 추가
-    'core',  # 기존
+    'rest_framework',
+    'corsheaders',
+    'core',
     'account',
-    'ckeditor',  # WYSIWYG
-    'blog',      # 블로그
-    'channels',  # ← 실시간(WebSocket)
+    'ckeditor',
+    'blog',
+    'channels',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # CORS 미들웨어 추가 (맨 위)
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -91,140 +89,99 @@ USE_SQLITE = False
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', ''),
-        'USER': os.getenv('DB_USER', ''),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', ''),
-        'PORT': os.getenv('DB_PORT', '5432'),
-        'OPTIONS': {
-            'client_encoding': 'UTF8',
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-# # SQLite 전환 (테스트/로컬 편의)
-# if os.getenv('USE_SQLITE', 'true').lower() == 'true':
-#     DATABASES['default'] = {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = 'ko-kr'
-
 TIME_ZONE = 'Asia/Seoul'
-
 USE_I18N = True
-
-USE_TZ = True  # SQLite에서 aware datetime 저장을 위해 True로 전환
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
+USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# Media (이미지 업로드)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# CKEditor 설정 (심플 + 코드 하이라이트 지원 가능 기본 구성)
 CKEDITOR_CONFIGS = {
     'default': {
         'toolbar': 'full',
         'height': 400,
         'width': '100%',
-        'extraPlugins': ','.join([
-            'codesnippet',  # 코드 하이라이트
-        ]),
+        'extraPlugins': ','.join(['codesnippet']),
         'codeSnippet_theme': 'prism',
         'removePlugins': 'stylesheetparser',
         'forcePasteAsPlainText': False,
     }
 }
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# DRF 설정
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-    ],
-    'DEFAULT_PARSER_CLASSES': [
-        'rest_framework.parsers.JSONParser',
-    ],
+    'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer'],
+    'DEFAULT_PARSER_CLASSES': ['rest_framework.parsers.JSONParser'],
 }
 
-# CORS 설정 (개발용 - 프로덕션에서는 특정 도메인만 허용)
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-]
+_raw_cors = os.getenv("DJANGO_CORS_ALLOWED_ORIGINS")
+
+if _raw_cors:
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in _raw_cors.split(',') if o.strip()]
 
 CORS_ALLOW_CREDENTIALS = True
 
-# 세션 설정 추가
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # DB에 세션 저장
-SESSION_COOKIE_AGE = 1209600  # 2주
-SESSION_COOKIE_SECURE = False  # 개발환경에서는 False
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 1209600
+SESSION_COOKIE_SECURE = not DEBUG  # 프로덕션에서만 Secure
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_SAVE_EVERY_REQUEST = True  # 요청마다 세션 갱신
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_NAME = 'sessionid'  # 명시적 설정
+SESSION_COOKIE_PATH = '/'  # 전체 도메인에서 사용
+# SESSION_COOKIE_DOMAIN 설정 (필요시)
+if not DEBUG:
+    # 프로덕션에서는 도메인 설정 필요할 수 있음
+    SESSION_COOKIE_DOMAIN = os.getenv('SESSION_COOKIE_DOMAIN', None)
 
 # RAG 시스템 설정
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# OpenAI API 키 (환경변수에서 로드)
-OPENAI_API_KEY = ''
-
-# ChromaDB 설정
-CHROMA_DB_PATH = BASE_DIR / 'chroma_db'
-
-# 임베딩 모델 설정
-EMBEDDING_MODEL = 'intfloat/multilingual-e5-large'
-
-# 네이버 검색 API 키 (환경변수 권장)
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 NAVER_CLIENT_ID = os.environ.get("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "")
-# (선택) requests 타임아웃/재시도 기본값
 NAVER_API_TIMEOUT = 5
 
+# Redis / Channels 설정 (환경변수화)
+REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
+REDIS_PORT = int(os.getenv('REDIS_PORT', '6379'))
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer'
-    }
+  'default': {
+    'BACKEND': 'channels_redis.core.RedisChannelLayer',
+    'CONFIG': {'hosts': [(REDIS_HOST, REDIS_PORT)]},
+  }
 }
 
-# CHANNEL_LAYERS = {
-#   'default': {
-#     'BACKEND': 'channels_redis.core.RedisChannelLayer',
-#     'CONFIG': {'hosts': [('127.0.0.1', 6379)]},
-#   }
-# }
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler'},
+    },
+    'root': {'handlers': ['console'], 'level': 'INFO'},
+    'loggers': {
+        'core.consumers': {'handlers': ['console'], 'level': 'DEBUG', 'propagate': False},
+    },
+}
+
+OPENAI_PROMPT_ID = os.environ.get("OPENAI_PROMPT_ID", "")
+
+# 배포 환경에서 필수 체크
+if not DEBUG and not SECRET_KEY:
+    raise RuntimeError("DJANGO_SECRET 환경변수가 설정되지 않았습니다 (production mode).")
