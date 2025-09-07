@@ -96,10 +96,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
-# BASE STATIC, MEDIA ROOT
+# AWS S3 설정
 AWS_S3_SECURE_URLS = True
 AWS_REGION = 'ap-northeast-2'
 AWS_STORAGE_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME')
@@ -112,10 +110,13 @@ AWS_S3_OBJECT_PARAMETERS = {
     'CacheControl': 'max-age=86400',
 }
 
-STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-MEDIAFILES_LOCATION = 'media'
-STATIC_URL = f'https://{AWS_S3_HOST}/'
+# S3 저장소 설정
+STATICFILES_STORAGE = 'config.storage_backends.StaticStorage'
+DEFAULT_FILE_STORAGE = 'config.storage_backends.PublicMediaStorage'
+
+# URL 설정 - S3 URL로 설정
+STATIC_URL = f'https://{AWS_S3_HOST}/static/'
+MEDIA_URL = f'https://{AWS_S3_HOST}/media/'
 
 CKEDITOR_CONFIGS = {
     'default': {
