@@ -340,6 +340,9 @@
         {% else %}<p class="text-sm text-slate-500">정보 없음</p>{% endif %}
       </section>
       <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
+        {% include 'core/reply.html' with target_type='hospital' code=hospital.code %}
+      </section>
+      <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm">
         <h2 class="text-lg font-bold mb-5">위치 정보</h2>
         {% if hospital.location %}<p class="text-sm text-slate-700">{{ hospital.location }}</p>{% endif %}
         {% if hospital.latitude and hospital.longitude and google_maps_api_key %}

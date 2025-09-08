@@ -15,6 +15,7 @@ urlpatterns = [
     path('chatbot/', views.chatbot_view, name='chatbot'),  # 기존 호환성
     path('facilities/', views.FacilityListView.as_view(), name='facility_list'),  # 시설 리스트
     path('facility/<str:code>/', views.facility_detail, name='facility_detail'),
+    path('hospital/<str:code>/', views.hospital_detail, name='hospital_detail'),
 
     # DRF API
     path('api/', include(router.urls)),
@@ -25,4 +26,12 @@ urlpatterns = [
     path('api/chat/sessions/', views.ChatSessionListCreateAPI.as_view(), name='chat_session_list_create'),
     path('api/chat/sessions/<int:pk>/', views.ChatSessionRenameDeleteAPI.as_view(), name='chat_session_detail'),
     path('api/chat/sessions/<int:pk>/messages/', views.ChatSessionMessagesAPI.as_view(), name='chat_session_messages'),
+    # 댓글 API
+    path('api/comments/', views.CommentListCreateAPI.as_view(), name='comment_list_create'),
+    path('api/comments/<int:pk>/', views.CommentDetailAPI.as_view(), name='comment_detail'),
+    # 리뷰 API
+    path('api/reviews/summary/', views.ReviewSummaryAPI.as_view(), name='review_summary'),
+    path('api/reviews/list/', views.ReviewListAPI.as_view(), name='review_list'),
+    path('facility/<str:code>/review/', views.facility_review_write, name='facility_review_write'),
+    path('hospital/<str:code>/review/', views.hospital_review_write, name='hospital_review_write'),
 ]

@@ -258,6 +258,8 @@
       {% endfor %}
     </div>
   {% else %}<p class="text-gray-500">등록된 항목이 없습니다.</p>{% endif %}
+</section><section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
+    {% include 'core/reply.html' with target_type='facility' code=facility.code %}
 </section>
 <section class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm hover:shadow transition">
       <h2 class="text-lg font-bold mb-5">위치 정보</h2>

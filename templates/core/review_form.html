@@ -1,0 +1,82 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>이용자 평가 작성</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body{font-family:'Pretendard',sans-serif;background:#f5f7fa;} .star-btn i{transition:color .15s ease;} .star-btn.active i{color:#fbbf24;} .star-btn i{color:#e2e8f0;} </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  {% include 'core/_navbar.html' %}
+  <main class="flex-1 w-full max-w-xl mx-auto px-5 py-10">
+    <h1 class="text-2xl font-bold text-slate-900 mb-2">이용자 평가</h1>
+    <p class="text-sm text-slate-500 mb-8">별점을 선택하고 후기를 작성하세요. 이미 작성했다면 수정됩니다.</p>
+
+    {% if error %}
+      <div class="mb-5 px-4 py-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-sm">{{ error }}</div>
+    {% endif %}
+
+    <form id="reviewForm" method="post" class="bg-white rounded-2xl border p-6 shadow-sm space-y-6" data-target-type="{{ target_type }}" data-code="{% if target_type == 'facility' %}{{ facility.code }}{% else %}{{ hospital.code }}{% endif %}" data-existing-rating="{% if existing and existing.rating %}{{ existing.rating }}{% endif %}" data-existing-content="{% if existing and existing.content %}{{ existing.content|escapejs }}{% endif %}">
+      {% csrf_token %}
+      <input type="hidden" name="rating" id="ratingInput" value="{{ existing.rating|default:'' }}" />
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">별점</label>
+        <div id="starSelect" class="flex items-center gap-1" role="radiogroup" aria-label="별점 선택">
+          {% for i in '12345' %}
+          {% with v=forloop.counter %}
+          <button type="button" class="star-btn w-11 h-11 flex items-center justify-center" data-star="{{ v }}" aria-label="{{ v }}점"><i class="fa-solid fa-star text-2xl"></i></button>
+          {% endwith %}
+          {% endfor %}
+        </div>
+        <p id="starMessage" class="mt-2 text-xs text-slate-500">별점을 선택하세요.</p>
+      </div>
+      <div>
+        <label for="reviewContent" class="block text-sm font-medium text-slate-700 mb-2">후기 내용</label>
+        <textarea id="reviewContent" name="content" rows="7" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-y" placeholder="돌봄 환경, 직원 응대, 청결, 프로그램, 식사 등 경험을 구체적으로 남겨주세요." maxlength="2000">{{ existing.content|default:'' }}</textarea>
+        <div class="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+          <span id="contentLength">0 / 2000</span>
+          <span>최소 5자</span>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <a href="{% if target_type == 'facility' %}{% url 'core:facility_detail' facility.code %}{% else %}{% url 'core:hospital_detail' hospital.code %}{% endif %}" class="px-4 h-10 inline-flex items-center rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-600 hover:border-slate-400">취소</a>
+        <button id="submitBtn" type="submit" class="px-5 h-10 inline-flex items-center gap-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="fa fa-paper-plane"></i><span>작성 완료</span>
+        </button>
+      </div>
+      <p id="submitMsg" class="hidden text-sm"></p>
+    </form>
+  </main>
+  {% include 'core/_footer.html' %}
+
+<script>
+(function(){
+  const form=document.getElementById('reviewForm'); if(!form) return;
+  const targetType=form.dataset.targetType; const code=form.dataset.code;
+  const ratingInput=document.getElementById('ratingInput');
+  const starBtns=[...form.querySelectorAll('.star-btn')];
+  const starMsg=document.getElementById('starMessage');
+  const textarea=document.getElementById('reviewContent');
+  const lenEl=document.getElementById('contentLength');
+  const submitBtn=document.getElementById('submitBtn');
+  const submitMsg=document.getElementById('submitMsg');
+  let rating=parseInt(form.dataset.existingRating)||0;
+  if(form.dataset.existingContent){ textarea.value=form.dataset.existingContent; }
+  function paint(){ starBtns.forEach(btn=>{ const v=parseInt(btn.dataset.star); btn.classList.toggle('active', v<=rating); }); }
+  paint(); updateLength();
+  starBtns.forEach(btn=>{ btn.addEventListener('mouseenter',()=>{ const v=parseInt(btn.dataset.star); starBtns.forEach(b=>{ const vv=parseInt(b.dataset.star); b.classList.toggle('active', vv<=v); }); }); btn.addEventListener('mouseleave', paint); btn.addEventListener('click',()=>{ rating=parseInt(btn.dataset.star); ratingInput.value=rating; paint(); starMsg.textContent=`${rating}점 선택`; }); });
+  function updateLength(){ lenEl.textContent=`${textarea.value.length} / 2000`; }
+  textarea.addEventListener('input', updateLength);
+  function getCSRF(){ const m=document.cookie.match(/csrftoken=([^;]+)/); return m? decodeURIComponent(m[1]):''; }
+  function validate(){ if(rating<1){ starMsg.textContent='별점을 선택하세요.'; return false;} if(textarea.value.trim().length<5){ starMsg.textContent='후기 5자 이상 작성'; return false;} return true; }
+  form.addEventListener('submit', e=>{ e.preventDefault(); if(!validate()) return; submitBtn.disabled=true; submitMsg.className='hidden'; fetch('/api/comments/', { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCSRF()}, body: JSON.stringify({ target_type:targetType, code:code, rating:rating, content: textarea.value.trim() }) }).then(async r=>{ if(!r.ok){ throw new Error(await r.text()); } return r.json(); }).then(()=>{ submitMsg.textContent='저장되었습니다. 이동 중...'; submitMsg.className='mt-3 text-sm text-emerald-600'; setTimeout(()=>{ if(targetType==='facility') window.location.href=`/facility/${code}/#reviewSummary`; else window.location.href=`/hospital/${code}/#reviewSummary`; }, 800); }).catch(()=>{ submitMsg.textContent='저장 실패. 새로고침 후 재시도'; submitMsg.className='mt-3 text-sm text-rose-600'; submitBtn.disabled=false; }).finally(()=>{}); });
+})();
+</script>
+</body>
+</html>

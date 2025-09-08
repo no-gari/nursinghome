@@ -259,3 +259,63 @@ class Tag(TimestampedModel):
 
     def __str__(self):
         return self.name
+
+
+class Comment(TimestampedModel):
+    """시설 또는 병원에 달리는 댓글. 둘 중 하나(facility/hospital)만 연결.
+    대댓글 지원(parent).
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comments')
+    facility = models.ForeignKey('Facility', on_delete=models.CASCADE, null=True, blank=True, related_name='comments')
+    hospital = models.ForeignKey('Hospital', on_delete=models.CASCADE, null=True, blank=True, related_name='comments')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+    content = models.TextField()
+    is_deleted = models.BooleanField(default=False, help_text='삭제 시 True (소프트 삭제)')
+    rating = models.PositiveSmallIntegerField(null=True, blank=True, help_text='1~5 사이 평점 (최상위 리뷰에만 사용)')
+
+    class Meta:
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['facility', 'created_at']),
+            models.Index(fields=['hospital', 'created_at']),
+            models.Index(fields=['parent']),
+            models.Index(fields=['rating']),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    models.Q(facility__isnull=False, hospital__isnull=True) |
+                    models.Q(facility__isnull=True, hospital__isnull=False)
+                ),
+                name='comment_one_target_only'
+            ),
+            models.CheckConstraint(
+                check=(models.Q(rating__gte=1) & models.Q(rating__lte=5)) | models.Q(rating__isnull=True),
+                name='comment_rating_range'
+            ),
+            models.UniqueConstraint(
+                fields=['user', 'facility'],
+                condition=models.Q(parent__isnull=True, is_deleted=False, facility__isnull=False),
+                name='uniq_user_facility_review'
+            ),
+            models.UniqueConstraint(
+                fields=['user', 'hospital'],
+                condition=models.Q(parent__isnull=True, is_deleted=False, hospital__isnull=False),
+                name='uniq_user_hospital_review'
+            ),
+        ]
+        verbose_name = '댓글'
+        verbose_name_plural = '댓글'
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if (self.facility is None and self.hospital is None) or (self.facility and self.hospital):
+            raise ValidationError('facility 또는 hospital 중 하나만 지정해야 합니다.')
+        if self.parent and (self.parent.facility_id != self.facility_id or self.parent.hospital_id != self.hospital_id):
+            raise ValidationError('부모 댓글과 동일한 대상이어야 합니다.')
+        if self.parent and self.rating is not None:
+            raise ValidationError('대댓글에는 평점을 줄 수 없습니다.')
+
+    def __str__(self):
+        target = self.facility or self.hospital
+        return f"Comment#{self.id} by {self.user} on {target}"

@@ -1,0 +1,256 @@
+{# 리뷰 요약 & 모달 (평균 + 최신 1건 프리뷰) #}
+<div id="reviewSummary" data-target-type="{{ target_type }}" data-code="{{ code }}" data-auth="{{ user.is_authenticated|yesno:'1,0' }}">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h2 class="text-lg font-bold mb-1">이용자 후기</h2>
+      <p class="text-xs text-slate-500">실제 이용자가 남긴 평점 및 후기입니다.</p>
+    </div>
+    <button type="button" id="openReviewModalBtn" class="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      더보기 <i class="fa fa-chevron-right text-[10px]"></i>
+    </button>
+  </div>
+  <div id="reviewSummaryBody" class="mt-4 space-y-4">
+    <div id="reviewSummaryLoading" class="flex items-center gap-2 text-sm text-slate-500"><i class="fa fa-spinner fa-spin"></i><span>불러오는 중...</span></div>
+    <div id="reviewSummaryEmpty" class="hidden text-sm text-slate-500">아직 등록된 평점이 없습니다.</div>
+    <div id="reviewSummaryContent" class="hidden flex items-center gap-6">
+      <div class="flex items-center gap-3">
+        <div class="text-3xl font-bold text-slate-800" id="summaryAvg">0.0</div>
+        <div class="flex flex-col gap-0.5">
+          <div id="summaryStars" class="flex text-amber-400"></div>
+          <div class="text-[11px] text-slate-500"><span id="summaryCount">0</span>개 후기</div>
+        </div>
+      </div>
+    </div>
+    <div id="latestReviewWrap" class="hidden border rounded-xl p-4 bg-white/50">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-start gap-3 min-w-0">
+          <div class="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-[11px] font-semibold text-slate-700" id="latestUserInitial"></div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 text-[11px] text-slate-500">
+              <span class="font-semibold text-slate-700" id="latestUserName"></span>
+              <span id="latestCreated"></span>
+            </div>
+            <div class="flex items-center gap-1 text-amber-400 text-xs mt-1" id="latestStars"></div>
+            <p class="mt-2 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed" id="latestContent"></p>
+          </div>
+        </div>
+        <div id="latestMenuSlot" class="shrink-0"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# 전체 리뷰 모달 #}
+<div id="reviewModal" class="hidden fixed inset-0 z-[120]" aria-hidden="true">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-200" data-rm-overlay></div>
+  <div class="absolute inset-0 flex items-start justify-center overflow-y-auto p-4 lg:p-10">
+    <div class="relative w-full max-w-3xl bg-white rounded-2xl shadow-xl border border-slate-200 translate-y-6 opacity-0 transition duration-200" data-rm-panel>
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <div class="flex items-center gap-4">
+          <div>
+            <div class="flex items-end gap-2">
+              <span class="text-2xl font-bold text-slate-800" id="modalAvg">0.0</span>
+              <div id="modalStars" class="flex text-amber-400 text-lg"></div>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-0.5"><span id="modalCount">0</span>개 이용자 평가</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <a id="writeReviewBtn" href="#" class="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">평가하기</a>
+          <button type="button" id="closeReviewModalBtn" class="w-9 h-9 inline-flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="닫기"><i class="fa fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="px-6 py-5 space-y-4" id="reviewListWrap">
+        <div id="reviewListLoading" class="flex items-center gap-2 text-sm text-slate-500"><i class="fa fa-spinner fa-spin"></i><span>후기 불러오는 중...</span></div>
+        <div id="reviewListEmpty" class="hidden text-sm text-slate-500">아직 후기가 없습니다.</div>
+        <ul id="reviewList" class="space-y-4"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .review-menu{position:absolute;top:100%;right:0;min-width:110px;background:#fff;border:1px solid #e2e8f0;border-radius:0.5rem;padding:4px;box-shadow:0 4px 12px -2px rgba(0,0,0,.1);z-index:30;}
+  .review-menu button{display:block;width:100%;text-align:left;font-size:12px;padding:6px 8px;border-radius:0.375rem;color:#475569;}
+  .review-menu button:hover{background:#f1f5f9;color:#1e293b;}
+</style>
+<script>
+(function(){
+  const summaryRoot = document.getElementById('reviewSummary');
+  if(!summaryRoot) return;
+  const targetType = summaryRoot.dataset.targetType;
+  const code = summaryRoot.dataset.code;
+  const isAuth = summaryRoot.dataset.auth === '1';
+  const avgEl = document.getElementById('summaryAvg');
+  const cntEl = document.getElementById('summaryCount');
+  const starsEl = document.getElementById('summaryStars');
+  const loadingEl = document.getElementById('reviewSummaryLoading');
+  const emptyEl = document.getElementById('reviewSummaryEmpty');
+  const contentEl = document.getElementById('reviewSummaryContent');
+  const latestWrap = document.getElementById('latestReviewWrap');
+  const latestUserInitial = document.getElementById('latestUserInitial');
+  const latestUserName = document.getElementById('latestUserName');
+  const latestCreated = document.getElementById('latestCreated');
+  const latestStars = document.getElementById('latestStars');
+  const latestContent = document.getElementById('latestContent');
+  const latestMenuSlot = document.getElementById('latestMenuSlot');
+  const openBtn = document.getElementById('openReviewModalBtn');
+
+  // Modal elements
+  const modal = document.getElementById('reviewModal');
+  const panel = modal.querySelector('[data-rm-panel]');
+  const overlay = modal.querySelector('[data-rm-overlay]');
+  const modalAvg = document.getElementById('modalAvg');
+  const modalStars = document.getElementById('modalStars');
+  const modalCount = document.getElementById('modalCount');
+  const writeBtn = document.getElementById('writeReviewBtn');
+  const closeBtn = document.getElementById('closeReviewModalBtn');
+  const listLoading = document.getElementById('reviewListLoading');
+  const listEmpty = document.getElementById('reviewListEmpty');
+  const listEl = document.getElementById('reviewList');
+
+  function starIcons(value){ const v=parseFloat(value)||0; const full=Math.floor(v); const half=(v-full)>=0.5; let out=''; for(let i=0;i<5;i++){ if(i<full) out+='<i class="fa-solid fa-star"></i>'; else if(i===full && half) out+='<i class="fa-regular fa-star-half-stroke"></i>'; else out+='<i class="fa-regular fa-star"></i>'; } return out; }
+  function escapeHtml(str){ return (str||'').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[s])); }
+  function fmtDate(iso){ try{ return new Date(iso).toLocaleString('ko-KR',{hour12:false}); }catch(e){ return ''; } }
+  function getCSRF(){ const m=document.cookie.match(/csrftoken=([^;]+)/); return m? decodeURIComponent(m[1]):''; }
+
+  // 삭제 확인 모달 구성
+  const deleteModalHTML = `
+  <div id="reviewDeleteModal" class="fixed inset-0 z-[1000] hidden flex items-center justify-center p-5" aria-hidden="true">
+    <div id="reviewDeleteOverlay" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm opacity-0 transition-opacity duration-300"></div>
+    <div id="reviewDeletePanel" role="dialog" aria-modal="true" aria-labelledby="reviewDeleteTitle" class="relative w-full max-w-md origin-center rounded-3xl shadow-[0_10px_40px_-5px_rgba(15,23,42,0.3)] bg-white/80 backdrop-blur-xl border border-white/40 ring-1 ring-indigo-200/40 px-8 pt-9 pb-8 opacity-0 scale-95 transition-all duration-300">
+      <div class="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-indigo-400/0 via-indigo-400/70 to-indigo-400/0"></div>
+      <div class="mx-auto mb-6 w-20 h-20 rounded-2xl bg-gradient-to-br from-rose-500 via-rose-600 to-rose-700 flex items-center justify-center shadow-lg shadow-rose-600/30">
+        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M10 3h4a1 1 0 011 1v2H9V4a1 1 0 011-1z"/></svg>
+      </div>
+      <h3 id="reviewDeleteTitle" class="text-2xl font-semibold tracking-tight text-slate-800 text-center mb-3">삭제 확인</h3>
+      <p class="text-slate-600 text-sm leading-relaxed text-center mb-8">이 후기를 삭제하시겠습니까?<br class="hidden sm:inline"> 삭제 후 복구할 수 없습니다.</p>
+      <div class="flex gap-4">
+        <button type="button" data-rd-cancel class="flex-1 h-12 rounded-xl border border-slate-300/80 bg-white/60 hover:bg-white text-slate-700 text-sm font-medium transition shadow-sm hover:shadow">취소</button>
+        <button type="button" data-rd-confirm class="flex-1 h-12 rounded-xl bg-gradient-to-r from-rose-600 via-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-500 text-white text-sm font-semibold shadow hover:shadow-md transition">삭제하기</button>
+      </div>
+      <div class="absolute -z-10 inset-0 rounded-3xl overflow-hidden"><div class="absolute -inset-20 bg-[radial-gradient(circle_at_30%_20%,rgba(244,63,94,0.18),transparent_60%),radial-gradient(circle_at_70%_70%,rgba(225,29,72,0.20),transparent_65%)]"></div></div>
+    </div>
+  </div>`;
+  if(!document.getElementById('reviewDeleteModal')){ document.body.insertAdjacentHTML('beforeend', deleteModalHTML); }
+  const rdModal=document.getElementById('reviewDeleteModal');
+  const rdOverlay=document.getElementById('reviewDeleteOverlay');
+  const rdPanel=document.getElementById('reviewDeletePanel');
+  let pendingDeleteId=null;
+  function showReviewDeleteModal(id){ pendingDeleteId=id; rdModal.classList.remove('hidden'); requestAnimationFrame(()=>{ rdOverlay.classList.add('opacity-100'); rdPanel.classList.remove('opacity-0','scale-95'); rdPanel.classList.add('opacity-100','scale-100'); }); document.documentElement.style.overflow='hidden'; }
+  function closeReviewDeleteModal(){ rdOverlay.classList.remove('opacity-100'); rdPanel.classList.remove('opacity-100','scale-100'); rdPanel.classList.add('opacity-0','scale-95'); document.documentElement.style.overflow=''; setTimeout(()=>{ rdModal.classList.add('hidden'); pendingDeleteId=null; },260); }
+  rdModal.addEventListener('click', e=>{ if(e.target===rdModal || e.target===rdOverlay) closeReviewDeleteModal(); });
+  window.addEventListener('keydown', e=>{ if(e.key==='Escape' && !rdModal.classList.contains('hidden')) closeReviewDeleteModal(); });
+  rdPanel.querySelector('[data-rd-cancel]').addEventListener('click', closeReviewDeleteModal);
+  rdPanel.querySelector('[data-rd-confirm]').addEventListener('click', ()=>{ if(pendingDeleteId){ doDeleteNow(pendingDeleteId); } });
+
+  function fetchSummary(){
+    fetch(`/api/reviews/summary/?target_type=${targetType}&code=${encodeURIComponent(code)}`)
+      .then(r=>r.json())
+      .then(data=>{
+        loadingEl.classList.add('hidden');
+        const avg = data.average||0; const cnt=data.count||0; const latest=data.latest||null;
+        if(!cnt){ emptyEl.classList.remove('hidden'); return; }
+        avgEl.textContent=avg.toFixed(1); cntEl.textContent=cnt; starsEl.innerHTML=starIcons(avg); contentEl.classList.remove('hidden');
+        if(latest){
+          latestWrap.classList.remove('hidden');
+            latestUserInitial.textContent=(latest.user_first_name||'?').slice(0,1);
+            latestUserName.textContent=latest.user_first_name||'이용자';
+            latestCreated.textContent=fmtDate(latest.created_at);
+            latestStars.innerHTML=starIcons(latest.rating||0);
+            latestContent.textContent=latest.content||'';
+            latestMenuSlot.innerHTML='';
+        }
+      })
+      .catch(()=>{ loadingEl.innerHTML='<span class="text-rose-500 text-sm">요약 로드 실패</span>'; });
+  }
+
+  function openModal(){
+    if(!isAuth){ if(typeof showLoginRequiredModal==='function'){ showLoginRequiredModal(); } return; }
+    modal.classList.remove('hidden'); requestAnimationFrame(()=>{ overlay.classList.remove('opacity-0'); panel.classList.remove('translate-y-6','opacity-0'); });
+    modalAvg.textContent=avgEl.textContent; modalStars.innerHTML=starIcons(parseFloat(avgEl.textContent)||0); modalCount.textContent=cntEl.textContent;
+    const reviewUrl = targetType==='facility'? `/facility/${code}/review/` : `/hospital/${code}/review/`;
+    writeBtn.href = reviewUrl;
+    fetchReviews();
+  }
+  function closeModal(){ overlay.classList.add('opacity-0'); panel.classList.add('translate-y-6','opacity-0'); setTimeout(()=>{ modal.classList.add('hidden'); },180); }
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) closeModal(); });
+  closeBtn.addEventListener('click', closeModal);
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+  openBtn.addEventListener('click', openModal);
+
+  // 메뉴 버튼 (삭제만)
+  function buildMenuButton(id, kind, scope){
+    const wrap=document.createElement('div'); wrap.className='relative';
+    const btn=document.createElement('button'); btn.type='button'; btn.className='w-8 h-8 inline-flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100'; btn.innerHTML='<i class="fa fa-ellipsis"></i>';
+    const menu=document.createElement('div'); menu.className='review-menu hidden'; menu.innerHTML=`<button data-act="delete">삭제</button>`;
+    btn.addEventListener('click', e=>{ e.stopPropagation(); const open=!menu.classList.contains('hidden'); document.querySelectorAll('.review-menu').forEach(m=>m.classList.add('hidden')); if(!open) menu.classList.remove('hidden'); });
+    document.addEventListener('click', ()=>menu.classList.add('hidden'));
+    menu.addEventListener('click', e=>{ const act=e.target.getAttribute('data-act'); if(!act) return; e.stopPropagation(); menu.classList.add('hidden'); if(act==='delete') showReviewDeleteModal(id); });
+    wrap.appendChild(btn); wrap.appendChild(menu); return wrap;
+  }
+
+  function renderReview(rv){
+    const created = fmtDate(rv.created_at);
+    const replies = rv.replies && rv.replies.length? `<ul class='mt-3 pl-5 border-l space-y-2'>${rv.replies.map(r=>renderReply(r)).join('')}</ul>`:'';
+    return `<li class='border rounded-xl p-4 hover:shadow-sm transition group' data-review-id='${rv.id}' data-type='review'>
+      <div class='flex items-start justify-between gap-3'>
+        <div class='flex items-start gap-3 min-w-0'>
+          <div class='w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-xs font-semibold text-slate-700'>${escapeHtml((rv.user_first_name||'?').slice(0,1))}</div>
+          <div class='min-w-0 flex-1'>
+            <div class='flex items-center gap-2 text-[11px] text-slate-500'>
+              <span class='font-semibold text-slate-700'>${escapeHtml(rv.user_first_name||'이용자')}</span>
+              <span>${created}</span>
+            </div>
+            <div class='flex items-center gap-1 text-amber-400 text-xs mt-1'>${starIcons(rv.rating||0)}</div>
+            <div class='mt-2'>
+              <p class='text-sm text-slate-700 whitespace-pre-wrap leading-relaxed review-content'>${escapeHtml(rv.content||'')}</p>
+            </div>
+            ${replies}
+          </div>
+        </div>
+        ${rv.is_owner? `<div class='shrink-0' data-menu-slot='${rv.id}' data-kind='review'></div>`:''}
+      </div>
+    </li>`;
+  }
+  function renderReply(r){
+    const created = fmtDate(r.created_at);
+    return `<li class='text-xs text-slate-600 relative pl-0' data-review-id='${r.id}' data-type='reply'>
+      <div class='flex items-start gap-2'>
+        <span class='font-semibold text-slate-700'>${escapeHtml(r.user_first_name||'운영자')}</span>
+        <span class='flex-1 review-content'>${escapeHtml(r.content||'')}</span>
+        <span class='text-[10px] text-slate-400'>${created}</span>
+        ${r.is_owner? `<div data-menu-slot='${r.id}' data-kind='reply'></div>`:''}
+      </div>
+    </li>`;
+  }
+
+  function initListMenus(){
+    listEl.querySelectorAll('[data-menu-slot]').forEach(slot=>{
+      if(slot.dataset.inited) return; slot.dataset.inited='1';
+      const id = slot.dataset.menuSlot || slot.getAttribute('data-menu-slot');
+      const kind = slot.dataset.kind || 'review';
+      const btn = buildMenuButton(id, kind, 'list');
+      slot.appendChild(btn);
+    });
+  }
+
+  function fetchReviews(){
+    listLoading.classList.remove('hidden'); listEmpty.classList.add('hidden'); listEl.innerHTML='';
+    fetch(`/api/reviews/list/?target_type=${targetType}&code=${encodeURIComponent(code)}`)
+      .then(r=>{ if(r.status===401){ if(typeof showLoginRequiredModal==='function') showLoginRequiredModal(); throw new Error('auth'); } return r.json(); })
+      .then(data=>{
+        listLoading.classList.add('hidden');
+        const reviews = data.reviews||[];
+        if(!reviews.length){ listEmpty.classList.remove('hidden'); return; }
+        listEl.innerHTML = reviews.map(rv=>renderReview(rv)).join('');
+        initListMenus(); // 삭제 메뉴 생성
+      })
+      .catch(err=>{ if(err.message!=='auth'){ listLoading.innerHTML='<span class="text-rose-500 text-sm">로드 실패</span>'; }});
+  }
+
+  function doDeleteNow(id){ fetch(`/api/comments/${id}/`, { method:'DELETE', headers:{'X-CSRFToken':getCSRF()} }).then(r=>{ if(r.status===204){ closeReviewDeleteModal(); fetchReviews(); fetchSummary(); } else throw new Error(); }).catch(()=>{ alert('삭제 실패'); closeReviewDeleteModal(); }); }
+
+  fetchSummary();
+})();
+</script>

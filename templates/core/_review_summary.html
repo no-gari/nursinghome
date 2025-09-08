@@ -1,0 +1,159 @@
+{# 시설/병원 상세 페이지에서 요약 평점 표시 + 모달 트리거 #}
+<div id="reviewSummary" class="bg-white rounded-2xl border p-6 lg:p-8 shadow-sm" data-target-type="{{ target_type }}" data-code="{{ code }}" data-auth="{{ user.is_authenticated|yesno:'1,0' }}">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h2 class="text-lg font-bold mb-1">이용자 후기</h2>
+      <p class="text-xs text-slate-500">실제 이용자가 남긴 평점 및 후기입니다.</p>
+    </div>
+    <button type="button" id="openReviewModalBtn" class="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      더보기
+      <i class="fa fa-chevron-right text-[10px]"></i>
+    </button>
+  </div>
+  <div id="reviewSummaryBody" class="mt-5">
+    <div id="reviewSummaryLoading" class="flex items-center gap-2 text-sm text-slate-500"><i class="fa fa-spinner fa-spin"></i><span>불러오는 중...</span></div>
+    <div id="reviewSummaryEmpty" class="hidden text-sm text-slate-500">아직 등록된 평점이 없습니다.</div>
+    <div id="reviewSummaryContent" class="hidden flex items-center gap-6">
+      <div class="flex items-center gap-3">
+        <div class="text-3xl font-bold text-slate-800" id="summaryAvg">0.0</div>
+        <div class="flex flex-col gap-0.5">
+          <div id="summaryStars" class="flex text-amber-400"></div>
+          <div class="text-[11px] text-slate-500"><span id="summaryCount">0</span>개 후기</div>
+        </div>
+      </div>
+      <div class="flex-1 grid grid-cols-5 gap-1" id="summaryStarBars"></div>
+    </div>
+  </div>
+</div>
+
+{# 후기 전체 모달 #}
+<div id="reviewModal" class="hidden fixed inset-0 z-[120]" aria-hidden="true">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-200" data-rm-overlay></div>
+  <div class="absolute inset-0 flex items-start justify-center overflow-y-auto p-4 lg:p-10">
+    <div class="relative w-full max-w-3xl bg-white rounded-2xl shadow-xl border border-slate-200 translate-y-6 opacity-0 transition duration-200" data-rm-panel>
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <div class="flex items-center gap-4">
+          <div>
+            <div class="flex items-end gap-2">
+              <span class="text-2xl font-bold text-slate-800" id="modalAvg">0.0</span>
+              <div id="modalStars" class="flex text-amber-400 text-lg"></div>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-0.5"><span id="modalCount">0</span>개 이용자 평가</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <a id="writeReviewBtn" href="#" class="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">평가하기</a>
+          <button type="button" id="closeReviewModalBtn" class="w-9 h-9 inline-flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="닫기"><i class="fa fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="px-6 py-5 space-y-4" id="reviewListWrap">
+        <div id="reviewListLoading" class="flex items-center gap-2 text-sm text-slate-500"><i class="fa fa-spinner fa-spin"></i><span>후기 불러오는 중...</span></div>
+        <div id="reviewListEmpty" class="hidden text-sm text-slate-500">아직 후기가 없습니다.</div>
+        <ul id="reviewList" class="space-y-4"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const summaryRoot = document.getElementById('reviewSummary');
+  if(!summaryRoot) return;
+  const targetType = summaryRoot.dataset.targetType;
+  const code = summaryRoot.dataset.code;
+  const isAuth = summaryRoot.dataset.auth === '1';
+  const avgEl = document.getElementById('summaryAvg');
+  const cntEl = document.getElementById('summaryCount');
+  const starsEl = document.getElementById('summaryStars');
+  const barsEl = document.getElementById('summaryStarBars');
+  const loadingEl = document.getElementById('reviewSummaryLoading');
+  const emptyEl = document.getElementById('reviewSummaryEmpty');
+  const contentEl = document.getElementById('reviewSummaryContent');
+  const openBtn = document.getElementById('openReviewModalBtn');
+
+  // Modal elements
+  const modal = document.getElementById('reviewModal');
+  const panel = modal.querySelector('[data-rm-panel]');
+  const overlay = modal.querySelector('[data-rm-overlay]');
+  const modalAvg = document.getElementById('modalAvg');
+  const modalStars = document.getElementById('modalStars');
+  const modalCount = document.getElementById('modalCount');
+  const writeBtn = document.getElementById('writeReviewBtn');
+  const closeBtn = document.getElementById('closeReviewModalBtn');
+  const listLoading = document.getElementById('reviewListLoading');
+  const listEmpty = document.getElementById('reviewListEmpty');
+  const listEl = document.getElementById('reviewList');
+
+  function starIcons(value, size='text-base'){ const v=parseFloat(value)||0; const full=Math.floor(v); const half=(v-full)>=0.5; let out=''; for(let i=0;i<5;i++){ if(i<full) out+='<i class="fa-solid fa-star"></i>'; else if(i===full && half) out+='<i class="fa-regular fa-star-half-stroke"></i>'; else out+='<i class="fa-regular fa-star"></i>'; } return out; }
+
+  function renderBars(avg){ barsEl.innerHTML=''; for(let i=5;i>=1;i--){ const w = 0; barsEl.insertAdjacentHTML('beforeend', `<div class='flex flex-col items-center gap-1'><span class='text-[10px] text-slate-400'>${i}★</span><div class='h-2 w-8 bg-slate-100 rounded overflow-hidden'><div class='h-full bg-amber-400 w-0' style='width:${w}%'></div></div></div>`); } }
+
+  function fetchSummary(){
+    fetch(`/api/reviews/summary/?target_type=${targetType}&code=${encodeURIComponent(code)}`)
+      .then(r=>r.json())
+      .then(data=>{
+        loadingEl.classList.add('hidden');
+        const avg = data.average||0; const cnt=data.count||0;
+        if(!cnt){ emptyEl.classList.remove('hidden'); return; }
+        avgEl.textContent=avg.toFixed(1); cntEl.textContent=cnt; starsEl.innerHTML=starIcons(avg,'text-sm'); renderBars(avg); contentEl.classList.remove('hidden');
+      })
+      .catch(()=>{ loadingEl.innerHTML='<span class="text-rose-500 text-sm">요약 로드 실패</span>'; });
+  }
+
+  function openModal(){
+    if(!isAuth){ if(typeof showLoginRequiredModal==='function'){ showLoginRequiredModal(); } return; }
+    modal.classList.remove('hidden'); requestAnimationFrame(()=>{ overlay.classList.remove('opacity-0'); panel.classList.remove('translate-y-6','opacity-0'); });
+    // 채우기
+    modalAvg.textContent=avgEl.textContent; modalStars.innerHTML=starIcons(parseFloat(avgEl.textContent)||0,'text-lg'); modalCount.textContent=cntEl.textContent;
+    const reviewUrl = targetType==='facility'? `/facility/${code}/review/` : `/hospital/${code}/review/`;
+    writeBtn.href = reviewUrl;
+    fetchReviews();
+  }
+  function closeModal(){ overlay.classList.add('opacity-0'); panel.classList.add('translate-y-6','opacity-0'); setTimeout(()=>{ modal.classList.add('hidden'); },180); }
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) closeModal(); });
+  closeBtn.addEventListener('click', closeModal);
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+  openBtn.addEventListener('click', openModal);
+
+  function fetchReviews(){
+    listLoading.classList.remove('hidden'); listEmpty.classList.add('hidden'); listEl.innerHTML='';
+    fetch(`/api/reviews/list/?target_type=${targetType}&code=${encodeURIComponent(code)}`)
+      .then(r=>{ if(r.status===401){ if(showLoginRequiredModal) showLoginRequiredModal(); throw new Error('auth'); } return r.json(); })
+      .then(data=>{
+        listLoading.classList.add('hidden');
+        const reviews = data.reviews||[];
+        if(!reviews.length){ listEmpty.classList.remove('hidden'); return; }
+        listEl.innerHTML = reviews.map(rv=>renderReview(rv)).join('');
+      })
+      .catch(err=>{ if(err.message!=='auth'){ listLoading.innerHTML='<span class="text-rose-500 text-sm">로드 실패</span>'; }});
+  }
+
+  function renderReview(rv){
+    const created = new Date(rv.created_at).toLocaleString('ko-KR',{hour12:false});
+    return `<li class='border rounded-xl p-4 hover:shadow-sm transition'>
+      <div class='flex items-start justify-between gap-4'>
+        <div class='flex items-start gap-3'>
+          <div class='w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-xs font-medium text-slate-700'>${(rv.user_first_name||'').slice(0,1)||'?'} </div>
+          <div class='min-w-0'>
+            <div class='flex items-center gap-2 text-[11px] text-slate-500'>
+              <span class='font-semibold text-slate-700'>${rv.user_first_name||'이용자'}</span>
+              <span>${created}</span>
+            </div>
+            <div class='flex items-center gap-1 text-amber-400 text-xs mt-1'>${starIcons(rv.rating||0)}</div>
+            <p class='mt-2 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed'>${escapeHtml(rv.content||'')}</p>
+          </div>
+        </div>
+      </div>
+      ${rv.replies && rv.replies.length? `<ul class='mt-3 pl-5 border-l space-y-2'>${rv.replies.map(r=>renderReply(r)).join('')}</ul>`:''}
+    </li>`;
+  }
+  function renderReply(r){
+    const created = new Date(r.created_at).toLocaleString('ko-KR',{hour12:false});
+    return `<li class='text-xs text-slate-600'><span class='font-semibold text-slate-700 mr-2'>${r.user_first_name||'운영자'}</span>${escapeHtml(r.content||'')} <span class='ml-2 text-[10px] text-slate-400'>${created}</span></li>`;
+  }
+  function escapeHtml(str){ return (str||'').replace(/[&<>"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[s])); }
+
+  fetchSummary();
+})();
+</script>
+

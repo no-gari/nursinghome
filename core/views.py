@@ -7,7 +7,7 @@ from rest_framework.authentication import SessionAuthentication, BasicAuthentica
 from rest_framework.permissions import IsAuthenticated  # 추가
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.conf import settings
-from .models import Facility, ChatHistory, Tag, Hospital, ChatSession
+from .models import Facility, ChatHistory, Tag, Hospital, ChatSession, Comment
 from .serializers import FacilityListSerializer, FacilityDetailSerializer, ChatRequestSerializer, ChatResponseSerializer, ChatSessionSerializer
 from .rag_service import RAGService
 from django.utils.decorators import method_decorator
@@ -16,6 +16,7 @@ from django.views.generic import ListView
 from django.db.models import Case, When, Value, IntegerField
 from django.contrib.auth.decorators import login_required
 import json
+from django.db.models import Avg, Count, Prefetch
 
 
 @ensure_csrf_cookie
@@ -142,7 +143,7 @@ class FacilityListView(ListView):
                 output_field=IntegerField()
             )
             queryset = queryset.annotate(_grade_order=grade_order).order_by('_grade_order', 'name')
-        else:  # 이름 ���름차순
+        else:  # 이름 오름차순
             queryset = queryset.order_by('name')
 
         return queryset.distinct()
@@ -536,3 +537,300 @@ def hospital_detail_by_id(request, pk: int):
         'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
     }
     return render(request, 'core/hospital_detail.html', context)
+
+
+# ===== 댓글 API =====
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.views import APIView
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
+
+class CommentListCreateAPI(APIView):
+    """GET: 대상(시설/병원) 댓글 트리 반환
+    POST: 새 댓글 또는 대댓글 작성 (로그인 필요)
+    query params: target_type=facility|hospital, code=<facility.code or hospital.code>
+    POST body: {target_type, code, content, parent_id(optional)}
+    """
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_target(self, target_type, code):
+        if target_type == 'facility':
+            return get_object_or_404(Facility, code=code)
+        elif target_type == 'hospital':
+            return get_object_or_404(Hospital, code=code)
+        else:
+            return None
+
+    def build_tree(self, comments):
+        # comments: queryset (ordered)
+        node_map = {}
+        roots = []
+        for c in comments:
+            node = {
+                'id': c.id,
+                'user': c.user.username if c.user_id else None,
+                'user_first_name': getattr(c.user, 'first_name', '') if c.user_id else '',
+                'rating': c.rating,
+                'content': '[삭제된 댓글]' if c.is_deleted else c.content,
+                'is_deleted': c.is_deleted,
+                'created_at': c.created_at.isoformat(),
+                'parent_id': c.parent_id,
+                'replies': []
+            }
+            node_map[c.id] = node
+        for c in comments:
+            n = node_map[c.id]
+            if c.parent_id and c.parent_id in node_map:
+                node_map[c.parent_id]['replies'].append(n)
+            else:
+                roots.append(n)
+        return roots
+
+    def get(self, request):
+        target_type = request.query_params.get('target_type')
+        code = request.query_params.get('code')
+        if not target_type or not code:
+            return Response({'error': 'target_type, code 필요'}, status=400)
+        target = self.get_target(target_type, code)
+        if not target:
+            return Response({'error': '대상 없음'}, status=404)
+        if target_type == 'facility':
+            qs = Comment.objects.filter(facility=target).select_related('user').order_by('created_at')
+        else:
+            qs = Comment.objects.filter(hospital=target).select_related('user').order_by('created_at')
+        return Response({'comments': self.build_tree(qs)})
+
+    @transaction.atomic
+    def post(self, request):
+        # rating upsert 지원
+        if not request.user.is_authenticated:
+            return Response({'error': '인증 필요'}, status=401)
+        data = request.data
+        target_type = data.get('target_type')
+        code = data.get('code')
+        content = (data.get('content') or '').strip()
+        parent_id = data.get('parent_id')
+        rating = data.get('rating')
+        if rating is not None:
+            try:
+                rating = int(rating)
+            except ValueError:
+                return Response({'error': 'rating 형식 오류'}, status=400)
+            if rating < 1 or rating > 5:
+                return Response({'error': 'rating 범위 1~5'}, status=400)
+        if not target_type or not code:
+            return Response({'error': 'target_type, code 필수'}, status=400)
+        if not parent_id and (not content):
+            return Response({'error': 'content 필요'}, status=400)
+        target = self.get_target(target_type, code)
+        if parent_id:
+            parent = Comment.objects.filter(id=parent_id).first()
+            if not parent:
+                return Response({'error': 'parent_id 잘못됨'}, status=400)
+            if target_type == 'facility' and parent.facility_id != target.id:
+                return Response({'error': '부모 댓글 대상 불일치'}, status=400)
+            if target_type == 'hospital' and parent.hospital_id != target.id:
+                return Response({'error': '부모 댓글 대상 불일치'}, status=400)
+            if rating is not None:
+                return Response({'error': '대댓글에는 rating 허용되지 않음'}, status=400)
+        else:
+            parent = None
+        # Upsert (최상위 리뷰에서만 rating 가능)
+        if parent is None and rating is not None:
+            existing = Comment.objects.filter(user=request.user, parent__isnull=True,
+                                              facility=target if target_type=='facility' else None,
+                                              hospital=target if target_type=='hospital' else None,
+                                              is_deleted=False).first()
+            if existing:
+                existing.content = content or existing.content
+                existing.rating = rating
+                existing.save(update_fields=['content','rating','updated_at'])
+                return Response({'id': existing.id, 'message': 'updated'}, status=200)
+        c = Comment.objects.create(
+            user=request.user,
+            facility=target if target_type == 'facility' else None,
+            hospital=target if target_type == 'hospital' else None,
+            parent=parent,
+            content=content,
+            rating=rating if parent is None else None
+        )
+        return Response({'id': c.id, 'message': 'created'}, status=201)
+
+
+class ReviewSummaryAPI(APIView):
+    permission_classes = []  # 공개
+    def get(self, request):
+        target_type = request.query_params.get('target_type')
+        code = request.query_params.get('code')
+        if not target_type or not code:
+            return Response({'error': 'target_type, code 필요'}, status=400)
+        if target_type == 'facility':
+            target = get_object_or_404(Facility, code=code)
+            qs = Comment.objects.filter(facility=target, parent__isnull=True, is_deleted=False, rating__isnull=False)
+        else:
+            target = get_object_or_404(Hospital, code=code)
+            qs = Comment.objects.filter(hospital=target, parent__isnull=True, is_deleted=False, rating__isnull=False)
+        agg = qs.aggregate(avg=Avg('rating'), cnt=Count('id'))
+        latest_obj = qs.order_by('-created_at').first()
+        latest = None
+        if latest_obj:
+            latest = {
+                'id': latest_obj.id,
+                'user_first_name': getattr(latest_obj.user, 'first_name', '') if latest_obj.user_id else '',
+                'rating': latest_obj.rating,
+                'content': '[삭제된 댓글]' if latest_obj.is_deleted else latest_obj.content,
+                'created_at': latest_obj.created_at.isoformat(),
+                'is_owner': (request.user.is_authenticated and latest_obj.user_id == request.user.id)
+            }
+        user_rating = None
+        if request.user.is_authenticated:
+            ur = qs.filter(user=request.user).first()
+            if ur:
+                user_rating = ur.rating
+        return Response({'average': round(agg['avg'] or 0, 1), 'count': agg['cnt'], 'user_rating': user_rating, 'latest': latest})
+
+
+class ReviewListAPI(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        target_type = request.query_params.get('target_type')
+        code = request.query_params.get('code')
+        if not target_type or not code:
+            return Response({'error':'target_type, code 필요'}, status=400)
+        if target_type == 'facility':
+            target = get_object_or_404(Facility, code=code)
+            top_qs = Comment.objects.filter(facility=target, parent__isnull=True, is_deleted=False).select_related('user').order_by('-created_at')
+        else:
+            target = get_object_or_404(Hospital, code=code)
+            top_qs = Comment.objects.filter(hospital=target, parent__isnull=True, is_deleted=False).select_related('user').order_by('-created_at')
+        replies_map = {}
+        replies = Comment.objects.filter(parent_id__in=top_qs.values_list('id', flat=True)).select_related('user').order_by('created_at')
+        for r in replies:
+            replies_map.setdefault(r.parent_id, []).append({
+                'id': r.id,
+                'user_first_name': getattr(r.user, 'first_name', '') if r.user_id else '',
+                'content': '[삭제된 댓글]' if r.is_deleted else r.content,
+                'created_at': r.created_at.isoformat(),
+                'is_owner': True if (r.user_id == request.user.id) else False,
+            })
+        data = []
+        for c in top_qs:
+            data.append({
+                'id': c.id,
+                'user_first_name': getattr(c.user, 'first_name', '') if c.user_id else '',
+                'rating': c.rating,
+                'content': '[삭제된 댓글]' if c.is_deleted else c.content,
+                'created_at': c.created_at.isoformat(),
+                'replies': replies_map.get(c.id, []),
+                'is_owner': True if (c.user_id == request.user.id) else False,
+            })
+        return Response({'reviews': data})
+
+
+class CommentDetailAPI(APIView):
+    permission_classes = [IsAuthenticated]
+    def patch(self, request, pk):
+        """댓글/리뷰 수정 (본인만). 루트 댓글은 rating 수정 허용, 대댓글은 content만."""
+        comment = get_object_or_404(Comment, pk=pk, user=request.user)
+        if comment.is_deleted:
+            return Response({'error': '삭제된 댓글'}, status=400)
+        content = (request.data.get('content') or '').strip()
+        rating = request.data.get('rating', None)
+        updated = False
+        if content:
+            comment.content = content
+            updated = True
+        if rating is not None:
+            # 대댓글은 별점 변경 불가
+            if comment.parent_id is not None:
+                return Response({'error': '대댓글은 별점 수정 불가'}, status=400)
+            try:
+                rating_int = int(rating)
+            except (TypeError, ValueError):
+                return Response({'error': 'rating 형식 오류'}, status=400)
+            if rating_int < 1 or rating_int > 5:
+                return Response({'error': 'rating 범위 1~5'}, status=400)
+            comment.rating = rating_int
+            updated = True
+        if not updated:
+            return Response({'error': '변경 내용 없음'}, status=400)
+        comment.save(update_fields=['content','rating','updated_at'])
+        return Response({
+            'id': comment.id,
+            'content': comment.content,
+            'rating': comment.rating,
+            'parent_id': comment.parent_id,
+            'updated_at': comment.updated_at.isoformat()
+        })
+
+    def delete(self, request, pk):
+        comment = get_object_or_404(Comment, pk=pk, user=request.user)
+        comment.is_deleted = True
+        comment.content = ''
+        comment.save(update_fields=['is_deleted','content','updated_at'])
+        return Response(status=204)
+
+
+@ensure_csrf_cookie
+def facility_review_write(request, code: str):
+    if not request.user.is_authenticated:
+        return redirect(f"{settings.LOGIN_URL}?next={request.path}")
+    facility = get_object_or_404(Facility, code=code)
+    existing = Comment.objects.filter(facility=facility, parent__isnull=True, user=request.user, is_deleted=False).first()
+    error = None
+    if request.method == 'POST':
+        rating = request.POST.get('rating')
+        content = (request.POST.get('content') or '').strip()
+        try:
+            rating_int = int(rating)
+        except (TypeError, ValueError):
+            rating_int = 0
+        if rating_int < 1 or rating_int > 5:
+            error = '별점(1~5)을 선택하세요.'
+        elif len(content) < 5:
+            error = '후기 내용을 5자 이상 작성하세요.'
+        else:
+            if existing:
+                existing.rating = rating_int
+                if content:
+                    existing.content = content
+                existing.save(update_fields=['rating','content','updated_at'])
+                return redirect(f"/facility/{facility.code}/#reviewSummary")
+            else:
+                Comment.objects.create(user=request.user, facility=facility, content=content, rating=rating_int)
+                return redirect(f"/facility/{facility.code}/#reviewSummary")
+    context = {'target_type': 'facility', 'facility': facility, 'existing': existing, 'error': error}
+    return render(request, 'core/review_form.html', context)
+
+
+@ensure_csrf_cookie
+def hospital_review_write(request, code: str):
+    if not request.user.is_authenticated:
+        return redirect(f"{settings.LOGIN_URL}?next={request.path}")
+    hospital = get_object_or_404(Hospital, code=code)
+    existing = Comment.objects.filter(hospital=hospital, parent__isnull=True, user=request.user, is_deleted=False).first()
+    error = None
+    if request.method == 'POST':
+        rating = request.POST.get('rating')
+        content = (request.POST.get('content') or '').strip()
+        try:
+            rating_int = int(rating)
+        except (TypeError, ValueError):
+            rating_int = 0
+        if rating_int < 1 or rating_int > 5:
+            error = '별점(1~5)을 선택하세요.'
+        elif len(content) < 5:
+            error = '후기 내용을 5자 이상 작성하세요.'
+        else:
+            if existing:
+                existing.rating = rating_int
+                if content:
+                    existing.content = content
+                existing.save(update_fields=['rating','content','updated_at'])
+                return redirect(f"/hospital/{hospital.code}/#reviewSummary")
+            else:
+                Comment.objects.create(user=request.user, hospital=hospital, content=content, rating=rating_int)
+                return redirect(f"/hospital/{hospital.code}/#reviewSummary")
+    context = {'target_type': 'hospital', 'hospital': hospital, 'existing': existing, 'error': error}
+    return render(request, 'core/review_form.html', context)
