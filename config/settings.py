@@ -74,8 +74,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-USE_SQLITE = False
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
