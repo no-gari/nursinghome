@@ -16,7 +16,6 @@ cffi==1.17.1
 channels==4.3.1
 channels_redis==4.3.0
 charset-normalizer==3.4.3
-chroma-hnswlib==0.7.6
 click==8.2.1
 coloredlogs==15.0.1
 constantly==23.10.4
@@ -59,7 +58,6 @@ jsonpatch==1.33
 jsonpointer==3.0.0
 kubernetes==33.1.0
 langchain==0.3.27
-langchain-chroma==0.2.3
 langchain-core==0.3.74
 langchain-openai==0.3.8
 langchain-text-splitters==0.3.9
