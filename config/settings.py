@@ -93,7 +93,17 @@ TIME_ZONE = 'Asia/Seoul'
 USE_I18N = True
 USE_TZ = True
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
+USE_S3 = False
+
+# 정적/미디어 설정
+STATIC_URL = '/static/'
+# 개발/수집 소스 디렉터리(프로젝트 루트의 static을 인식하도록)
+STATICFILES_DIRS = [BASE_DIR / 'static']
+# collectstatic 결과물이 들어갈 디렉터리(소스와 분리)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles/')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 # AWS S3 설정
 AWS_S3_SECURE_URLS = True
@@ -108,13 +118,13 @@ AWS_S3_OBJECT_PARAMETERS = {
     'CacheControl': 'max-age=86400',
 }
 
-# S3 저장소 설정
-STATICFILES_STORAGE = 'config.storage_backends.StaticStorage'
-DEFAULT_FILE_STORAGE = 'config.storage_backends.PublicMediaStorage'
+if USE_S3 is True:
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    MEDIAFILES_LOCATION = 'media'
+    STATIC_URL = f'https://{AWS_S3_HOST}/'
+    MEDIA_URL = f'https://{AWS_S3_HOST}/media/'
 
-# URL 설정 - S3 URL로 설정
-STATIC_URL = f'https://{AWS_S3_HOST}/static/'
-MEDIA_URL = f'https://{AWS_S3_HOST}/media/'
 
 CKEDITOR_CONFIGS = {
     'default': {

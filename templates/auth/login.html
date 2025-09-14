@@ -1,5 +1,6 @@
 <!-- templates/auth/login.html -->
 <!DOCTYPE html>
+{% load static %}
 <html lang="ko">
 <head>
     <meta charset="UTF-8" />
@@ -42,6 +43,8 @@
         .toast button.close-btn{background:transparent;border:none;color:#fff;cursor:pointer;font-size:16px;line-height:1;padding:0 4px;margin-left:auto;}
         @keyframes toast-in{to{opacity:1;transform:translateY(0);}}
         @keyframes toast-out{to{opacity:0;transform:translateY(6px);}}
+        /* 로고 이미지 크기 */
+        .logo img{height:36px;width:auto;display:inline-block;}
     </style>
 </head>
 <body>
@@ -53,7 +56,7 @@
 </script>
 <div class="wrap">
     <div class="card">
-        <div class="logo">CareBridge</div>
+        <div class="logo"><img src="{% static 'img/logo.png' %}" alt="CareBridge"></div>
         <div class="subtitle">간편 로그인으로 맞춤형 요양시설 인사이트와 AI 상담을 빠르게 시작하세요.</div>
         <div class="btn-wrap">
             <div class="speech">3초만에 시작</div>

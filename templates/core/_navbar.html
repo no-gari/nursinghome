@@ -1,8 +1,12 @@
+{% load static %}
 <div class="w-full">
     <div class="max-w-7xl mx-auto px-5 h-full flex items-center w-full">
         <!-- Left: Logo -->
         <div class="shrink-0 pr-3 flex items-center gap-2">
-            <a href="{% url 'core:main' %}" class="text-lg font-semibold tracking-tight text-slate-800 whitespace-nowrap">CareBridge</a>
+            <a href="{% url 'core:main' %}" class="inline-flex items-center" aria-label="CareBridge 홈으로">
+                <img src="{% static 'img/logo.png' %}" alt="CareBridge" class="h-7 w-auto" loading="eager" decoding="async">
+                <span class="sr-only">CareBridge</span>
+            </a>
         </div>
         <!-- Spacer -->
         <div class="flex-1"></div>

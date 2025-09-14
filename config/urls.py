@@ -34,6 +34,5 @@ urlpatterns = [
     path('ws/chat/', websocket_info, name='websocket_info'),  # WebSocket 경로에 대한 HTTP 처리
 ]
 
-# S3를 사용하므로 로컬 미디어 파일 서빙 제거
-# if settings.DEBUG:
-#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,8 +1,11 @@
+{% load static %}
 <footer class="mt-16 border-t border-slate-200 bg-white/80 backdrop-blur-sm text-slate-600 text-sm">
   <div class="max-w-7xl mx-auto px-5 py-10 grid gap-10 md:gap-14 md:grid-cols-4">
     <!-- Brand -->
     <div class="space-y-3">
-      <a href="{% url 'core:main' %}" class="inline-block text-base font-semibold tracking-tight text-slate-800">CareBridge</a>
+      <a href="{% url 'core:main' %}" class="inline-block" aria-label="CareBridge 홈으로">
+        <img src="{% static 'img/logo.png' %}" alt="CareBridge" class="h-6 w-auto" />
+      </a>
       <p class="text-[13px] leading-relaxed text-slate-500 max-w-xs">전국 요양원, 요양병원 데이터를 기반으로 한 맞춤형 검색과 AI 분석 서비스를 제공합니다.</p>
       <p class="text-[12px] text-slate-400">협업/ 비즈니스 관련 문의는 이메일 <a href="mailto:contact@carebridge.local" class="underline hover:text-slate-600">contact@carebridge.local</a> 로 부탁드립니다.</p>
       <div class="flex gap-3 pt-1">
@@ -44,7 +47,7 @@
   </div>
   <div class="border-t border-slate-200">
     <div class="max-w-7xl mx-auto px-5 py-6 flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-between text-[12px] text-slate-500">
-      <p>&copy; {% now 'Y' %} CareBridge. All rights reserved.</p>
+      <p>&copy; {% now 'Y' %} <img src="{% static 'img/logo.png' %}" alt="CareBridge" class="inline h-4 w-auto align-[-2px]">. All rights reserved.</p>
       <div class="flex flex-wrap gap-x-4 gap-y-1">
         <a href="#" class="hover:text-slate-700">이용약관</a>
         <a href="#" class="hover:text-slate-700">개인정보처리방침</a>

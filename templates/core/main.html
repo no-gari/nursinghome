@@ -14,7 +14,9 @@
         .hdr{transition:height .2s ease, box-shadow .2s ease, background .2s ease;backdrop-filter:blur(8px);} .hdr:not(.shrink){height:70px;} .hdr.shrink{height:56px;}
         .main-container {min-height:calc(100vh - 70px);display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;background:linear-gradient(160deg,#ffffff 0%,#f5f8fb 55%,#eef3f9 100%);}
         .landing-inner {width:100%;max-width:860px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:40px;}
-        .brand-text {text-align:center;} .brand-text h1.hero-title {font-size:3rem;background:linear-gradient(135deg,#1e293b,#334155 40%,#6366f1);-webkit-background-clip:text;color:transparent;margin-bottom:12px;} .brand-text p.hero-subtitle {color:#475569;}
+        .brand-text {text-align:center;}
+        .brand-text img.hero-logo{height:56px;width:auto;display:inline-block;margin-bottom:12px;}
+        .brand-text p.hero-subtitle {color:#475569;}
         .main-input-container {width:100%;max-width:600px;position:relative;}
         .main-input {width:100%;padding:20px 24px;font-size:16px;border:none;border-radius:16px;background:#fff;box-shadow:0 8px 32px rgba(0,0,0,0.1);outline:none;transition:.3s;padding-right:60px;}
         .main-input:focus {box-shadow:0 8px 32px rgba(0,0,0,0.2);transform:translateY(-2px);}
@@ -27,18 +29,19 @@
         .init-btn {background:#1e293b;border:1px solid #1e293b;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;margin-left:8px;transition:.25s;} .init-btn:hover{background:#334155;} .init-btn:disabled{background:#64748b;border-color:#64748b;opacity:.5;cursor:not-allowed;}
         .success-notice {position:fixed;top:24px;right:24px;background:#10b981;color:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:2000;animation:slideIn .3s ease;}
         @keyframes slideIn {from{transform:translateX(100%);} to{transform:translateX(0);} }
-        @media (max-width:768px){ .brand-text h1.hero-title{font-size:2.5rem;} .example-prompts{grid-template-columns:repeat(2,1fr);gap:12px;max-width:100%;} .example-prompt{padding:16px 18px;} .example-prompt h3{font-size:0.9rem;} .example-prompt p{font-size:0.75rem;} }
+        @media (max-width:768px){ .brand-text img.hero-logo{height:44px;} .example-prompts{grid-template-columns:repeat(2,1fr);gap:12px;max-width:100%;} .example-prompt{padding:16px 18px;} .example-prompt h3{font-size:0.9rem;} .example-prompt p{font-size:0.75rem;} }
     </style>
 </head>
 <body>
 <header id="siteHeader" class="hdr sticky top-0 z-50 bg-white/80 border-b border-slate-200 flex flex-col justify-center">
     {% include 'core/_navbar.html' %}
 </header>
+{% load static %}
 <div id="app">
     <div class="main-container">
         <div class="landing-inner">
             <div class="brand-text">
-                <h1 class="hero-title">CareBridge</h1>
+                <img src="{% static 'img/logo.png' %}" alt="CareBridge" class="hero-logo" />
                 <p class="hero-subtitle">AI로 찾는 내 가족을 위한 요양시설</p>
             </div>
             <div class="main-input-container">
