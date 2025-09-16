@@ -1,0 +1,64 @@
+{% comment %}
+준비 중 모달: 로그인 필요 모달과 동일한 톤/애니메이션을 사용
+{% endcomment %}
+<div id="comingSoonModal" class="fixed inset-0 z-[1000] hidden flex items-center justify-center p-5" aria-hidden="true">
+  <!-- Overlay -->
+  <div id="comingSoonOverlay" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm opacity-0 transition-opacity duration-300"></div>
+  <!-- Panel -->
+  <div id="comingSoonPanel" role="dialog" aria-modal="true" aria-labelledby="comingSoonTitle" class="relative w-full max-w-md origin-center rounded-3xl shadow-[0_10px_40px_-5px_rgba(15,23,42,0.3)] bg-white/80 backdrop-blur-xl border border-white/40 ring-1 ring-indigo-200/40 px-8 pt-9 pb-8 opacity-0 scale-95 transition-all duration-300">
+      <div class="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-indigo-400/0 via-indigo-400/70 to-indigo-400/0"></div>
+      <div class="mx-auto mb-6 w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-indigo-600/30">
+        <!-- Clock icon -->
+        <svg class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>
+      </div>
+      <h3 id="comingSoonTitle" class="text-2xl font-semibold tracking-tight text-slate-800 text-center mb-3">준비 중입니다</h3>
+      <p class="text-slate-600 text-sm leading-relaxed text-center mb-8">현재 준비 중인 기능입니다. 조금만 기다려 주세요.</p>
+      <div class="flex gap-4">
+        <button type="button" onclick="closeComingSoonModal()" class="flex-1 h-12 rounded-xl border border-slate-300/80 bg-white/60 hover:bg-white text-slate-700 text-sm font-medium transition shadow-sm hover:shadow">확인</button>
+      </div>
+      <div class="absolute -z-10 inset-0 rounded-3xl overflow-hidden"><div class="absolute -inset-20 bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.18),transparent_60%),radial-gradient(circle_at_70%_70%,rgba(79,70,229,0.20),transparent_65%)]"></div></div>
+  </div>
+</div>
+
+<script>
+let _comingPrevFocus = null;
+(function relocateComingSoonModal(){
+  const modal = document.getElementById('comingSoonModal');
+  if(modal && modal.parentElement !== document.body){
+    document.body.appendChild(modal);
+  }
+})();
+function showComingSoonModal(){
+  const modal = document.getElementById('comingSoonModal');
+  const overlay = document.getElementById('comingSoonOverlay');
+  const panel = document.getElementById('comingSoonPanel');
+  if(!modal || !overlay || !panel) return;
+  _comingPrevFocus = document.activeElement;
+  modal.classList.remove('hidden');
+  requestAnimationFrame(()=>{
+    overlay.classList.add('opacity-100');
+    panel.classList.remove('opacity-0','scale-95');
+    panel.classList.add('opacity-100','scale-100');
+  });
+  document.documentElement.style.overflow = 'hidden';
+  setTimeout(()=>{ (panel.querySelector('button') )?.focus(); },60);
+}
+function closeComingSoonModal(){
+  const modal = document.getElementById('comingSoonModal');
+  const overlay = document.getElementById('comingSoonOverlay');
+  const panel = document.getElementById('comingSoonPanel');
+  if(!modal || !overlay || !panel) return;
+  overlay.classList.remove('opacity-100');
+  panel.classList.remove('opacity-100','scale-100');
+  panel.classList.add('opacity-0','scale-95');
+  document.documentElement.style.overflow = '';
+  setTimeout(()=>{ modal.classList.add('hidden'); _comingPrevFocus && _comingPrevFocus.focus(); },260);
+}
+window.addEventListener('keydown', e=>{ if(e.key==='Escape'){ const m=document.getElementById('comingSoonModal'); if(m && !m.classList.contains('hidden')) closeComingSoonModal(); }});
+// Click outside to close
+{
+  const handler = (e)=>{ const m=document.getElementById('comingSoonModal'); if(!m||m.classList.contains('hidden')) return; if(e.target.id==='comingSoonModal' || e.target.id==='comingSoonOverlay') closeComingSoonModal(); };
+  document.addEventListener('click', handler);
+}
+</script>
+

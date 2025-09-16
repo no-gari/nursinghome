@@ -30,9 +30,10 @@
     <div class="space-y-3">
       <h3 class="text-xs font-semibold tracking-widest text-slate-500 uppercase">소셜</h3>
       <ul class="space-y-2">
-        <li><a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 hover:text-slate-900 transition" aria-label="Instagram"><i class="fa-brands fa-instagram"></i><span>Instagram</span></a></li>
-        <li><a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 hover:text-slate-900 transition" aria-label="YouTube"><i class="fa-brands fa-youtube"></i><span>YouTube</span></a></li>
-        <li><a href="https://blog.naver.com" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 hover:text-slate-900 transition" aria-label="블로그"><i class="fa-solid fa-rss"></i><span>블로그</span></a></li>
+        <!-- 소셜 링크 클릭 시 준비중 모달 표시 -->
+        <li><a href="#" onclick="showComingSoonModal(); return false;" class="inline-flex items-center gap-2 hover:text-slate-900 transition" aria-label="Instagram"><i class="fa-brands fa-instagram"></i><span>Instagram</span></a></li>
+        <li><a href="#" onclick="showComingSoonModal(); return false;" class="inline-flex items-center gap-2 hover:text-slate-900 transition" aria-label="YouTube"><i class="fa-brands fa-youtube"></i><span>YouTube</span></a></li>
+        <li><a href="#" onclick="showComingSoonModal(); return false;" class="inline-flex items-center gap-2 hover:text-slate-900 transition" aria-label="블로그"><i class="fa-solid fa-rss"></i><span>블로그</span></a></li>
       </ul>
     </div>
     <!-- Newsletter / CTA -->
@@ -56,3 +57,5 @@
     </div>
   </div>
 </footer>
+
+{% include 'core/_coming_soon_modal.html' %}
