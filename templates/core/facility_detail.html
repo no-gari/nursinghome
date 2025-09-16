@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ facility.name }} - 요양원 상세정보</title>
     <!-- Open Graph / SEO -->
-    <meta property="og:title" content="{{ facility.name }} | CareBridge" />
-    <meta property="og:description" content="{% if summary_info and summary_info.is_generated %}{{ summary_info.content|truncatechars:120 }}{% else %}요양원 상세정보{% endif %}" />
+    <meta property="og:title" content="{{ facility.name }} | 안온" />
+    <meta property="og:description" content="{% if summary_info and summary_info.is_generated %}{{ summary_info.content|truncatechars:120 }}{% else %}요양 시설 상세정보{% endif %}" />
     <meta property="og:type" content="article" />
     <meta property="og:image" content="{% if images %}{{ images.0.image.url }}{% endif %}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="{{ facility.name }}" />
-    <meta name="twitter:description" content="{% if summary_info and summary_info.is_generated %}{{ summary_info.content|truncatechars:120 }}{% else %}요양원 상세�����������보{% endif %}" />
+    <meta name="twitter:description" content="{% if summary_info and summary_info.is_generated %}{{ summary_info.content|truncatechars:120 }}{% else %}요양 시설 상세정보{% endif %}" />
     <meta name="twitter:image" content="{% if images %}{{ images.0.image.url }}{% endif %}" />
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -46,7 +46,7 @@
   <ol class="flex items-center text-xs sm:text-sm text-slate-500 gap-2">
     <li><a href="{% url 'core:main' %}" class="hover:text-slate-700">홈</a></li>
     <li><i class="fas fa-chevron-right text-slate-400 text-[10px]"></i></li>
-    <li><a href="{% url 'core:facility_list' %}" class="hover:text-slate-700">요양원 검색</a></li>
+    <li><a href="{% url 'core:facility_list' %}" class="hover:text-slate-700">요양 시설 검색</a></li>
     <li><i class="fas fa-chevron-right text-slate-400 text-[10px]"></i></li>
     <li class="text-slate-700 font-medium truncate max-w-[40ch]" aria-current="page">{{ facility.name }}</li>
   </ol>
@@ -327,7 +327,7 @@
       <h2 class="text-lg font-bold mb-5">2025년 부담금 계산기</h2>
       <form class="space-y-5 text-sm" onsubmit="return false;" id="feeCalcForm">
         <div class="space-y-2">
-          <p class="text-xs text-slate-500 leading-relaxed">요양원 급여비용은 공단 80% 지원, 본인 20% (감경 12% / 8%). 기초생활(생계·의료) 수급자 0%. 비급여는 선택 항목 합산 가격입니다.</p>
+          <p class="text-xs text-slate-500 leading-relaxed">요양 시설 급여비용은 공단 80% 지원, 본인 20% (감경 12% / 8%). 기초생활(생계·의료) 수급자 0%. 비급여는 선택 항목 합산 가격입니다.</p>
         </div>
         <!-- 등급 드롭다운 -->
         <div>

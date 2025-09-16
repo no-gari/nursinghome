@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{{ post.title }} - CareBridge 블로그</title>
+    <title>{{ post.title }} - 안온 블로그</title>
     <meta name="description" content="{{ post.excerpt|truncatechars:155 }}">
     <link rel="canonical" href="{{ request.build_absolute_uri }}">
     <meta property="og:type" content="article"/>
@@ -21,7 +21,7 @@
       "headline": "{{ post.title|escapejs }}",
       "datePublished": "{{ post.published_at|date:'c' }}",
       "dateModified": "{{ post.updated_at|date:'c' }}",
-      "author": {"@type": "Organization", "name": "CareBridge"},
+      "author": {"@type": "Organization", "name": "안온"},
       {% if post.cover_image %}"image": ["{{ request.scheme }}://{{ request.get_host }}{{ post.cover_image.url }}"],{% endif %}
       "mainEntityOfPage": {"@type": "WebPage", "@id": "{{ request.build_absolute_uri }}"}
     }</script>

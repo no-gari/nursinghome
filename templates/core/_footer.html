@@ -3,14 +3,10 @@
   <div class="max-w-7xl mx-auto px-5 py-10 grid gap-10 md:gap-14 md:grid-cols-4">
     <!-- Brand -->
     <div class="space-y-3">
-      <a href="{% url 'core:main' %}" class="inline-block" aria-label="CareBridge 홈으로">
-        <img src="{% static 'img/logo.png' %}" alt="CareBridge" class="h-6 w-auto" />
+      <a href="{% url 'core:main' %}" class="inline-block" aria-label="안온 홈으로">
+        <img src="{% static 'img/logo.png' %}" alt="안온" class="h-6 w-auto" />
       </a>
       <p class="text-[13px] leading-relaxed text-slate-500 max-w-xs">전국 요양원, 요양병원 데이터를 기반으로 한 맞춤형 검색과 AI 분석 서비스를 제공합니다.</p>
-      <p class="text-[12px] text-slate-400">협업/ 비즈니스 관련 문의는 이메일 <a href="mailto:contact@carebridge.local" class="underline hover:text-slate-600">contact@carebridge.local</a> 로 부탁드립니다.</p>
-      <div class="flex gap-3 pt-1">
-        <a href="mailto:contact@carebridge.local" class="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-slate-300 hover:border-slate-500 hover:text-slate-700 transition" aria-label="이메일"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m4 4 8 8 8-8"/></svg></a>
-      </div>
     </div>
     <!-- Navigation -->
     <div class="space-y-3">
@@ -48,7 +44,7 @@
   </div>
   <div class="border-t border-slate-200">
     <div class="max-w-7xl mx-auto px-5 py-6 flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-between text-[12px] text-slate-500">
-      <p>&copy; {% now 'Y' %} <img src="{% static 'img/logo.png' %}" alt="CareBridge" class="inline h-4 w-auto align-[-2px]">. All rights reserved.</p>
+      <p>&copy; {% now 'Y' %} <img src="{% static 'img/logo.png' %}" alt="안온" class="inline h-4 w-auto align-[-2px]">. All rights reserved.</p>
       <div class="flex flex-wrap gap-x-4 gap-y-1">
         <a href="#" class="hover:text-slate-700">이용약관</a>
         <a href="#" class="hover:text-slate-700">개인정보처리방침</a>

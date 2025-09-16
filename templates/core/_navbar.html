@@ -3,9 +3,9 @@
     <div class="max-w-7xl mx-auto px-5 h-full flex items-center w-full">
         <!-- Left: Logo -->
         <div class="shrink-0 pr-3 flex items-center gap-2">
-            <a href="{% url 'core:main' %}" class="inline-flex items-center" aria-label="CareBridge 홈으로">
-                <img src="{% static 'img/logo.png' %}" alt="CareBridge" class="h-7 w-auto" loading="eager" decoding="async">
-                <span class="sr-only">CareBridge</span>
+            <a href="{% url 'core:main' %}" class="inline-flex items-center" aria-label="안온 홈으로">
+                <img src="{% static 'img/logo.png' %}" alt="안온" class="h-7 w-auto" loading="eager" decoding="async">
+                <span class="sr-only">안온</span>
             </a>
         </div>
         <!-- Spacer -->
@@ -59,7 +59,7 @@
                     <a href="{% url 'core:main' %}" class="block px-3 py-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition {% if current == 'main' %}bg-slate-100 border-slate-300 underline underline-offset-4 decoration-2{% endif %}">홈</a>
                 </li>
                 <li>
-                    <a href="{% url 'core:facility_list' %}" class="block px-3 py-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition {% if current == 'facility_list' %}bg-slate-100 border-slate-300 underline underline-offset-4 decoration-2{% endif %}">요양원 찾기</a>
+                    <a href="{% url 'core:facility_list' %}" class="block px-3 py-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition {% if current == 'facility_list' %}bg-slate-100 border-slate-300 underline underline-offset-4 decoration-2{% endif %}">요양 시설 찾기</a>
                 </li>
                 <li>
                     <a href="{% url 'core:hospital_list' %}" class="block px-3 py-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition {% if current == 'hospital_list' %}bg-slate-100 border-slate-300 underline underline-offset-4 decoration-2{% endif %}">요양병원 찾기</a>
