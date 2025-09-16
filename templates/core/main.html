@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -8,6 +9,9 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"><!-- Font Awesome for footer icons -->
+
+    {% include 'core/_favicons.html' %}
+
     <style>
         * {margin:0;padding:0;box-sizing:border-box;}
         body {font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif;background:#f7f7f8;color:#374151;line-height:1.6;}
@@ -36,7 +40,6 @@
 <header id="siteHeader" class="hdr sticky top-0 z-50 bg-white/80 border-b border-slate-200 flex flex-col justify-center">
     {% include 'core/_navbar.html' %}
 </header>
-{% load static %}
 <div id="app">
     <div class="main-container">
         <div class="landing-inner">

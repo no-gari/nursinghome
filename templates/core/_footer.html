@@ -7,6 +7,7 @@
         <img src="{% static 'img/logo.png' %}" alt="안온" class="h-6 w-auto" />
       </a>
       <p class="text-[13px] leading-relaxed text-slate-500 max-w-xs">전국 요양원, 요양병원 데이터를 기반으로 한 맞춤형 검색과 AI 분석 서비스를 제공합니다.</p>
+      <p class="text-[12px] text-slate-500 max-w-xs">&copy; {% now 'Y' %} 안온. All rights reserved.</p>
     </div>
     <!-- Navigation -->
     <div class="space-y-3">
@@ -35,21 +36,11 @@
     <!-- Newsletter / CTA -->
     <div class="space-y-3">
       <h3 class="text-xs font-semibold tracking-widest text-slate-500 uppercase">뉴스레터</h3>
-      <form class="space-y-2" onsubmit="event.preventDefault(); if(this.email.value.trim()){ alert('구독 신청이 완료되었습니다.'); this.reset(); }">
+      <form class="space-y-2" onsubmit="event.preventDefault(); showComingSoonModal(); return false;">
         <label for="footerEmail" class="sr-only">이메일</label>
-        <input id="footerEmail" name="email" type="email" required placeholder="이메일 입력" class="w-full h-11 px-4 rounded-xl border border-slate-300 bg-white placeholder-slate-400 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-sm" />
-        <button type="submit" class="w-full h-11 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition">구독하기</button>
+        <input id="footerEmail" name="email" type="email" placeholder="이메일 입력" class="w-full h-11 px-4 rounded-xl border border-slate-300 bg-white placeholder-slate-400 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-sm" />
+        <button type="button" onclick="showComingSoonModal(); return false;" class="w-full h-11 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition">구독하기</button>
       </form>
-    </div>
-  </div>
-  <div class="border-t border-slate-200">
-    <div class="max-w-7xl mx-auto px-5 py-6 flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-between text-[12px] text-slate-500">
-      <p>&copy; {% now 'Y' %} <img src="{% static 'img/logo.png' %}" alt="안온" class="inline h-4 w-auto align-[-2px]">. All rights reserved.</p>
-      <div class="flex flex-wrap gap-x-4 gap-y-1">
-        <a href="#" class="hover:text-slate-700">이용약관</a>
-        <a href="#" class="hover:text-slate-700">개인정보처리방침</a>
-        <a href="mailto:contact@carebridge.local" class="hover:text-slate-700">문의</a>
-      </div>
     </div>
   </div>
 </footer>
