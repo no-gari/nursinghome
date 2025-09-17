@@ -118,11 +118,13 @@ AWS_S3_OBJECT_PARAMETERS = {
 }
 
 if USE_S3 is True:
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    MEDIAFILES_LOCATION = 'media'
-    STATIC_URL = f'https://{AWS_S3_HOST}/'
-
+    STATICFILES_STORAGE = 'config.storage_backends.StaticStorage'
+    DEFAULT_FILE_STORAGE = 'config.storage_backends.MediaStorage'
+    STATIC_URL = f'https://{AWS_S3_HOST}/static/'
+    MEDIA_URL = f'https://{AWS_S3_HOST}/media/'
+else:
+    STATIC_URL = '/static/'
+    MEDIA_URL = '/media/'
 
 CKEDITOR_CONFIGS = {
     'default': {
