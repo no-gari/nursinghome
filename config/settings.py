@@ -101,7 +101,6 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 # collectstatic 결과물이 들어갈 디렉터리(소스와 분리)
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles/')
-
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
@@ -123,7 +122,6 @@ if USE_S3 is True:
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     MEDIAFILES_LOCATION = 'media'
     STATIC_URL = f'https://{AWS_S3_HOST}/'
-    MEDIA_URL = f'https://{AWS_S3_HOST}/media/'
 
 
 CKEDITOR_CONFIGS = {
