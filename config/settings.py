@@ -93,7 +93,7 @@ TIME_ZONE = 'Asia/Seoul'
 USE_I18N = True
 USE_TZ = True
 
-USE_S3 = False
+USE_S3 = True
 
 # 정적/미디어 설정
 STATIC_URL = '/static/'
