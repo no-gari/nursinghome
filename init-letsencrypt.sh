@@ -8,13 +8,13 @@ set -euo pipefail
 #   또는
 #   ./init-letsencrypt.sh "example.com,www.example.com" email@example.com
 
-# Docker Compose 명령 감지 (v1: docker-compose, v2: docker compose)
-if command -v docker-compose >/dev/null 2>&1; then
-  DC="docker-compose"
-elif docker compose version >/dev/null 2>&1; then
+# Docker Compose 명령 감지: v2(docker compose) 우선, 이후 v1(docker-compose) 검증
+if docker compose version >/dev/null 2>&1; then
   DC="docker compose"
+elif command -v docker-compose >/dev/null 2>&1 && docker-compose version >/dev/null 2>&1; then
+  DC="docker-compose"
 else
-  echo 'Error: docker-compose (or docker compose) is not installed.' >&2
+  echo 'Error: docker compose/docker-compose 가 설치되어 있지 않거나 손상되었습니다.' >&2
   exit 1
 fi
 
@@ -27,8 +27,20 @@ fi
 raw_domains="$1"
 email="$2"
 
-# 쉼표로 구분된 도메인 리스트 파싱
-IFS=',' read -r -a domains <<< "$raw_domains"
+# 쉼표로 구분된 도메인 리스트 파싱 + 공백/개행 제거, 빈 항목 제거
+IFS=',' read -r -a _domains_raw <<< "$raw_domains"
+domains=()
+for d in "${_domains_raw[@]}"; do
+  # 모든 공백/개행 제거
+  d="${d//[$'\n\r\t ']/}"
+  [ -n "$d" ] && domains+=("$d")
+done
+
+if [ ${#domains[@]} -eq 0 ]; then
+  echo "Error: 유효한 도메인이 없습니다." >&2
+  exit 1
+fi
+
 PRIMARY_DOMAIN="${domains[0]}"
 
 data_path="./certbot"
@@ -37,7 +49,10 @@ staging="${LE_STAGING:-1}"
 
 if [ -d "$data_path" ]; then
   read -p "기존 데이터가 발견되었습니다. $data_path 폴더를 삭제하고 새로 시작하시겠습니까? (y/N) " decision
-  if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
+  if [ "$decision" = "Y" ] || [ "$decision" = "y" ]; then
+    echo "### 기존 $data_path 제거 중..."
+    rm -rf "$data_path"
+  else
     echo "중단합니다."
     exit 0
   fi
@@ -82,8 +97,9 @@ staging_arg=""
 if [ "$staging" != "0" ]; then staging_arg="--staging"; fi
 
 # -d 파라미터 구성
+readarray -t uniq_domains < <(printf "%s\n" "${domains[@]}" | awk 'NF' | sort -u)
 domain_args=()
-for d in "${domains[@]}"; do
+for d in "${uniq_domains[@]}"; do
   domain_args+=( -d "$d" )
 done
 
@@ -99,4 +115,4 @@ $DC run --rm --entrypoint "\
 echo "### Nginx 재시작 중..."
 $DC exec nginx nginx -s reload
 
-echo "### 완료: 인증서가 발급되었습니다. (도메인: ${domains[*]})"
+echo "### 완료: 인증서가 발급되었습니다. (도메인: ${uniq_domains[*]})"
