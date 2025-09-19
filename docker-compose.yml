@@ -47,7 +47,8 @@ services:
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
-    command: certonly --webroot --webroot-path=/var/www/certbot --email sofaissofa@naver.com --agree-tos --no-eff-email --staging -d anonnursing.com
+    # up 시에는 대기만 하고, 발급/갱신은 run으로 실행
+    command: ["sh", "-c", "trap : TERM INT; sleep infinity & wait"]
 
 volumes:
   redis-data:
