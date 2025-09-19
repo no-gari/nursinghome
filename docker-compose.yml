@@ -26,17 +26,17 @@ services:
       - "8000"
     command: /app/scripts/entrypoint.sh
 
-  nginx:
-    image: nginx:1.27-alpine
-    restart: unless-stopped
-    depends_on:
-      - app
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - static_volume:/static:ro
-      - ./media:/app_media:ro
+#  nginx:
+#    image: nginx:1.27-alpine
+#    restart: unless-stopped
+#    depends_on:
+#      - app
+#    ports:
+#      - "80:80"
+#    volumes:
+#      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+#      - static_volume:/static:ro
+#      - ./media:/app_media:ro
 
 volumes:
   redis-data:
