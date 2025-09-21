@@ -187,3 +187,8 @@ OPENAI_PROMPT_ID = os.environ.get("OPENAI_PROMPT_ID", "")
 # 배포 환경에서 필수 체크
 if not DEBUG and not SECRET_KEY:
     raise RuntimeError("DJANGO_SECRET 환경변수가 설정되지 않았습니다 (production mode).")
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://anonnursing.com',
+    'https://www.anonnursing.com',
+]
