@@ -48,16 +48,16 @@
                 <p class="hero-subtitle">AI로 찾는 안심할 수 있는 요양시설의 시작</p>
             </div>
             <div class="main-input-container">
-                <input v-model="currentMessage" @keypress.enter="startChat" :disabled="isLoading" placeholder="예) 서울에 있는 A등급 요양 시설 추천해주세요." class="main-input">
+                <input v-model="currentMessage" @keypress.enter="startChat" :disabled="isLoading" placeholder="예) 서울에 있는 A등급 요양원 추천해주세요." class="main-input">
                 <button @click="startChat" :disabled="isLoading || !currentMessage.trim()" class="main-send-btn">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
             </div>
             <div class="example-prompts">
-                <div class="example-prompt" @click="setExamplePrompt('서울에 있는 A등급 요양 시설 추천해주세요')"><h3>🏆 등급별 추천</h3><p>서울에 있는 A등급 요양 시설 추천해주세요.</p></div>
-                <div class="example-prompt" @click="setExamplePrompt('대기자가 적은 요양 시설 찾아주세요')"><h3>⏰ 입소 가능</h3><p>대기자가 적은 요양 시설 찾아주세요.</p></div>
-                <div class="example-prompt" @click="setExamplePrompt('비급여 비용이 저렴한 곳은 어디인가요?')"><h3>💰 비용 정보</h3><p>비급여 비용이 저렴한 곳은 어디인가요?</p></div>
-                <div class="example-prompt" @click="setExamplePrompt('물리치료 프로그램이 있는 요양 시설 추천해주세요')"><h3>🏃‍♂️ 특별 프로그램</h3><p>물리치료 프로그램이 있는 요양 시설 추천해주세요</p></div>
+                <div class="example-prompt" @click="setExamplePrompt('서울에 있는 A등급 요양원 추천해주세요')"><h3>🏆 등급별 추천</h3><p>서울에 있는 A등급 요양원 추천해주세요.</p></div>
+                <div class="example-prompt" @click="setExamplePrompt('대기자가 적은 요양원 찾아주세요')"><h3>⏰ 입소 가능</h3><p>대기자가 적은 요양원 찾아주세요.</p></div>
+                <div class="example-prompt" @click="setExamplePrompt('비급여 비용이 저렴한 요양원은 어디인가요?')"><h3>💰 비용 정보</h3><p>비급여 비용이 저렴한 요양원은 어디인가요?</p></div>
+                <div class="example-prompt" @click="setExamplePrompt('상급 병실이 있는 요양 시설 추천해주세요')"><h3>🏃‍♂️ 특별 프로그램</h3><p>상급 병실이 있는 요양 시설 추천해주세요</p></div>
             </div>
         </div>
     </div>
