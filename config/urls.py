@@ -18,18 +18,12 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.http import HttpResponse
-
-def websocket_info(request):
-    """WebSocket 경로에 대한 HTTP 요청 처리"""
-    return HttpResponse("WebSocket endpoint. Use ws:// or wss:// protocol.", content_type="text/plain")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls', namespace='core')),
     path('account/', include('account.urls')),
     path('blog/', include('blog.urls', namespace='blog')),  # 블로그
-    path('ws/chat/', websocket_info, name='websocket_info'),  # WebSocket 경로에 대한 HTTP 처리
 ]
 
 # DEBUG 모드에서 미디어 파일 제공

@@ -202,7 +202,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # OpenAI API 키 (환경변수에서 로드)
-OPENAI_API_KEY = ''
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 # ChromaDB 설정
 CHROMA_DB_PATH = BASE_DIR / 'chroma_db'
